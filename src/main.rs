@@ -99,8 +99,13 @@ fn init_logger() {
     .init();
 }
 
+fn parse_args() {
+    // TODO: add `--license` argument to print license
+}
+
 fn main() {
     init_logger();
+    parse_args();
 
     let mut soc: SoC = SoC {
         cpu: CPU {
