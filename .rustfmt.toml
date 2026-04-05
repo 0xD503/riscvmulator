@@ -1,0 +1,5 @@
+hard_tabs = false               ## use spaces instead of tabs
+tab_spaces = 4                  ## indent width
+newline_style = "Unix"          ## Line endings: "Unix" (LF) or "Windows" (CRLF)
+max_width = 80                  ## max line width
+#comment_width = 80
