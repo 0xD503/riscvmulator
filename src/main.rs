@@ -1,4 +1,5 @@
 use log::{debug, error, info, trace, warn};
+use std::env;
 use std::mem::size_of;
 
 /// architechtural defines
@@ -8,16 +9,13 @@ type XLen = u32;
 type InstructionType = u32;
 
 // default constants
-const PC_DEFAULT_VALUE: XLen = 0x00000000;
+const PC_RESET_VALUE: XLen = 0x00000000;
 const PC_STEP: XLen = 0x00000004;
+
 const INITIAL_INSTRUCTION: XLen = 0x00000000;
 
 const MEM_DEFAULT_VALUE: u8 = 0x00;
 const MEM_SIZE: usize = 65536; // placeholder value, to be configured later
-
-// instruction formats
-
-// base instruction formats
 
 struct Context {
     pc: XLen,
@@ -54,7 +52,7 @@ impl SoC {
     }
 
     fn reset(&mut self) {
-        self.cpu.context.pc = PC_DEFAULT_VALUE;
+        self.cpu.context.pc = PC_RESET_VALUE;
         self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
         self.memory.byte_array = [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec();
     }
@@ -99,8 +97,24 @@ fn init_logger() {
     .init();
 }
 
+static LICENSE_TEXT: &str = "
+Copyright 2026 Ruslan Vostretsov
+
+Licensed under either of:
+
+  * MIT License (LICENSE-MIT)
+    https://opensource.org/licenses/MIT
+
+  * Apache License, Version 2.0 (LICENSE-APACHE)
+    https://www.apache.org/licenses/LICENSE-2.0
+
+at your option.
+";
+
 fn parse_args() {
     // TODO: add `--license` argument to print license
+    let args: Vec<String> = env::args().collect();
+    //
 }
 
 fn main() {
@@ -110,7 +124,7 @@ fn main() {
     let mut soc: SoC = SoC {
         cpu: CPU {
             context: Context {
-                pc: PC_DEFAULT_VALUE,
+                pc: PC_RESET_VALUE,
                 current_instruction: INITIAL_INSTRUCTION,
             },
         },
