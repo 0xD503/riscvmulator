@@ -15,8 +15,9 @@ const INITIAL_INSTRUCTION: XLen = 0x00000000;
 const MEM_DEFAULT_VALUE: u8 = 0x00;
 const MEM_SIZE: usize = 65536; // placeholder value, to be configured later
 
-// instruction types
-//
+// instruction formats
+
+// base instruction formats
 
 struct Context {
     pc: XLen,
@@ -37,12 +38,6 @@ struct SoC {
 }
 
 impl SoC {
-    fn reset(&mut self) {
-        self.cpu.context.pc = PC_DEFAULT_VALUE;
-        self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
-        self.memory.byte_array = [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec();
-    }
-
     fn fetch(&mut self) {
         let bytes = self.memory.byte_array[self.cpu.context.pc as usize
             ..self.cpu.context.pc as usize + size_of::<InstructionType>()]
@@ -58,6 +53,12 @@ impl SoC {
         );
     }
 
+    fn reset(&mut self) {
+        self.cpu.context.pc = PC_DEFAULT_VALUE;
+        self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
+        self.memory.byte_array = [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec();
+    }
+
     fn step(&mut self) {
         trace!("Current PC: {}", self.cpu.context.pc);
 
@@ -71,9 +72,13 @@ impl SoC {
     }
 }
 
+fn extract_opcode(instruction: InstructionType) -> u32 {
+    instruction & 0x7F
+}
+
 impl CPU {
     fn decode(&self) {
-        //
+        let opcode = extract_opcode(self.context.current_instruction);
     }
 }
 
