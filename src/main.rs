@@ -1,4 +1,5 @@
 use log::{debug, error, info, trace, warn};
+use std::mem::size_of;
 
 /// architechtural defines
 type XLen = u32;
@@ -9,9 +10,10 @@ type InstructionType = u32;
 // default constants
 const PC_DEFAULT_VALUE: XLen = 0;
 const PC_STEP: XLen = 4;
+const PC_RESET_VALUE: XLen = 0x00000000;
+
 const MEM_DEFAULT_VALUE: u8 = 0;
-const MEM_SIZE: usize = 100;
-const UNDEFINED_INSTRUCTION: XLen = 0;
+const MEM_SIZE: usize = 65536; // placeholder value, to be configured later
 
 struct Context {
     pc: XLen,
@@ -33,10 +35,10 @@ struct SoC {
 
 fn fetch(soc: &mut SoC) {
     let bytes = soc.memory.byte_array[soc.cpu.context.pc as usize
-        ..soc.cpu.context.pc as usize + PC_STEP as usize]
+        ..soc.cpu.context.pc as usize + size_of::<InstructionType>()]
         .try_into()
         .unwrap();
-    // NOTICE: so far emulator only supports low endian
+    // NOTICE: so far emulator only supports little-endian
     let instruction = InstructionType::from_le_bytes(bytes);
     soc.cpu.context.current_instruction = instruction;
 }
@@ -63,21 +65,23 @@ fn init_logger() {
 }
 
 fn step(soc: &mut SoC) {
+    trace!("Current PC: {0}", soc.cpu.context.pc);
+
     fetch(soc);
     decode(soc);
     execute();
     write_back();
     soc.cpu.context.pc += PC_STEP;
-
-    trace!("Current PC: {0}", soc.cpu.context.pc);
 }
 
 fn main() {
+    init_logger();
+
     let mut soc: SoC = SoC {
         cpu: CPU {
             context: Context {
                 pc: PC_DEFAULT_VALUE,
-                current_instruction: UNDEFINED_INSTRUCTION,
+                current_instruction: PC_RESET_VALUE,
             },
         },
         memory: Memory {
@@ -85,8 +89,7 @@ fn main() {
         },
     };
 
-    init_logger();
-
+    // TODO: HALT condition
     loop {
         step(&mut soc);
     }
