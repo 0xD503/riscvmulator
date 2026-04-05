@@ -15,6 +15,9 @@ const INITIAL_INSTRUCTION: XLen = 0x00000000;
 const MEM_DEFAULT_VALUE: u8 = 0x00;
 const MEM_SIZE: usize = 65536; // placeholder value, to be configured later
 
+// instruction types
+//
+
 struct Context {
     pc: XLen,
     current_instruction: XLen,
@@ -59,7 +62,7 @@ impl SoC {
         trace!("Current PC: {}", self.cpu.context.pc);
 
         self.fetch();
-        decode();
+        self.cpu.decode();
         execute();
         write_back();
 
@@ -68,8 +71,10 @@ impl SoC {
     }
 }
 
-fn decode() {
-    //
+impl CPU {
+    fn decode(&self) {
+        //
+    }
 }
 
 fn execute() {
