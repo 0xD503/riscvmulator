@@ -48,10 +48,15 @@ impl SoC {
         // NOTICE: so far emulator only supports little-endian
         let instruction = InstructionType::from_le_bytes(bytes);
         self.cpu.context.current_instruction = instruction;
+
+        trace!(
+            "Fetched instruction: {:#010X?}",
+            self.cpu.context.current_instruction
+        );
     }
 
     fn step(&mut self) {
-        trace!("Current PC: {0}", self.cpu.context.pc);
+        trace!("Current PC: {}", self.cpu.context.pc);
 
         self.fetch();
         decode();
