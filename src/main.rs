@@ -1,6 +1,4 @@
 use log::{debug, error, info, trace, warn};
-//use std::mem::size_of;
-//use std::env::{set_var, var};
 
 /// architechtural defines
 type XLen = u32;
@@ -12,7 +10,6 @@ type InstructionType = u32;
 const PC_DEFAULT_VALUE: XLen = 0;
 const PC_STEP: XLen = 4;
 const MEM_DEFAULT_VALUE: u8 = 0;
-// const MEM_DEFAULT_VALUE: u32 = 0;
 const MEM_SIZE: usize = 100;
 const UNDEFINED_INSTRUCTION: XLen = 0;
 
@@ -21,7 +18,6 @@ struct Context {
     current_instruction: XLen,
 }
 
-//#[derive(Debug)]
 struct CPU {
     context: Context,
 }
@@ -29,10 +25,6 @@ struct CPU {
 struct Memory {
     byte_array: Vec<u8>,
 }
-
-// struct Memory {
-//     word_array: Vec<XLen>,
-// }
 
 struct SoC {
     cpu: CPU,
@@ -47,17 +39,6 @@ fn fetch(soc: &mut SoC) {
     // NOTICE: so far emulator only supports low endian
     let instruction = InstructionType::from_le_bytes(bytes);
     soc.cpu.context.current_instruction = instruction;
-
-    // let mut instruction: XLen = 0;
-    // // construct instruction
-    // for i in 0..size_of::<XLen>() {
-    //     instruction |= (soc.memory.byte_array[soc.cpu.context.pc as usize + i]
-    //         as XLen)
-    //         << 8 * i;
-    // }
-    // soc.cpu.context.current_instruction = instruction;
-
-    // soc.cpu.context.current_instruction = soc.memory.byte_array[soc.cpu.context.pc as usize];
 }
 
 fn decode(soc: &SoC) {
@@ -74,10 +55,6 @@ fn write_back() {
 
 fn init_logger() {
     let default_log_level = "info";
-    // set RUST_LOG environment variable if it's not set
-    // if var("RUST_LOG").is_err() {
-    //     std::env::set_var("RUST_LOG", default_log_level);
-    // }
     // set default log level (unless specified with RUST_LOG environment variable)
     env_logger::Builder::from_env(
         env_logger::Env::default().default_filter_or(default_log_level),
