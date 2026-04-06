@@ -1,4 +1,5 @@
 use log::{debug, error, info, trace, warn};
+use std::convert::From;
 use std::env;
 use std::mem::size_of;
 
@@ -33,8 +34,8 @@ const MASK_DESTINATION_REGISTER: InstructionType = 0x1F;
 
 const BIT_OFFSET_FUNCT3: usize = 12;
 const MASK_FUNCT3: InstructionType = 0x07;
-const BIT_OFFSET_FUNCT7: usize = 25;
-const MASK_FUNCT7: InstructionType = 0x7F;
+const BIT_OFFSET_R_FUNCT7: usize = 25;
+const MASK_R_FUNCT7: InstructionType = 0x7F;
 
 const BIT_OFFSET_IMM_11_0: usize = 20;
 const MASK_IMM_11_0: InstructionType = 0xFFF;
@@ -115,6 +116,112 @@ const MASK_J_IMM_0: InstructionType = 0x01;
 
 // const BIT_OFFSET_: usize = ;
 // const MASK_: InstructionType = 0x;
+
+enum Opcode {
+    LOAD = 0b0000011,
+    STORE = 0b0100011,
+    MADD = 0b1000011,
+    BRANCH = 0b1100011,
+
+    LOAD_FP = 0b0000111,
+    STORE_FP = 0b0100111,
+    MSUB = 0b1000111,
+    JALR = 0b1100111,
+
+    custom_0 = 0b0001011,
+    custom_1 = 0b0101011,
+    NMSUB = 0b1001011,
+    reserved_1 = 0b1101011,
+
+    MISC_MEM = 0b0001111,
+    AMO = 0b0101111,
+    NMADD = 0b1001111,
+    JAL = 0b1101111,
+
+    OP_IMM = 0b0010011,
+    OP = 0b0110011,
+    OP_FP = 0b1010011,
+    SYSTEM = 0b1110011,
+
+    AUIPC = 0b0010111,
+    LUI = 0b0110111,
+    OP_V = 0b1010111,
+    OP_VE = 0b1110111,
+
+    OP_IMM_32 = 0b0011011,
+    OP_32 = 0b0111011,
+    custom_2 = 0b1011011,
+    custom_3 = 0b1111011,
+
+    reserved_2 = 0b0011111,
+    reserved_3 = 0b0111111,
+    reserved_4 = 0b1011111,
+    reserved_5 = 0b1111111,
+}
+
+const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
+
+impl From<u32> for Opcode {
+    fn from(value: u32) -> Self {
+        match value {
+            0b0000011 => Self::LOAD,
+            0b0100011 => Self::STORE,
+            0b1000011 => Self::MADD,
+            0b1100011 => Self::BRANCH,
+
+            0b0000111 => Self::LOAD_FP,
+            0b0100111 => Self::STORE_FP,
+            0b1000111 => Self::MSUB,
+            0b1100111 => Self::JALR,
+
+            0b0001011 => Self::custom_0,
+            0b0101011 => Self::custom_1,
+            0b1001011 => Self::NMSUB,
+            0b1101011 => Self::reserved_1,
+
+            0b0001111 => Self::MISC_MEM,
+            0b0101111 => Self::AMO,
+            0b1001111 => Self::NMADD,
+            0b1101111 => Self::JAL,
+
+            0b0010011 => Self::OP_IMM,
+            0b0110011 => Self::OP,
+            0b1010011 => Self::OP_FP,
+            0b1110011 => Self::SYSTEM,
+
+            0b0010111 => Self::AUIPC,
+            0b0110111 => Self::LUI,
+            0b1010111 => Self::OP_V,
+            0b1110111 => Self::OP_VE,
+
+            0b0011011 => Self::OP_IMM_32,
+            0b0111011 => Self::OP_32,
+            0b1011011 => Self::custom_2,
+            0b1111011 => Self::custom_3,
+
+            0b0011111 => Self::reserved_2,
+            0b0111111 => Self::reserved_3,
+            0b1011111 => Self::reserved_4,
+            0b1111111 => Self::reserved_5,
+            _ => {
+                error!("Unknown opcode: {value:#018X}");
+                panic!("Unknown opcode: {value:#018X}");
+            }
+        }
+    }
+}
+
+// impl Opcode {
+// fn from_u32(self, value: u32) -> Self {
+//     match value {
+//         0b0000011 => Self::LOAD,
+//         _ => {
+//             error!("Unknown opcode: {value:#018X}");
+//             panic!("Unknown opcode: {value:#018X}");
+//         }
+//     }
+// }
+// }
 
 struct RegisterFile {
     registers: [XLen; RISCV_NUM_OF_REGISTERS],
@@ -198,7 +305,7 @@ impl SoC {
         self.cpu.context.current_instruction = instruction;
 
         trace!(
-            "Fetched instruction: {:#010X?}",
+            "Fetched instruction: {:#018X?}",
             self.cpu.context.current_instruction
         );
     }
@@ -213,11 +320,16 @@ impl SoC {
                 .write(i, RISCV_X0_REGISTER_VALUE);
         }
         self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
+
         self.memory.byte_array = [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec();
+        // fill memory with NOP's
+        for i in (0..MEM_SIZE).step_by(PC_STEP as usize) {
+            self.memory.byte_array[i] = Opcode::OP_IMM as u8;
+        }
     }
 
     fn step(&mut self) {
-        trace!("Current PC: {}", self.cpu.context.pc);
+        trace!("Current PC: {:#018X}", self.cpu.context.pc);
 
         self.fetch();
         self.cpu.decode();
@@ -233,12 +345,22 @@ impl CPU {
     fn decode(&self) {
         let opcode = self.extract_opcode();
 
+        match Opcode::from(opcode) {
+            Opcode::OP => (),
+            Opcode::OP_IMM => (),
+
+            _ => {
+                error!("Unknown opcode: {opcode}");
+                panic!("Unknown opcode: {opcode}")
+            }
+        }
+
         let source_register_1 = self.extract_source_register_1();
         let source_register_2 = self.extract_source_register_2();
         let destination_register = self.extract_destination_register();
 
         let funct3 = self.extract_funct3();
-        let funct7 = self.extract_funct7();
+        let r_funct7 = self.extract_r_funct7();
 
         let imm_11_0 = self.extract_imm_11_0();
         let imm_11_5 = self.extract_imm_11_5();
@@ -306,8 +428,9 @@ impl CPU {
         (self.context.current_instruction >> BIT_OFFSET_FUNCT3) & MASK_FUNCT3
     }
 
-    fn extract_funct7(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_FUNCT7) & MASK_FUNCT7
+    fn extract_r_funct7(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_R_FUNCT7)
+            & MASK_R_FUNCT7
     }
 
     fn extract_imm_11_0(&self) -> InstructionType {
