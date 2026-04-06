@@ -164,8 +164,8 @@ enum Opcode {
     reserved_5 = 0b1111111,
 }
 
-impl From<u32> for Opcode {
-    fn from(value: u32) -> Self {
+impl From<InstructionType> for Opcode {
+    fn from(value: InstructionType) -> Self {
         match value {
             0b0000011 => Self::LOAD,
             0b0100011 => Self::STORE,
@@ -226,8 +226,8 @@ enum OP_IMM_Funct3 {
     ANDI = 0b111,  // AND with immediate
 }
 
-impl From<u32> for OP_IMM_Funct3 {
-    fn from(value: u32) -> Self {
+impl From<InstructionType> for OP_IMM_Funct3 {
+    fn from(value: InstructionType) -> Self {
         match value {
             0b000 => OP_IMM_Funct3::ADDI,
             0b001 => OP_IMM_Funct3::SLLI,
@@ -484,6 +484,7 @@ impl CPU {
             }
         }
 
+        // TODO: remove unconditional decoding
         self.context.decoder.source_register_1 =
             self.extract_source_register_1();
         self.context.decoder.source_register_2 =
@@ -542,11 +543,19 @@ impl CPU {
             ExecutableInstruction::ADDI => {
                 trace!("Executing ADDI...");
 
-                self.context.result = self
+                // TODO: CHECK: Reuslt is SIGNED
+                let mut immediate_value =
+                    self.context.decoder.imm_11_0 as i32 & 0x7FF;
+                if (self.context.decoder.imm_11_0 & 0x800) != 0 {
+                    immediate_value = -immediate_value;
+                }
+                self.context.result = (self
                     .context
                     .register_file
                     .read(self.context.decoder.source_register_1 as usize)
-                    + self.context.decoder.imm_11_0;
+                    as i32
+                    + immediate_value)
+                    as XLen;
             }
 
             _ => {
