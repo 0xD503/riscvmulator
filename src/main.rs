@@ -22,16 +22,20 @@ const MEM_SIZE: usize = 65536; // placeholder value, to be configured later
 // decoder constants
 const BIT_OFFSET_OPCODE: usize = 0;
 const MASK_OPCODE: InstructionType = 0x7F;
+
 const BIT_OFFSET_SOURCE_REGISTER_1: usize = 15;
 const MASK_SOURCE_REGISTER_1: InstructionType = 0x1F;
 const BIT_OFFSET_SOURCE_REGISTER_2: usize = 20;
 const MASK_SOURCE_REGISTER_2: InstructionType = 0x1F;
+
 const BIT_OFFSET_DESTINATION_REGISTER: usize = 7;
 const MASK_DESTINATION_REGISTER: InstructionType = 0x1F;
+
 const BIT_OFFSET_FUNCT3: usize = 12;
 const MASK_FUNCT3: InstructionType = 0x07;
 const BIT_OFFSET_FUNCT7: usize = 25;
 const MASK_FUNCT7: InstructionType = 0x7F;
+
 const BIT_OFFSET_IMM_11_0: usize = 20;
 const MASK_IMM_11_0: InstructionType = 0xFFF;
 const BIT_OFFSET_IMM_11_5: usize = 25;
@@ -48,6 +52,7 @@ const BIT_OFFSET_IMM_10_1: usize = 21;
 const MASK_IMM_10_1: InstructionType = 0x3FF;
 const BIT_OFFSET_IMM_19_12: usize = 12;
 const MASK_IMM_19_12: InstructionType = 0xFF;
+
 const BIT_OFFSET_B_11: usize = 7;
 const MASK_B_11: InstructionType = 0x01;
 const BIT_OFFSET_B_12: usize = 31;
@@ -56,6 +61,60 @@ const BIT_OFFSET_J_11: usize = 20;
 const MASK_J_11: InstructionType = 0x01;
 const BIT_OFFSET_J_20: usize = 31;
 const MASK_J_20: InstructionType = 0x01;
+
+const BIT_OFFSET_I_IMM_INST_31: usize = 11;
+const MASK_I_IMM_INST_31: InstructionType = 0x1FFFFF;
+const BIT_OFFSET_I_IMM_INST_30_25: usize = 5;
+const MASK_I_IMM_INST_30_25: InstructionType = 0x3F;
+const BIT_OFFSET_I_IMM_INST_24_21: usize = 1;
+const MASK_I_IMM_INST_24_21: InstructionType = 0x0F;
+const BIT_OFFSET_I_IMM_20: usize = 0;
+const MASK_I_IMM_20: InstructionType = 0x01;
+
+const BIT_OFFSET_S_IMM_INST_31: usize = 11;
+const MASK_S_IMM_INST_31: InstructionType = 0x1FFFFF;
+const BIT_OFFSET_S_IMM_INST_30_25: usize = 5;
+const MASK_S_IMM_INST_30_25: InstructionType = 0x3F;
+const BIT_OFFSET_S_IMM_INST_11_8: usize = 1;
+const MASK_S_IMM_INST_11_8: InstructionType = 0x0F;
+const BIT_OFFSET_S_IMM_7: usize = 0;
+const MASK_S_IMM_7: InstructionType = 0x01;
+
+const BIT_OFFSET_B_IMM_INST_31: usize = 12;
+const MASK_B_IMM_INST_31: InstructionType = 0xFFFFF;
+const BIT_OFFSET_B_IMM_7: usize = 11;
+const MASK_B_IMM_7: InstructionType = 0x01;
+const BIT_OFFSET_B_IMM_INST_30_25: usize = 5;
+const MASK_B_IMM_INST_30_25: InstructionType = 0x3F;
+const BIT_OFFSET_B_IMM_INST_11_8: usize = 1;
+const MASK_B_IMM_INST_11_8: InstructionType = 0x0F;
+const BIT_OFFSET_B_IMM_0: usize = 0;
+const MASK_B_IMM_0: InstructionType = 0x01;
+
+const BIT_OFFSET_U_IMM_31: usize = 31;
+const MASK_U_IMM_31: InstructionType = 0x01;
+const BIT_OFFSET_U_IMM_INST_30_20: usize = 20;
+const MASK_U_IMM_INST_30_20: InstructionType = 0x7FF;
+const BIT_OFFSET_U_IMM_INST_19_12: usize = 12;
+const MASK_U_IMM_INST_19_12: InstructionType = 0xFF;
+const BIT_OFFSET_U_IMM_0: usize = 0;
+const MASK_U_IMM_0: InstructionType = 0xFFF;
+
+const BIT_OFFSET_J_IMM_INST_31: usize = 20;
+const MASK_J_IMM_INST_31: InstructionType = 0xFFF;
+const BIT_OFFSET_J_IMM_INST_19_12: usize = 12;
+const MASK_J_IMM_INST_19_12: InstructionType = 0xFF;
+const BIT_OFFSET_J_IMM_20: usize = 11;
+const MASK_J_IMM_20: InstructionType = 0x01;
+const BIT_OFFSET_J_IMM_INST_30_25: usize = 5;
+const MASK_J_IMM_INST_30_25: InstructionType = 0x3F;
+const BIT_OFFSET_J_IMM_INST_24_21: usize = 1;
+const MASK_J_IMM_INST_24_21: InstructionType = 0x0F;
+const BIT_OFFSET_J_IMM_0: usize = 0;
+const MASK_J_IMM_0: InstructionType = 0x01;
+
+// const BIT_OFFSET_: usize = ;
+// const MASK_: InstructionType = 0x;
 
 struct RegisterFile {
     registers: [XLen; RISCV_NUM_OF_REGISTERS],
@@ -173,11 +232,14 @@ impl SoC {
 impl CPU {
     fn decode(&self) {
         let opcode = self.extract_opcode();
+
         let source_register_1 = self.extract_source_register_1();
         let source_register_2 = self.extract_source_register_2();
         let destination_register = self.extract_destination_register();
+
         let funct3 = self.extract_funct3();
         let funct7 = self.extract_funct7();
+
         let imm_11_0 = self.extract_imm_11_0();
         let imm_11_5 = self.extract_imm_11_5();
         let imm_4_0 = self.extract_imm_4_0();
@@ -186,10 +248,39 @@ impl CPU {
         let imm_4_1 = self.extract_imm_4_1();
         let imm_10_1 = self.extract_imm_10_1();
         let imm_19_12 = self.extract_imm_19_12();
+
         let b_11 = self.extract_b_11();
         let b_12 = self.extract_b_12();
         let j_11 = self.extract_j_11();
         let j_20 = self.extract_j_20();
+
+        let i_imm_inst_31 = self.extract_i_imm_inst_31();
+        let i_imm_inst_30_25 = self.extract_i_imm_inst_30_25();
+        let i_imm_inst_24_21 = self.extract_i_imm_inst_24_21();
+        let i_imm_inst_20 = self.extract_i_imm_20();
+
+        let s_imm_inst_31 = self.extract_s_imm_inst_31();
+        let s_imm_inst_30_25 = self.extract_s_imm_inst_30_25();
+        let s_imm_inst_11_8 = self.extract_s_imm_inst_11_8();
+        let s_imm_inst_7 = self.extract_s_imm_7();
+
+        let b_imm_inst_31 = self.extract_b_imm_inst_31();
+        let b_imm_7 = self.extract_b_imm_7();
+        let b_imm_inst_30_25 = self.extract_b_imm_inst_30_25();
+        let b_imm_inst_11_8 = self.extract_b_imm_inst_11_8();
+        let b_imm_0 = self.extract_b_imm_0();
+
+        let u_imm_31 = self.extract_u_imm_31();
+        let u_imm_inst_30_20 = self.extract_u_imm_inst_30_20();
+        let u_imm_inst_19_12 = self.extract_u_imm_inst_19_12();
+        let u_imm_0 = self.extract_u_imm_0();
+
+        let j_imm_inst_31 = self.extract_j_imm_inst_31();
+        let j_imm_inst_19_12 = self.extract_j_imm_inst_19_12();
+        let j_imm_20 = self.extract_j_imm_20();
+        let j_imm_inst_30_25 = self.extract_j_imm_inst_30_25();
+        let j_imm_inst_24_21 = self.extract_j_imm_inst_24_21();
+        let j_imm_0 = self.extract_j_imm_0();
     }
 
     fn extract_opcode(&self) -> InstructionType {
@@ -271,6 +362,116 @@ impl CPU {
 
     fn extract_j_20(&self) -> InstructionType {
         (self.context.current_instruction >> BIT_OFFSET_J_20) & MASK_J_20
+    }
+
+    fn extract_i_imm_inst_31(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_I_IMM_INST_31)
+            & MASK_I_IMM_INST_31
+    }
+
+    fn extract_i_imm_inst_30_25(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_I_IMM_INST_30_25)
+            & MASK_I_IMM_INST_30_25
+    }
+
+    fn extract_i_imm_inst_24_21(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_I_IMM_INST_24_21)
+            & MASK_I_IMM_INST_24_21
+    }
+
+    fn extract_i_imm_20(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_I_IMM_20)
+            & MASK_I_IMM_20
+    }
+
+    fn extract_s_imm_inst_31(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_S_IMM_INST_31)
+            & MASK_S_IMM_INST_31
+    }
+
+    fn extract_s_imm_inst_30_25(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_S_IMM_INST_30_25)
+            & MASK_S_IMM_INST_30_25
+    }
+
+    fn extract_s_imm_inst_11_8(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_S_IMM_INST_11_8)
+            & MASK_S_IMM_INST_11_8
+    }
+
+    fn extract_s_imm_7(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_S_IMM_7) & MASK_S_IMM_7
+    }
+
+    fn extract_b_imm_inst_31(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_B_IMM_INST_31)
+            & MASK_B_IMM_INST_31
+    }
+
+    fn extract_b_imm_7(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_B_IMM_7) & MASK_B_IMM_7
+    }
+
+    fn extract_b_imm_inst_30_25(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_B_IMM_INST_30_25)
+            & MASK_B_IMM_INST_30_25
+    }
+
+    fn extract_b_imm_inst_11_8(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_B_IMM_INST_11_8)
+            & MASK_B_IMM_INST_11_8
+    }
+
+    fn extract_b_imm_0(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_B_IMM_0) & MASK_B_IMM_0
+    }
+
+    fn extract_u_imm_31(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_U_IMM_31)
+            & MASK_U_IMM_31
+    }
+
+    fn extract_u_imm_inst_30_20(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_U_IMM_INST_30_20)
+            & MASK_U_IMM_INST_30_20
+    }
+
+    fn extract_u_imm_inst_19_12(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_U_IMM_INST_19_12)
+            & MASK_U_IMM_INST_19_12
+    }
+
+    fn extract_u_imm_0(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_U_IMM_0) & MASK_U_IMM_0
+    }
+
+    fn extract_j_imm_inst_31(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_31)
+            & MASK_J_IMM_INST_31
+    }
+
+    fn extract_j_imm_inst_19_12(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_19_12)
+            & MASK_J_IMM_INST_19_12
+    }
+
+    fn extract_j_imm_20(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_J_IMM_20)
+            & MASK_J_IMM_20
+    }
+
+    fn extract_j_imm_inst_30_25(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_30_25)
+            & MASK_J_IMM_INST_30_25
+    }
+
+    fn extract_j_imm_inst_24_21(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_24_21)
+            & MASK_J_IMM_INST_24_21
+    }
+
+    fn extract_j_imm_0(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_J_IMM_0) & MASK_J_IMM_0
     }
 }
 
