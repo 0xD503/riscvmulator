@@ -37,6 +37,9 @@ const MASK_FUNCT3: InstructionType = 0x07;
 const BIT_OFFSET_R_FUNCT7: usize = 25;
 const MASK_R_FUNCT7: InstructionType = 0x7F;
 
+const BIT_OFFSET_SHAMT: usize = 20;
+const MASK_SHAMT: InstructionType = 0x1F;
+
 const BIT_OFFSET_IMM_11_0: usize = 20;
 const MASK_IMM_11_0: InstructionType = 0xFFF;
 const BIT_OFFSET_IMM_11_5: usize = 25;
@@ -114,9 +117,10 @@ const MASK_J_IMM_INST_24_21: InstructionType = 0x0F;
 const BIT_OFFSET_J_IMM_0: usize = 0;
 const MASK_J_IMM_0: InstructionType = 0x01;
 
-// const BIT_OFFSET_: usize = ;
-// const MASK_: InstructionType = 0x;
+const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
 
+#[derive(Default, Clone)]
+#[allow(non_camel_case_types)]
 enum Opcode {
     LOAD = 0b0000011,
     STORE = 0b0100011,
@@ -138,6 +142,7 @@ enum Opcode {
     NMADD = 0b1001111,
     JAL = 0b1101111,
 
+    #[default]
     OP_IMM = 0b0010011,
     OP = 0b0110011,
     OP_FP = 0b1010011,
@@ -158,8 +163,6 @@ enum Opcode {
     reserved_4 = 0b1011111,
     reserved_5 = 0b1111111,
 }
-
-const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
 
 impl From<u32> for Opcode {
     fn from(value: u32) -> Self {
@@ -211,18 +214,45 @@ impl From<u32> for Opcode {
     }
 }
 
-// impl Opcode {
-// fn from_u32(self, value: u32) -> Self {
-//     match value {
-//         0b0000011 => Self::LOAD,
-//         _ => {
-//             error!("Unknown opcode: {value:#018X}");
-//             panic!("Unknown opcode: {value:#018X}");
-//         }
-//     }
-// }
-// }
+#[allow(non_camel_case_types)]
+enum OP_IMM_Funct3 {
+    ADDI = 0b000,  // add immediate
+    SLLI = 0b001,  // shift left logical immediate
+    SLTI = 0b010,  //
+    SLTIU = 0b011, //
+    XORI = 0b100,  // XOR with immediate
+    SRXI = 0b101,  // shift right X immediate
+    ORI = 0b110,   // OR with immediate
+    ANDI = 0b111,  // AND with immediate
+}
 
+impl From<u32> for OP_IMM_Funct3 {
+    fn from(value: u32) -> Self {
+        match value {
+            0b000 => OP_IMM_Funct3::ADDI,
+            0b001 => OP_IMM_Funct3::SLLI,
+            0b010 => OP_IMM_Funct3::SLTI,
+            0b011 => OP_IMM_Funct3::SLTIU,
+            0b100 => OP_IMM_Funct3::XORI,
+            0b101 => OP_IMM_Funct3::SRXI,
+            0b110 => OP_IMM_Funct3::ORI,
+            0b111 => OP_IMM_Funct3::ANDI,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                panic!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+#[derive(Default, Clone, Debug)]
+enum ExecutableInstruction {
+    #[default]
+    ADDI,
+}
+
+#[derive(Clone)]
 struct RegisterFile {
     registers: [XLen; RISCV_NUM_OF_REGISTERS],
 }
@@ -271,16 +301,82 @@ impl RegisterFile {
         // register `x0` is hardwired with all bits equal to 0, so do nothing with `x0`
         if offset != 0 {
             self.registers[offset] = value;
+        } else {
+            trace!(
+                "An attempt to write value {value} to register `x0` was silently discarded"
+            );
         }
     }
 }
 
+#[derive(Default, Clone)]
+struct Decoder {
+    opcode: Opcode,
+    source_register_1: InstructionType,
+    source_register_2: InstructionType,
+    destination_register: InstructionType,
+
+    funct3: InstructionType,
+    r_funct7: InstructionType,
+
+    shamt: InstructionType,
+
+    imm_11_0: InstructionType,
+    imm_11_5: InstructionType,
+    imm_4_0: InstructionType,
+    imm_31_12: InstructionType,
+    imm_10_5: InstructionType,
+    imm_4_1: InstructionType,
+    imm_10_1: InstructionType,
+    imm_19_12: InstructionType,
+
+    b_11: InstructionType,
+    b_12: InstructionType,
+    j_11: InstructionType,
+    j_20: InstructionType,
+
+    i_imm_inst_31: InstructionType,
+    i_imm_inst_30_25: InstructionType,
+    i_imm_inst_24_21: InstructionType,
+    i_imm_inst_20: InstructionType,
+
+    s_imm_inst_31: InstructionType,
+    s_imm_inst_30_25: InstructionType,
+    s_imm_inst_11_8: InstructionType,
+    s_imm_inst_7: InstructionType,
+
+    b_imm_inst_31: InstructionType,
+    b_imm_7: InstructionType,
+    b_imm_inst_30_25: InstructionType,
+    b_imm_inst_11_8: InstructionType,
+    b_imm_0: InstructionType,
+
+    u_imm_31: InstructionType,
+    u_imm_inst_30_20: InstructionType,
+    u_imm_inst_19_12: InstructionType,
+    u_imm_0: InstructionType,
+
+    j_imm_inst_31: InstructionType,
+    j_imm_inst_19_12: InstructionType,
+    j_imm_20: InstructionType,
+    j_imm_inst_30_25: InstructionType,
+    j_imm_inst_24_21: InstructionType,
+    j_imm_0: InstructionType,
+
+    executable_instruction: ExecutableInstruction,
+    need_to_write_back: bool,
+}
+
+#[derive(Clone)]
 struct Context {
     pc: XLen,
     register_file: RegisterFile,
     current_instruction: XLen,
+    decoder: Decoder,
+    result: XLen,
 }
 
+#[derive(Clone)]
 struct CPU {
     context: Context,
 }
@@ -321,8 +417,8 @@ impl SoC {
         }
         self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
 
-        self.memory.byte_array = [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec();
         // fill memory with NOP's
+        self.memory.byte_array = [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec();
         for i in (0..MEM_SIZE).step_by(PC_STEP as usize) {
             self.memory.byte_array[i] = Opcode::OP_IMM as u8;
         }
@@ -333,8 +429,8 @@ impl SoC {
 
         self.fetch();
         self.cpu.decode();
-        execute();
-        write_back();
+        self.cpu.execute();
+        self.cpu.write_back();
 
         // step PC
         self.cpu.context.pc += PC_STEP;
@@ -342,71 +438,144 @@ impl SoC {
 }
 
 impl CPU {
-    fn decode(&self) {
-        let opcode = self.extract_opcode();
+    fn decode(&mut self) {
+        self.context.decoder.opcode = self.extract_opcode();
 
-        match Opcode::from(opcode) {
+        match self.context.decoder.opcode {
+            // TODO: implement other opcodes beside OP_IMM
             Opcode::OP => (),
-            Opcode::OP_IMM => (),
+            Opcode::OP_IMM => {
+                self.context.decoder.source_register_1 =
+                    self.extract_source_register_1();
+                self.context.decoder.destination_register =
+                    self.extract_destination_register();
+                self.context.decoder.funct3 = self.extract_funct3();
+                match self.context.decoder.funct3 & 0b11 {
+                    0b01 => {
+                        // shift operations
+                        self.context.decoder.r_funct7 = self.extract_r_funct7();
+                        self.context.decoder.shamt = self.extract_shamt();
+                    }
+                    _ => {
+                        self.context.decoder.imm_11_0 = self.extract_imm_11_0();
+                    }
+                }
+
+                match OP_IMM_Funct3::from(self.context.decoder.funct3) {
+                    OP_IMM_Funct3::ADDI => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::ADDI;
+                        self.context.decoder.need_to_write_back = true;
+                    }
+
+                    _ => (),
+                }
+            }
 
             _ => {
-                error!("Unknown opcode: {opcode}");
-                panic!("Unknown opcode: {opcode}")
+                error!(
+                    "Unknown opcode: {:#010b}",
+                    self.context.decoder.opcode.clone() as InstructionType
+                );
+                panic!(
+                    "Unknown opcode: {:#010b}",
+                    self.context.decoder.opcode.clone() as InstructionType
+                );
             }
         }
 
-        let source_register_1 = self.extract_source_register_1();
-        let source_register_2 = self.extract_source_register_2();
-        let destination_register = self.extract_destination_register();
+        self.context.decoder.source_register_1 =
+            self.extract_source_register_1();
+        self.context.decoder.source_register_2 =
+            self.extract_source_register_2();
+        self.context.decoder.destination_register =
+            self.extract_destination_register();
 
-        let funct3 = self.extract_funct3();
-        let r_funct7 = self.extract_r_funct7();
+        self.context.decoder.funct3 = self.extract_funct3();
+        self.context.decoder.r_funct7 = self.extract_r_funct7();
 
-        let imm_11_0 = self.extract_imm_11_0();
-        let imm_11_5 = self.extract_imm_11_5();
-        let imm_4_0 = self.extract_imm_4_0();
-        let imm_31_12 = self.extract_imm_31_12();
-        let imm_10_5 = self.extract_imm_10_5();
-        let imm_4_1 = self.extract_imm_4_1();
-        let imm_10_1 = self.extract_imm_10_1();
-        let imm_19_12 = self.extract_imm_19_12();
+        self.context.decoder.imm_11_0 = self.extract_imm_11_0();
+        self.context.decoder.imm_11_5 = self.extract_imm_11_5();
+        self.context.decoder.imm_4_0 = self.extract_imm_4_0();
+        self.context.decoder.imm_31_12 = self.extract_imm_31_12();
+        self.context.decoder.imm_10_5 = self.extract_imm_10_5();
+        self.context.decoder.imm_4_1 = self.extract_imm_4_1();
+        self.context.decoder.imm_10_1 = self.extract_imm_10_1();
+        self.context.decoder.imm_19_12 = self.extract_imm_19_12();
 
-        let b_11 = self.extract_b_11();
-        let b_12 = self.extract_b_12();
-        let j_11 = self.extract_j_11();
-        let j_20 = self.extract_j_20();
+        self.context.decoder.b_11 = self.extract_b_11();
+        self.context.decoder.b_12 = self.extract_b_12();
+        self.context.decoder.j_11 = self.extract_j_11();
+        self.context.decoder.j_20 = self.extract_j_20();
 
-        let i_imm_inst_31 = self.extract_i_imm_inst_31();
-        let i_imm_inst_30_25 = self.extract_i_imm_inst_30_25();
-        let i_imm_inst_24_21 = self.extract_i_imm_inst_24_21();
-        let i_imm_inst_20 = self.extract_i_imm_20();
+        self.context.decoder.i_imm_inst_31 = self.extract_i_imm_inst_31();
+        self.context.decoder.i_imm_inst_30_25 = self.extract_i_imm_inst_30_25();
+        self.context.decoder.i_imm_inst_24_21 = self.extract_i_imm_inst_24_21();
+        self.context.decoder.i_imm_inst_20 = self.extract_i_imm_20();
 
-        let s_imm_inst_31 = self.extract_s_imm_inst_31();
-        let s_imm_inst_30_25 = self.extract_s_imm_inst_30_25();
-        let s_imm_inst_11_8 = self.extract_s_imm_inst_11_8();
-        let s_imm_inst_7 = self.extract_s_imm_7();
+        self.context.decoder.s_imm_inst_31 = self.extract_s_imm_inst_31();
+        self.context.decoder.s_imm_inst_30_25 = self.extract_s_imm_inst_30_25();
+        self.context.decoder.s_imm_inst_11_8 = self.extract_s_imm_inst_11_8();
+        self.context.decoder.s_imm_inst_7 = self.extract_s_imm_7();
 
-        let b_imm_inst_31 = self.extract_b_imm_inst_31();
-        let b_imm_7 = self.extract_b_imm_7();
-        let b_imm_inst_30_25 = self.extract_b_imm_inst_30_25();
-        let b_imm_inst_11_8 = self.extract_b_imm_inst_11_8();
-        let b_imm_0 = self.extract_b_imm_0();
+        self.context.decoder.b_imm_inst_31 = self.extract_b_imm_inst_31();
+        self.context.decoder.b_imm_7 = self.extract_b_imm_7();
+        self.context.decoder.b_imm_inst_30_25 = self.extract_b_imm_inst_30_25();
+        self.context.decoder.b_imm_inst_11_8 = self.extract_b_imm_inst_11_8();
+        self.context.decoder.b_imm_0 = self.extract_b_imm_0();
 
-        let u_imm_31 = self.extract_u_imm_31();
-        let u_imm_inst_30_20 = self.extract_u_imm_inst_30_20();
-        let u_imm_inst_19_12 = self.extract_u_imm_inst_19_12();
-        let u_imm_0 = self.extract_u_imm_0();
+        self.context.decoder.u_imm_31 = self.extract_u_imm_31();
+        self.context.decoder.u_imm_inst_30_20 = self.extract_u_imm_inst_30_20();
+        self.context.decoder.u_imm_inst_19_12 = self.extract_u_imm_inst_19_12();
+        self.context.decoder.u_imm_0 = self.extract_u_imm_0();
 
-        let j_imm_inst_31 = self.extract_j_imm_inst_31();
-        let j_imm_inst_19_12 = self.extract_j_imm_inst_19_12();
-        let j_imm_20 = self.extract_j_imm_20();
-        let j_imm_inst_30_25 = self.extract_j_imm_inst_30_25();
-        let j_imm_inst_24_21 = self.extract_j_imm_inst_24_21();
-        let j_imm_0 = self.extract_j_imm_0();
+        self.context.decoder.j_imm_inst_31 = self.extract_j_imm_inst_31();
+        self.context.decoder.j_imm_inst_19_12 = self.extract_j_imm_inst_19_12();
+        self.context.decoder.j_imm_20 = self.extract_j_imm_20();
+        self.context.decoder.j_imm_inst_30_25 = self.extract_j_imm_inst_30_25();
+        self.context.decoder.j_imm_inst_24_21 = self.extract_j_imm_inst_24_21();
+        self.context.decoder.j_imm_0 = self.extract_j_imm_0();
     }
 
-    fn extract_opcode(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_OPCODE) & MASK_OPCODE
+    fn execute(&mut self) {
+        match self.context.decoder.executable_instruction {
+            ExecutableInstruction::ADDI => {
+                trace!("Executing ADDI...");
+
+                self.context.result = self
+                    .context
+                    .register_file
+                    .read(self.context.decoder.source_register_1 as usize)
+                    + self.context.decoder.imm_11_0;
+            }
+
+            _ => {
+                error!(
+                    "Unknown instruction: {:?}",
+                    self.context.decoder.executable_instruction
+                );
+                panic!(
+                    "Unknown instruction: {:?}",
+                    self.context.decoder.executable_instruction
+                );
+            }
+        }
+    }
+
+    fn write_back(&mut self) {
+        if self.context.decoder.need_to_write_back {
+            self.context.register_file.write(
+                self.context.decoder.destination_register as usize,
+                self.context.result,
+            );
+        }
+    }
+
+    fn extract_opcode(&self) -> Opcode {
+        Opcode::from(
+            (self.context.current_instruction >> BIT_OFFSET_OPCODE)
+                & MASK_OPCODE,
+        )
     }
 
     fn extract_source_register_1(&self) -> InstructionType {
@@ -431,6 +600,10 @@ impl CPU {
     fn extract_r_funct7(&self) -> InstructionType {
         (self.context.current_instruction >> BIT_OFFSET_R_FUNCT7)
             & MASK_R_FUNCT7
+    }
+
+    fn extract_shamt(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT
     }
 
     fn extract_imm_11_0(&self) -> InstructionType {
@@ -598,14 +771,6 @@ impl CPU {
     }
 }
 
-fn execute() {
-    //
-}
-
-fn write_back() {
-    //
-}
-
 fn init_logger() {
     let default_log_level = "info";
     // set default log level (unless specified with RUST_LOG environment variable)
@@ -648,6 +813,10 @@ fn main() {
                         RISCV_NUM_OF_REGISTERS],
                 },
                 current_instruction: INITIAL_INSTRUCTION,
+                decoder: Decoder {
+                    ..Default::default()
+                },
+                result: Default::default(),
             },
         },
         memory: Memory {
