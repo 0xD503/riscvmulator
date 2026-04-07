@@ -1,7 +1,8 @@
 use log::{debug, error, info, trace, warn};
+// use serde::Deserialize;
 use std::convert::From;
-use std::env;
 use std::mem::size_of;
+use std::{env, fs};
 
 /// architechtural defines
 type XLen = u32;
@@ -117,7 +118,7 @@ const MASK_J_IMM_INST_24_21: InstructionType = 0x0F;
 const BIT_OFFSET_J_IMM_0: usize = 0;
 const MASK_J_IMM_0: InstructionType = 0x01;
 
-const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
+//const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
 
 #[derive(Default, Clone)]
 #[allow(non_camel_case_types)]
@@ -437,6 +438,15 @@ impl SoC {
     }
 }
 
+fn extend_sign(value: XLen, value_mask: InstructionType) -> XLen {
+    if value & ((value_mask + 1) >> 1) == 0 {
+        value
+    } else {
+        let negative_sign_extension: XLen = XLen::MAX & !value_mask;
+        value | negative_sign_extension
+    }
+}
+
 impl CPU {
     fn decode(&mut self) {
         self.context.decoder.opcode = self.extract_opcode();
@@ -543,19 +553,11 @@ impl CPU {
             ExecutableInstruction::ADDI => {
                 trace!("Executing ADDI...");
 
-                // TODO: CHECK: Reuslt is SIGNED
-                let mut immediate_value =
-                    self.context.decoder.imm_11_0 as i32 & 0x7FF;
-                if (self.context.decoder.imm_11_0 & 0x800) != 0 {
-                    immediate_value = -immediate_value;
-                }
-                self.context.result = (self
+                self.context.result = self
                     .context
                     .register_file
                     .read(self.context.decoder.source_register_1 as usize)
-                    as i32
-                    + immediate_value)
-                    as XLen;
+                    + self.context.decoder.imm_11_0;
             }
 
             _ => {
@@ -615,42 +617,84 @@ impl CPU {
         (self.context.current_instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT
     }
 
+    // fn extend_sign_improved(
+    //     immediate: XLen,
+    //     immediate_bit_width: usize,
+    //     immediate_bit_offset: usize,
+    //     immediate_final_bit_offset: usize,
+    // ) -> XLen {
+    //     // immediate <<
+    //     const XLEN_BIT_WIDTH: usize = size_of::<XLen>() * 8;
+    //     let shift_left_amount =
+    //         XLEN_BIT_WIDTH - immediate_bit_offset - immediate_bit_width;
+    //     let left_shifted_imm = immediate << shift_left_amount;
+    //     (left_shifted_imm as i32
+    //         >> (XLEN_BIT_WIDTH - immediate_bit_width
+    //             + immediate_final_bit_offset)) as XLen
+    // }
+
     fn extract_imm_11_0(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_IMM_11_0)
-            & MASK_IMM_11_0
+        let immediate = (self.context.current_instruction
+            >> BIT_OFFSET_IMM_11_0)
+            & MASK_IMM_11_0;
+        // immediate [11;0] is sign extended
+        extend_sign(immediate, MASK_IMM_11_0)
     }
 
     fn extract_imm_11_5(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_IMM_11_5)
-            & MASK_IMM_11_5
+        let immediate = (self.context.current_instruction
+            >> BIT_OFFSET_IMM_11_5)
+            & MASK_IMM_11_5;
+        // immediate [11;5] is sign extended
+        extend_sign(immediate, MASK_IMM_11_5)
     }
 
     fn extract_imm_4_0(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_IMM_4_0) & MASK_IMM_4_0
+        let immediate = (self.context.current_instruction
+            >> BIT_OFFSET_IMM_4_0)
+            & MASK_IMM_4_0;
+        // immediate [4;0] is sign extended
+        extend_sign(immediate, MASK_IMM_4_0)
     }
 
     fn extract_imm_31_12(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_IMM_31_12)
-            & MASK_IMM_31_12
+        let immediate = (self.context.current_instruction
+            >> BIT_OFFSET_IMM_31_12)
+            & MASK_IMM_31_12;
+        // immediate [31;12] is sign extended
+        extend_sign(immediate, MASK_IMM_31_12)
     }
 
     fn extract_imm_10_5(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_IMM_10_5)
-            & MASK_IMM_10_5
+        let immediate = (self.context.current_instruction
+            >> BIT_OFFSET_IMM_10_5)
+            & MASK_IMM_10_5;
+        // immediate [10;5] is sign extended
+        extend_sign(immediate, MASK_IMM_10_5)
     }
 
     fn extract_imm_4_1(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_IMM_4_1) & MASK_IMM_4_1
+        let immediate = (self.context.current_instruction
+            >> BIT_OFFSET_IMM_4_1)
+            & MASK_IMM_4_1;
+        // immediate [4;1] is sign extended
+        extend_sign(immediate, MASK_IMM_4_1)
     }
 
     fn extract_imm_10_1(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_IMM_10_1)
-            & MASK_IMM_10_1
+        let immediate = (self.context.current_instruction
+            >> BIT_OFFSET_IMM_10_1)
+            & MASK_IMM_10_1;
+        // immediate [10;1] is sign extended
+        extend_sign(immediate, MASK_IMM_10_1)
     }
 
     fn extract_imm_19_12(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_IMM_19_12)
-            & MASK_IMM_19_12
+        let immediate = (self.context.current_instruction
+            >> BIT_OFFSET_IMM_19_12)
+            & MASK_IMM_19_12;
+        // immediate [19;12] is sign extended
+        extend_sign(immediate, MASK_IMM_19_12)
     }
 
     fn extract_b_11(&self) -> InstructionType {
@@ -809,9 +853,31 @@ fn parse_args() {
     //
 }
 
-fn main() {
+// #[derive(Deserialize)]
+// struct MemoryCfg {
+//     size_bytes: Option<usize>,
+// }
+
+// #[derive(Deserialize)]
+// struct SocConfig {
+//     soc: Option<MemoryCfg>,
+// }
+
+fn configure() {
+    // const DEFAULT_CONFIG_PATH: &str = "conf/soc.toml";
+    // let config_path = DEFAULT_CONFIG_PATH;
+    // let file_content = fs::read_to_string(config_path).unwrap().as_str();
+    // let config: SocConfig = toml::from_str(file_content).unwrap();
+}
+
+fn init() {
     init_logger();
     parse_args();
+    configure();
+}
+
+fn main() {
+    init();
 
     let mut soc: SoC = SoC {
         cpu: CPU {
