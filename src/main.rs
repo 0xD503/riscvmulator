@@ -1,7 +1,9 @@
+use clap::Parser;
 use log::{debug, error, info, trace, warn};
-// use serde::Deserialize;
+use serde::Deserialize;
 use std::convert::From;
 use std::mem::size_of;
+use std::str::FromStr;
 use std::{env, fs};
 
 /// architechtural defines
@@ -833,41 +835,69 @@ fn init_logger() {
     .init();
 }
 
-static LICENSE_TEXT: &str = "
-Copyright 2026 Ruslan Vostretsov
+fn print_license_text() {
+    static LICENSE_TEXT: &str = "
 
-Licensed under either of:
+    Copyright 2026 Ruslan Vostretsov
 
-  * MIT License (LICENSE-MIT)
-    https://opensource.org/licenses/MIT
+    Licensed under either of:
 
-  * Apache License, Version 2.0 (LICENSE-APACHE)
-    https://www.apache.org/licenses/LICENSE-2.0
+    * MIT License (LICENSE-MIT)
+        https://opensource.org/licenses/MIT
 
-at your option.
+    * Apache License, Version 2.0 (LICENSE-APACHE)
+        https://www.apache.org/licenses/LICENSE-2.0
+
+    at your option.
+
 ";
+    print!("{LICENSE_TEXT}");
+}
+
+#[derive(Parser)]
+#[command(version, about)]
+struct Args {
+    #[arg(long, required = false, action = clap::ArgAction::SetTrue)]
+    license: bool,
+}
+// #[derive(Parser, Debug)]
+// #[command(version, about, long_about = None)]
+// struct Args {
+//     // /// Name of the person to greet
+//     // #[arg(short, long)]
+//     // name: String,
+//     /// Number of times to greet
+//     #[arg(short, long, default_value_t = 1)]
+//     count: u8,
+// }
 
 fn parse_args() {
     // TODO: add `--license` argument to print license
-    let args: Vec<String> = env::args().collect();
-    //
+    // let args: Vec<String> = env::args().collect();
+    let args = Args::parse();
+
+    if args.license {
+        print_license_text();
+        std::process::exit(0);
+    }
 }
 
-// #[derive(Deserialize)]
-// struct MemoryCfg {
-//     size_bytes: Option<usize>,
-// }
+#[derive(Deserialize)]
+struct MemoryCfg {
+    size_bytes: Option<usize>,
+}
 
-// #[derive(Deserialize)]
-// struct SocConfig {
-//     soc: Option<MemoryCfg>,
-// }
+#[derive(Deserialize)]
+struct SocConfig {
+    soc: Option<MemoryCfg>,
+}
 
 fn configure() {
-    // const DEFAULT_CONFIG_PATH: &str = "conf/soc.toml";
-    // let config_path = DEFAULT_CONFIG_PATH;
-    // let file_content = fs::read_to_string(config_path).unwrap().as_str();
-    // let config: SocConfig = toml::from_str(file_content).unwrap();
+    const DEFAULT_CONFIG_PATH: &str = "conf/soc.toml";
+    let config_path = DEFAULT_CONFIG_PATH;
+    let binding = fs::read_to_string(config_path).unwrap();
+    let file_content = binding.as_str();
+    let config: SocConfig = toml::from_str(file_content).unwrap();
 }
 
 fn init() {
