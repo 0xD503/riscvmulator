@@ -4,6 +4,9 @@ build-dev:
 run-dev:
   RUST_LOG=debug cargo run --release
 
+run-trace:
+  RUST_LOG=trace cargo run --release
+
 build:
   cargo build --release
 

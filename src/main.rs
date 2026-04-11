@@ -258,7 +258,14 @@ impl From<InstructionType> for OP_IMM_Funct3 {
 #[derive(Default, Clone, Debug)]
 enum ExecutableInstruction {
     #[default]
-    ADDI,
+    ADDI, // add immediate
+    SLLI,  // shift left logical immediate
+    SLTI,  //
+    SLTIU, //
+    XORI,  // XOR with immediate
+    SRXI,  // shift right X immediate
+    ORI,   // OR with immediate
+    ANDI,  // AND with immediate
 }
 
 #[derive(Clone)]
@@ -389,6 +396,7 @@ struct Decoder {
     instruction_format: InstructionFormat,
     executable_instruction: ExecutableInstruction,
     need_to_read_memory: bool,
+    need_to_write_memory: bool,
     need_to_write_back: bool,
 }
 
@@ -571,111 +579,166 @@ impl From<Opcode> for OpcodeToInstructionFormat {
 }
 
 impl CPU {
-    fn decode(&mut self) {
-        self.context.decoder.opcode = self.extract_opcode();
-
-        match From::from(self.context.decoder.opcode.clone()) {
-            OpcodeToInstructionFormat::I_3
-            | OpcodeToInstructionFormat::I_7
-            | OpcodeToInstructionFormat::I_19
-            | OpcodeToInstructionFormat::I_27
-            | OpcodeToInstructionFormat::I_103 => {
-                self.context.decoder.source_register_1 =
-                    self.extract_source_register_1();
-                self.context.decoder.destination_register =
-                    self.extract_destination_register();
-                self.context.decoder.funct3 = self.extract_funct3();
-                self.context.decoder.immediate = self.extract_imm_11_0();
-                self.context.decoder.need_to_read_memory = false;
-                self.context.decoder.need_to_write_back = true;
-
-                match OP_IMM_Funct3::from(self.context.decoder.funct3) {
-                    OP_IMM_Funct3::ADDI => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::ADDI;
-                    }
-
-                    _ => {
-                        error!(
-                            "Unknown funct3: {:#05b}",
-                            self.context.decoder.funct3
-                        );
-                        unreachable!(
-                            "Unknown funct3: {:#05b}",
-                            self.context.decoder.funct3
-                        );
-                    }
-                }
-            }
-            OpcodeToInstructionFormat::R_51
-            | OpcodeToInstructionFormat::R_59
-            | OpcodeToInstructionFormat::R_83 => {}
-            OpcodeToInstructionFormat::S_35
-            | OpcodeToInstructionFormat::S_39 => {}
-            OpcodeToInstructionFormat::B_99 => {}
-            OpcodeToInstructionFormat::U_23
-            | OpcodeToInstructionFormat::U_55 => {}
-            OpcodeToInstructionFormat::J_111 => {}
-            OpcodeToInstructionFormat::R4_67
-            | OpcodeToInstructionFormat::R4_71
-            | OpcodeToInstructionFormat::R4_75
-            | OpcodeToInstructionFormat::R4_79 => {}
-        }
-
-        // match self.context.decoder.opcode {
-        //     // TODO: implement other opcodes beside OP_IMM
-        //     Opcode::OP => (),
-        //     Opcode::OP_IMM => {
-        //         // self.context.decoder.source_register_1 =
-        //         //     self.extract_source_register_1();
-        //         // self.context.decoder.destination_register =
-        //         //     self.extract_destination_register();
-        //         // self.context.decoder.funct3 = self.extract_funct3();
-        //         // match self.context.decoder.funct3 & 0b11 {
-        //         //     0b01 => {
-        //         //         // shift operations
-        //         //         self.context.decoder.r_funct7 = self.extract_r_funct7();
-        //         //         self.context.decoder.shamt = self.extract_shamt();
-        //         //     }
-        //         //     _ => {
-        //         //         self.context.decoder.imm_11_0 = self.extract_imm_11_0();
-        //         //     }
-        //         // }
-
-        //         // match OP_IMM_Funct3::from(self.context.decoder.funct3) {
-        //         //     OP_IMM_Funct3::ADDI => {
-        //         //         self.context.decoder.executable_instruction =
-        //         //             ExecutableInstruction::ADDI;
-        //         //         self.context.decoder.need_to_write_back = true;
-        //         //     }
-
-        //         //     _ => (),
-        //         // }
-        //     }
-
-        //     _ => {
-        //         error!(
-        //             "Unknown opcode: {:#09b}",
-        //             self.context.decoder.opcode.clone() as InstructionType
-        //         );
-        //         unreachable!(
-        //             "Unknown opcode: {:#09b}",
-        //             self.context.decoder.opcode.clone() as InstructionType
-        //         );
-        //     }
-        // }
-
-        // TODO: remove unconditional decoding
+    fn decode_r_format(&mut self) {
         self.context.decoder.source_register_1 =
             self.extract_source_register_1();
         self.context.decoder.source_register_2 =
             self.extract_source_register_2();
         self.context.decoder.destination_register =
             self.extract_destination_register();
-
+        self.context.decoder.need_to_read_memory = false;
+        self.context.decoder.need_to_write_memory = false;
+        self.context.decoder.need_to_write_back = true;
         self.context.decoder.funct3 = self.extract_funct3();
         self.context.decoder.r_funct7 = self.extract_r_funct7();
 
+        // TODO: unimplemented{
+        panic!("Unimplemented");
+    }
+
+    fn decode_i_format(&mut self) {
+        self.context.decoder.source_register_1 =
+            self.extract_source_register_1();
+        self.context.decoder.destination_register =
+            self.extract_destination_register();
+        self.context.decoder.immediate = self.extract_imm_11_0();
+        self.context.decoder.need_to_read_memory = false;
+        self.context.decoder.need_to_write_memory = false;
+        self.context.decoder.need_to_write_back = true;
+        self.context.decoder.funct3 = self.extract_funct3();
+
+        match self.context.decoder.opcode {
+            Opcode::OP_IMM => {
+                match OP_IMM_Funct3::from(self.context.decoder.funct3) {
+                    OP_IMM_Funct3::ADDI => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::ADDI;
+                    }
+                    OP_IMM_Funct3::SLLI => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SLLI;
+                    }
+                    OP_IMM_Funct3::SLTI => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SLTI;
+                    }
+                    OP_IMM_Funct3::SLTIU => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SLTIU;
+                    }
+                    OP_IMM_Funct3::XORI => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::XORI;
+                    }
+                    OP_IMM_Funct3::SRXI => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SRXI;
+                    }
+                    OP_IMM_Funct3::ORI => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::ORI;
+                    }
+                    OP_IMM_Funct3::ANDI => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::ANDI;
+                    }
+                }
+            }
+            Opcode::OP => {
+                panic!("Unimplemented");
+            }
+
+            _ => {
+                panic!("Unimplemented");
+            }
+        }
+    }
+
+    fn decode_s_format(&mut self) {
+        self.context.decoder.source_register_1 =
+            self.extract_source_register_1();
+        self.context.decoder.source_register_2 =
+            self.extract_source_register_2();
+        self.context.decoder.need_to_read_memory = false;
+        self.context.decoder.need_to_write_memory = true;
+        self.context.decoder.need_to_write_back = false;
+
+        // extract imm
+
+        self.context.decoder.funct3 = self.extract_funct3();
+
+        // TODO: unimplemented{
+        panic!("Unimplemented");
+    }
+
+    fn decode_b_format(&mut self) {
+        self.context.decoder.source_register_1 =
+            self.extract_source_register_1();
+        self.context.decoder.source_register_2 =
+            self.extract_source_register_2();
+        // self.context.decoder.need_to_read_memory = false;
+        // self.context.decoder.need_to_write_memory = false;
+        // self.context.decoder.need_to_write_back = false;
+
+        // extract imm
+
+        self.context.decoder.funct3 = self.extract_funct3();
+        panic!("Unimplemented");
+    }
+
+    fn decode_u_format(&mut self) {
+        self.context.decoder.destination_register =
+            self.extract_destination_register();
+        // self.context.decoder.need_to_read_memory = false;
+        // self.context.decoder.need_to_write_memory = false;
+        // self.context.decoder.need_to_write_back = false;
+
+        // extract imm
+
+        panic!("Unimplemented");
+    }
+
+    fn decode_j_format(&mut self) {
+        self.context.decoder.destination_register =
+            self.extract_destination_register();
+        // self.context.decoder.need_to_read_memory = false;
+        // self.context.decoder.need_to_write_memory = false;
+        // self.context.decoder.need_to_write_back = false;
+
+        // extract imm
+
+        panic!("Unimplemented");
+    }
+
+    fn decode_r4_format(&mut self) {
+        panic!("Unimplemented");
+    }
+
+    fn decode(&mut self) {
+        self.context.decoder.opcode = self.extract_opcode();
+
+        match From::from(self.context.decoder.opcode.clone()) {
+            OpcodeToInstructionFormat::R_51
+            | OpcodeToInstructionFormat::R_59
+            | OpcodeToInstructionFormat::R_83 => self.decode_r_format(),
+            OpcodeToInstructionFormat::I_3
+            | OpcodeToInstructionFormat::I_7
+            | OpcodeToInstructionFormat::I_19
+            | OpcodeToInstructionFormat::I_27
+            | OpcodeToInstructionFormat::I_103 => self.decode_i_format(),
+            OpcodeToInstructionFormat::S_35
+            | OpcodeToInstructionFormat::S_39 => self.decode_s_format(),
+            OpcodeToInstructionFormat::B_99 => self.decode_b_format(),
+            OpcodeToInstructionFormat::U_23
+            | OpcodeToInstructionFormat::U_55 => self.decode_u_format(),
+            OpcodeToInstructionFormat::J_111 => self.decode_j_format(),
+            OpcodeToInstructionFormat::R4_67
+            | OpcodeToInstructionFormat::R4_71
+            | OpcodeToInstructionFormat::R4_75
+            | OpcodeToInstructionFormat::R4_79 => self.decode_r4_format(),
+        }
+
+        // TODO: remove unconditional decoding
         self.context.decoder.imm_11_0 = self.extract_imm_11_0();
         self.context.decoder.imm_11_5 = self.extract_imm_11_5();
         self.context.decoder.imm_4_0 = self.extract_imm_4_0();
@@ -730,7 +793,27 @@ impl CPU {
                     .read(self.context.decoder.source_register_1 as usize)
                     + self.context.decoder.immediate;
             }
-
+            // ExecutableInstruction::SLLI => {
+            //     panic!("Unimplemented");
+            // }
+            // ExecutableInstruction::SLTI => {
+            //     panic!("Unimplemented");
+            // }
+            // ExecutableInstruction::SLTIU => {
+            //     panic!("Unimplemented");
+            // }
+            // ExecutableInstruction::XORI => {
+            //     panic!("Unimplemented");
+            // }
+            // ExecutableInstruction::SRXI => {
+            //     panic!("Unimplemented");
+            // }
+            // ExecutableInstruction::ORI => {
+            //     panic!("Unimplemented");
+            // }
+            // ExecutableInstruction::ANDI => {
+            //     panic!("Unimplemented");
+            // }
             _ => {
                 error!(
                     "Unknown instruction: {:?}",
@@ -746,12 +829,14 @@ impl CPU {
 
     fn memory_read(&mut self) {
         if self.context.decoder.need_to_read_memory {
+            trace!("Executing memory read...");
             //
         }
     }
 
     fn write_back(&mut self) {
         if self.context.decoder.need_to_write_back {
+            trace!("Executing register write back...");
             self.context.register_file.write(
                 self.context.decoder.destination_register as usize,
                 self.context.result,
