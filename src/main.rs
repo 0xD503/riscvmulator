@@ -2,8 +2,8 @@ use clap::Parser;
 use log::{debug, error, info, trace, warn};
 use serde::Deserialize;
 use std::convert::From;
+use std::fmt::{self, Binary};
 use std::mem::size_of;
-use std::str::FromStr;
 use std::{env, fs};
 
 /// architechtural defines
@@ -167,6 +167,12 @@ enum Opcode {
     reserved_5 = 0b1111111,
 }
 
+impl Binary for Opcode {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> fmt::Result {
+        write!(formatter, "{}", self.clone() as InstructionType)
+    }
+}
+
 impl From<InstructionType> for Opcode {
     fn from(value: InstructionType) -> Self {
         match value {
@@ -211,7 +217,7 @@ impl From<InstructionType> for Opcode {
             0b1111111 => Self::reserved_5,
             _ => {
                 error!("Unknown opcode: {value:#018X}");
-                panic!("Unknown opcode: {value:#018X}");
+                unreachable!("Unknown opcode: {value:#018X}");
             }
         }
     }
@@ -243,7 +249,7 @@ impl From<InstructionType> for OP_IMM_Funct3 {
 
             _ => {
                 error!("Unknown funct3: {value:#05b}");
-                panic!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
             }
         }
     }
@@ -261,38 +267,38 @@ struct RegisterFile {
 }
 
 // enum RegisterName {
-//     x0,
-//     x1,
-//     x2,
-//     x3,
-//     x4,
-//     x5,
-//     x6,
-//     x7,
-//     x8,
-//     x9,
-//     x10,
-//     x11,
-//     x12,
-//     x13,
-//     x14,
-//     x15,
-//     x16,
-//     x17,
-//     x18,
-//     x19,
-//     x20,
-//     x21,
-//     x22,
-//     x23,
-//     x24,
-//     x25,
-//     x26,
-//     x27,
-//     x28,
-//     x29,
-//     x30,
-//     x31,
+//     x0_zero,
+//     x1_ra,
+//     x2_sp,
+//     x3_gp,
+//     x4_tp,
+//     x5_t0,
+//     x6_t1,
+//     x7_t2,
+//     x8_s0_fp,
+//     x9_s1,
+//     x10_a0,
+//     x11_a1,
+//     x12_a2,
+//     x13_a3,
+//     x14_a4,
+//     x15_a5,
+//     x16_a6,
+//     x17_a7,
+//     x18_s2,
+//     x19_s3,
+//     x20_s4,
+//     x21_s5,
+//     x22_s6,
+//     x23_s7,
+//     x24_s8,
+//     x25_s9,
+//     x26_s10,
+//     x27_s11,
+//     x28_t3,
+//     x29_t4,
+//     x30_t5,
+//     x31_t6,
 // }
 
 impl RegisterFile {
@@ -313,6 +319,18 @@ impl RegisterFile {
 }
 
 #[derive(Default, Clone)]
+enum InstructionFormat {
+    R,
+    #[default]
+    I,
+    S,
+    B,
+    U,
+    J,
+    R4,
+}
+
+#[derive(Default, Clone)]
 struct Decoder {
     opcode: Opcode,
     source_register_1: InstructionType,
@@ -323,6 +341,8 @@ struct Decoder {
     r_funct7: InstructionType,
 
     shamt: InstructionType,
+
+    immediate: InstructionType,
 
     imm_11_0: InstructionType,
     imm_11_5: InstructionType,
@@ -366,7 +386,9 @@ struct Decoder {
     j_imm_inst_24_21: InstructionType,
     j_imm_0: InstructionType,
 
+    instruction_format: InstructionFormat,
     executable_instruction: ExecutableInstruction,
+    need_to_read_memory: bool,
     need_to_write_back: bool,
 }
 
@@ -433,6 +455,7 @@ impl SoC {
         self.fetch();
         self.cpu.decode();
         self.cpu.execute();
+        self.cpu.memory_read();
         self.cpu.write_back();
 
         // step PC
@@ -449,52 +472,198 @@ fn extend_sign(value: XLen, value_mask: InstructionType) -> XLen {
     }
 }
 
+fn extend_sign_improved(
+    immediate: XLen,
+    immediate_bit_offset: usize,
+    immediate_bit_width: usize,
+    immediate_final_bit_offset: usize,
+) -> XLen {
+    // immediate
+    const XLEN_BIT_WIDTH: usize = size_of::<XLen>() * 8;
+    let shift_left_amount =
+        XLEN_BIT_WIDTH - immediate_bit_offset - immediate_bit_width;
+    let left_shifted_imm = immediate << shift_left_amount;
+    (left_shifted_imm as i32
+        >> (XLEN_BIT_WIDTH - immediate_bit_width + immediate_final_bit_offset))
+        as XLen
+}
+
+#[allow(non_camel_case_types)]
+enum OpcodeToInstructionFormat {
+    I_3 = 0b0000011,
+    I_7 = 0b0000111,
+    I_19 = 0b0010011,
+    U_23 = 0b0010111,
+    I_27 = 0b0011011,
+    S_35 = 0b0100011,
+    S_39 = 0b0100111,
+    R_51 = 0b0110011,
+    U_55 = 0b0110111,
+    R_59 = 0b0111011,
+    R4_67 = 0b1000011,
+    R4_71 = 0b1000111,
+    R4_75 = 0b1001011,
+    R4_79 = 0b1001111,
+    R_83 = 0b1010011,
+    B_99 = 0b1100011,
+    I_103 = 0b1100111,
+    J_111 = 0b1101111,
+}
+
+impl From<Opcode> for OpcodeToInstructionFormat {
+    fn from(opcode: Opcode) -> Self {
+        match opcode {
+            Opcode::LOAD => OpcodeToInstructionFormat::I_3,
+            Opcode::STORE => OpcodeToInstructionFormat::S_35,
+            Opcode::MADD => OpcodeToInstructionFormat::R4_67,
+            Opcode::BRANCH => OpcodeToInstructionFormat::B_99,
+
+            Opcode::LOAD_FP => OpcodeToInstructionFormat::I_7,
+            Opcode::STORE_FP => OpcodeToInstructionFormat::S_39,
+            Opcode::MSUB => OpcodeToInstructionFormat::R4_71,
+            Opcode::JALR => OpcodeToInstructionFormat::I_103,
+
+            Opcode::NMSUB => OpcodeToInstructionFormat::R4_75,
+
+            Opcode::NMADD => OpcodeToInstructionFormat::R4_79,
+            Opcode::JAL => OpcodeToInstructionFormat::J_111,
+
+            Opcode::OP_IMM => OpcodeToInstructionFormat::I_19,
+            Opcode::OP => OpcodeToInstructionFormat::R_51,
+            Opcode::OP_FP => OpcodeToInstructionFormat::R_83,
+
+            Opcode::AUIPC => OpcodeToInstructionFormat::U_23,
+            Opcode::LUI => OpcodeToInstructionFormat::U_55,
+
+            Opcode::OP_IMM_32 => OpcodeToInstructionFormat::I_27,
+            Opcode::OP_32 => OpcodeToInstructionFormat::R_59,
+
+            Opcode::MISC_MEM
+            | Opcode::AMO
+            | Opcode::SYSTEM
+            | Opcode::OP_V
+            | Opcode::OP_VE => {
+                error!("Opcode not implemented yet: {:#09b}", opcode);
+                unreachable!("Opcode not implemented yet: {:#09b}", opcode);
+            }
+
+            Opcode::reserved_1
+            | Opcode::reserved_2
+            | Opcode::reserved_3
+            | Opcode::reserved_4
+            | Opcode::reserved_5 => {
+                error!("Opcode reserved for future use: {:#09b}", opcode);
+                unreachable!("Opcode reserved for future use: {:#09b}", opcode);
+            }
+
+            Opcode::custom_0
+            | Opcode::custom_1
+            | Opcode::custom_2
+            | Opcode::custom_3 => {
+                error!("Opcode reserved for custom commands: {:#09b}", opcode);
+                unreachable!(
+                    "Opcode reserved for custom commands: {:#09b}",
+                    opcode
+                );
+            }
+        }
+    }
+}
+
 impl CPU {
     fn decode(&mut self) {
         self.context.decoder.opcode = self.extract_opcode();
 
-        match self.context.decoder.opcode {
-            // TODO: implement other opcodes beside OP_IMM
-            Opcode::OP => (),
-            Opcode::OP_IMM => {
+        match From::from(self.context.decoder.opcode.clone()) {
+            OpcodeToInstructionFormat::I_3
+            | OpcodeToInstructionFormat::I_7
+            | OpcodeToInstructionFormat::I_19
+            | OpcodeToInstructionFormat::I_27
+            | OpcodeToInstructionFormat::I_103 => {
                 self.context.decoder.source_register_1 =
                     self.extract_source_register_1();
                 self.context.decoder.destination_register =
                     self.extract_destination_register();
                 self.context.decoder.funct3 = self.extract_funct3();
-                match self.context.decoder.funct3 & 0b11 {
-                    0b01 => {
-                        // shift operations
-                        self.context.decoder.r_funct7 = self.extract_r_funct7();
-                        self.context.decoder.shamt = self.extract_shamt();
-                    }
-                    _ => {
-                        self.context.decoder.imm_11_0 = self.extract_imm_11_0();
-                    }
-                }
+                self.context.decoder.immediate = self.extract_imm_11_0();
+                self.context.decoder.need_to_read_memory = false;
+                self.context.decoder.need_to_write_back = true;
 
                 match OP_IMM_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_Funct3::ADDI => {
                         self.context.decoder.executable_instruction =
                             ExecutableInstruction::ADDI;
-                        self.context.decoder.need_to_write_back = true;
                     }
 
-                    _ => (),
+                    _ => {
+                        error!(
+                            "Unknown funct3: {:#05b}",
+                            self.context.decoder.funct3
+                        );
+                        unreachable!(
+                            "Unknown funct3: {:#05b}",
+                            self.context.decoder.funct3
+                        );
+                    }
                 }
             }
-
-            _ => {
-                error!(
-                    "Unknown opcode: {:#010b}",
-                    self.context.decoder.opcode.clone() as InstructionType
-                );
-                panic!(
-                    "Unknown opcode: {:#010b}",
-                    self.context.decoder.opcode.clone() as InstructionType
-                );
-            }
+            OpcodeToInstructionFormat::R_51
+            | OpcodeToInstructionFormat::R_59
+            | OpcodeToInstructionFormat::R_83 => {}
+            OpcodeToInstructionFormat::S_35
+            | OpcodeToInstructionFormat::S_39 => {}
+            OpcodeToInstructionFormat::B_99 => {}
+            OpcodeToInstructionFormat::U_23
+            | OpcodeToInstructionFormat::U_55 => {}
+            OpcodeToInstructionFormat::J_111 => {}
+            OpcodeToInstructionFormat::R4_67
+            | OpcodeToInstructionFormat::R4_71
+            | OpcodeToInstructionFormat::R4_75
+            | OpcodeToInstructionFormat::R4_79 => {}
         }
+
+        // match self.context.decoder.opcode {
+        //     // TODO: implement other opcodes beside OP_IMM
+        //     Opcode::OP => (),
+        //     Opcode::OP_IMM => {
+        //         // self.context.decoder.source_register_1 =
+        //         //     self.extract_source_register_1();
+        //         // self.context.decoder.destination_register =
+        //         //     self.extract_destination_register();
+        //         // self.context.decoder.funct3 = self.extract_funct3();
+        //         // match self.context.decoder.funct3 & 0b11 {
+        //         //     0b01 => {
+        //         //         // shift operations
+        //         //         self.context.decoder.r_funct7 = self.extract_r_funct7();
+        //         //         self.context.decoder.shamt = self.extract_shamt();
+        //         //     }
+        //         //     _ => {
+        //         //         self.context.decoder.imm_11_0 = self.extract_imm_11_0();
+        //         //     }
+        //         // }
+
+        //         // match OP_IMM_Funct3::from(self.context.decoder.funct3) {
+        //         //     OP_IMM_Funct3::ADDI => {
+        //         //         self.context.decoder.executable_instruction =
+        //         //             ExecutableInstruction::ADDI;
+        //         //         self.context.decoder.need_to_write_back = true;
+        //         //     }
+
+        //         //     _ => (),
+        //         // }
+        //     }
+
+        //     _ => {
+        //         error!(
+        //             "Unknown opcode: {:#09b}",
+        //             self.context.decoder.opcode.clone() as InstructionType
+        //         );
+        //         unreachable!(
+        //             "Unknown opcode: {:#09b}",
+        //             self.context.decoder.opcode.clone() as InstructionType
+        //         );
+        //     }
+        // }
 
         // TODO: remove unconditional decoding
         self.context.decoder.source_register_1 =
@@ -559,7 +728,7 @@ impl CPU {
                     .context
                     .register_file
                     .read(self.context.decoder.source_register_1 as usize)
-                    + self.context.decoder.imm_11_0;
+                    + self.context.decoder.immediate;
             }
 
             _ => {
@@ -567,11 +736,17 @@ impl CPU {
                     "Unknown instruction: {:?}",
                     self.context.decoder.executable_instruction
                 );
-                panic!(
+                unreachable!(
                     "Unknown instruction: {:?}",
                     self.context.decoder.executable_instruction
                 );
             }
+        }
+    }
+
+    fn memory_read(&mut self) {
+        if self.context.decoder.need_to_read_memory {
+            //
         }
     }
 
@@ -636,11 +811,12 @@ impl CPU {
     // }
 
     fn extract_imm_11_0(&self) -> InstructionType {
-        let immediate = (self.context.current_instruction
-            >> BIT_OFFSET_IMM_11_0)
-            & MASK_IMM_11_0;
-        // immediate [11;0] is sign extended
-        extend_sign(immediate, MASK_IMM_11_0)
+        // right shift for signed values compiles to arithmetic shift right
+        // (ASR) with sign extension
+        let immediate =
+            self.context.current_instruction as i32 >> BIT_OFFSET_IMM_11_0;
+        // immediate [11;0] is already sign extended
+        immediate as u32
     }
 
     fn extract_imm_11_5(&self) -> InstructionType {
