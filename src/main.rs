@@ -12,7 +12,7 @@ type XLen = u32;
 // const ILEN: i32 = IALIGN * 1;
 type InstructionType = u32;
 const RISCV_NUM_OF_REGISTERS: usize = 32;
-const RISCV_X0_REGISTER_VALUE: XLen = 0x00000000;
+const RISCV_X0_ZERO_REGISTER_VALUE: XLen = 0x00000000;
 
 // default constants
 const PC_RESET_VALUE: XLen = 0x00000000;
@@ -44,30 +44,38 @@ const BIT_OFFSET_SHAMT: usize = 20;
 const MASK_SHAMT: InstructionType = 0x1F;
 
 const BIT_OFFSET_IMM_11_0: usize = 20;
-const MASK_IMM_11_0: InstructionType = 0xFFF;
+const BIT_OFFSET_IMM_11_0_FINAL: usize = 0;
 const BIT_OFFSET_IMM_11_5: usize = 25;
-const MASK_IMM_11_5: InstructionType = 0x7F;
+const BIT_OFFSET_IMM_11_5_FINAL: usize = 5;
+// const MASK_IMM_11_5_WITH_SIGN: InstructionType = MASK_IMM_11_5 | !MASK_IMM_11_5;
 const BIT_OFFSET_IMM_4_0: usize = 7;
-const MASK_IMM_4_0: InstructionType = 0x1F;
+const BIT_OFFSET_IMM_4_0_FINAL: usize = 0;
+const MASK_IMM_4_0: InstructionType = 0x1F << BIT_OFFSET_IMM_4_0_FINAL;
 const BIT_OFFSET_IMM_31_12: usize = 12;
-const MASK_IMM_31_12: InstructionType = 0xFFFFF;
+const BIT_OFFSET_IMM_31_12_FINAL: usize = 12;
 const BIT_OFFSET_IMM_10_5: usize = 25;
-const MASK_IMM_10_5: InstructionType = 0x3F;
+const BIT_OFFSET_IMM_10_5_FINAL: usize = 5;
+const MASK_IMM_10_5: InstructionType = 0x3F << BIT_OFFSET_IMM_10_5_FINAL;
 const BIT_OFFSET_IMM_4_1: usize = 8;
-const MASK_IMM_4_1: InstructionType = 0x0F;
+const BIT_OFFSET_IMM_4_1_FINAL: usize = 1;
+const MASK_IMM_4_1: InstructionType = 0x0F << BIT_OFFSET_IMM_4_1_FINAL;
 const BIT_OFFSET_IMM_10_1: usize = 21;
-const MASK_IMM_10_1: InstructionType = 0x3FF;
+const BIT_OFFSET_IMM_10_1_FINAL: usize = 21;
+const MASK_IMM_10_1: InstructionType = 0x3FF << BIT_OFFSET_IMM_10_1_FINAL;
 const BIT_OFFSET_IMM_19_12: usize = 12;
-const MASK_IMM_19_12: InstructionType = 0xFF;
+const BIT_OFFSET_IMM_19_12_FINAL: usize = 12;
+const MASK_IMM_19_12: InstructionType = 0xFF << BIT_OFFSET_IMM_19_12_FINAL;
 
 const BIT_OFFSET_B_11: usize = 7;
-const MASK_B_11: InstructionType = 0x01;
+const BIT_OFFSET_B_11_FINAL: usize = 11;
+const MASK_B_11: InstructionType = 0x01 << BIT_OFFSET_B_11_FINAL;
 const BIT_OFFSET_B_12: usize = 31;
-const MASK_B_12: InstructionType = 0x01;
+const BIT_OFFSET_B_12_FINAL: usize = 12;
 const BIT_OFFSET_J_11: usize = 20;
-const MASK_J_11: InstructionType = 0x01;
+const BIT_OFFSET_J_11_FINAL: usize = 11;
+const MASK_J_11: InstructionType = 0x01 << BIT_OFFSET_B_11_FINAL;
 const BIT_OFFSET_J_20: usize = 31;
-const MASK_J_20: InstructionType = 0x01;
+const BIT_OFFSET_J_20_FINAL: usize = 20;
 
 const BIT_OFFSET_I_IMM_INST_31: usize = 11;
 const MASK_I_IMM_INST_31: InstructionType = 0x1FFFFF;
@@ -110,9 +118,12 @@ const MASK_U_IMM_0: InstructionType = 0xFFF;
 const BIT_OFFSET_J_IMM_INST_31: usize = 20;
 const MASK_J_IMM_INST_31: InstructionType = 0xFFF;
 const BIT_OFFSET_J_IMM_INST_19_12: usize = 12;
-const MASK_J_IMM_INST_19_12: InstructionType = 0xFF;
+const BIT_OFFSET_J_IMM_INST_19_12_FINAL: usize = 12;
+const MASK_J_IMM_INST_19_12: InstructionType =
+    0xFF << BIT_OFFSET_J_IMM_INST_19_12_FINAL;
 const BIT_OFFSET_J_IMM_20: usize = 11;
-const MASK_J_IMM_20: InstructionType = 0x01;
+const BIT_OFFSET_J_IMM_20_FINAL: usize = 20;
+const MASK_J_IMM_20: InstructionType = 0x01 << BIT_OFFSET_J_IMM_20_FINAL;
 const BIT_OFFSET_J_IMM_INST_30_25: usize = 5;
 const MASK_J_IMM_INST_30_25: InstructionType = 0x3F;
 const BIT_OFFSET_J_IMM_INST_24_21: usize = 1;
@@ -235,6 +246,11 @@ enum OP_IMM_Funct3 {
     ANDI = 0b111,  // AND with immediate
 }
 
+#[allow(non_camel_case_types)]
+enum OP_Funct3 {
+    //
+}
+
 impl From<InstructionType> for OP_IMM_Funct3 {
     fn from(value: InstructionType) -> Self {
         match value {
@@ -314,28 +330,28 @@ impl RegisterFile {
     }
 
     fn write(&mut self, offset: usize, value: XLen) {
-        // register `x0` is hardwired with all bits equal to 0, so do nothing with `x0`
+        // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
         if offset != 0 {
             self.registers[offset] = value;
         } else {
             trace!(
-                "An attempt to write value {value} to register `x0` was silently discarded"
+                "An attempt to write value {value} to register `x0_zero` was silently discarded"
             );
         }
     }
 }
 
-#[derive(Default, Clone)]
-enum InstructionFormat {
-    R,
-    #[default]
-    I,
-    S,
-    B,
-    U,
-    J,
-    R4,
-}
+// #[derive(Default, Clone)]
+// enum InstructionFormat {
+//     R,
+//     #[default]
+//     I,
+//     S,
+//     B,
+//     U,
+//     J,
+//     R4,
+// }
 
 #[derive(Default, Clone)]
 struct Decoder {
@@ -350,20 +366,6 @@ struct Decoder {
     shamt: InstructionType,
 
     immediate: InstructionType,
-
-    imm_11_0: InstructionType,
-    imm_11_5: InstructionType,
-    imm_4_0: InstructionType,
-    imm_31_12: InstructionType,
-    imm_10_5: InstructionType,
-    imm_4_1: InstructionType,
-    imm_10_1: InstructionType,
-    imm_19_12: InstructionType,
-
-    b_11: InstructionType,
-    b_12: InstructionType,
-    j_11: InstructionType,
-    j_20: InstructionType,
 
     i_imm_inst_31: InstructionType,
     i_imm_inst_30_25: InstructionType,
@@ -393,7 +395,7 @@ struct Decoder {
     j_imm_inst_24_21: InstructionType,
     j_imm_0: InstructionType,
 
-    instruction_format: InstructionFormat,
+    // instruction_format: InstructionFormat,
     executable_instruction: ExecutableInstruction,
     need_to_read_memory: bool,
     need_to_write_memory: bool,
@@ -441,12 +443,12 @@ impl SoC {
 
     fn reset(&mut self) {
         self.cpu.context.pc = PC_RESET_VALUE;
-        // register `x0` is hardwired with all bits equal to 0, so do nothing with `x0`
+        // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
         for i in 1..RISCV_NUM_OF_REGISTERS {
             self.cpu
                 .context
                 .register_file
-                .write(i, RISCV_X0_REGISTER_VALUE);
+                .write(i, RISCV_X0_ZERO_REGISTER_VALUE);
         }
         self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
 
@@ -463,7 +465,7 @@ impl SoC {
         self.fetch();
         self.cpu.decode();
         self.cpu.execute();
-        self.cpu.memory_read();
+        self.cpu.memory_operation();
         self.cpu.write_back();
 
         // step PC
@@ -471,30 +473,30 @@ impl SoC {
     }
 }
 
-fn extend_sign(value: XLen, value_mask: InstructionType) -> XLen {
-    if value & ((value_mask + 1) >> 1) == 0 {
-        value
-    } else {
-        let negative_sign_extension: XLen = XLen::MAX & !value_mask;
-        value | negative_sign_extension
-    }
-}
+// fn extend_sign(value: XLen, value_mask: InstructionType) -> XLen {
+//     if value & ((value_mask + 1) >> 1) == 0 {
+//         value
+//     } else {
+//         let negative_sign_extension: XLen = XLen::MAX & !value_mask;
+//         value | negative_sign_extension
+//     }
+// }
 
-fn extend_sign_improved(
-    immediate: XLen,
-    immediate_bit_offset: usize,
-    immediate_bit_width: usize,
-    immediate_final_bit_offset: usize,
-) -> XLen {
-    // immediate
-    const XLEN_BIT_WIDTH: usize = size_of::<XLen>() * 8;
-    let shift_left_amount =
-        XLEN_BIT_WIDTH - immediate_bit_offset - immediate_bit_width;
-    let left_shifted_imm = immediate << shift_left_amount;
-    (left_shifted_imm as i32
-        >> (XLEN_BIT_WIDTH - immediate_bit_width + immediate_final_bit_offset))
-        as XLen
-}
+// fn extend_sign_improved(
+//     immediate: XLen,
+//     immediate_bit_offset: usize,
+//     immediate_bit_width: usize,
+//     immediate_final_bit_offset: usize,
+// ) -> XLen {
+//     // immediate
+//     const XLEN_BIT_WIDTH: usize = size_of::<XLen>() * 8;
+//     let shift_left_amount =
+//         XLEN_BIT_WIDTH - immediate_bit_offset - immediate_bit_width;
+//     let left_shifted_imm = immediate << shift_left_amount;
+//     (left_shifted_imm as i32
+//         >> (XLEN_BIT_WIDTH - immediate_bit_width + immediate_final_bit_offset))
+//         as XLen
+// }
 
 #[allow(non_camel_case_types)]
 enum OpcodeToInstructionFormat {
@@ -663,12 +665,19 @@ impl CPU {
         self.context.decoder.need_to_write_memory = true;
         self.context.decoder.need_to_write_back = false;
 
-        // extract imm
+        // extract immediate
+        self.context.decoder.immediate = self.extract_imm_4_0();
+        self.context.decoder.immediate |= self.extract_imm_11_5();
 
         self.context.decoder.funct3 = self.extract_funct3();
 
-        // TODO: unimplemented{
-        panic!("Unimplemented");
+        match self.context.decoder.opcode {
+            _ => match self.context.decoder.funct3 {
+                _ => {
+                    panic!("Unimplemented");
+                }
+            },
+        };
     }
 
     fn decode_b_format(&mut self) {
@@ -676,11 +685,15 @@ impl CPU {
             self.extract_source_register_1();
         self.context.decoder.source_register_2 =
             self.extract_source_register_2();
-        // self.context.decoder.need_to_read_memory = false;
-        // self.context.decoder.need_to_write_memory = false;
-        // self.context.decoder.need_to_write_back = false;
+        self.context.decoder.need_to_read_memory = false;
+        self.context.decoder.need_to_write_memory = false;
+        self.context.decoder.need_to_write_back = false;
 
-        // extract imm
+        // extract immediate
+        self.context.decoder.immediate = self.extract_imm_4_1();
+        self.context.decoder.immediate |= self.extract_imm_10_5();
+        self.context.decoder.immediate |= self.extract_b_11();
+        self.context.decoder.immediate |= self.extract_b_12();
 
         self.context.decoder.funct3 = self.extract_funct3();
         panic!("Unimplemented");
@@ -689,11 +702,12 @@ impl CPU {
     fn decode_u_format(&mut self) {
         self.context.decoder.destination_register =
             self.extract_destination_register();
-        // self.context.decoder.need_to_read_memory = false;
-        // self.context.decoder.need_to_write_memory = false;
-        // self.context.decoder.need_to_write_back = false;
+        self.context.decoder.need_to_read_memory = false;
+        self.context.decoder.need_to_write_memory = false;
+        self.context.decoder.need_to_write_back = true;
 
-        // extract imm
+        // extract immediate
+        self.context.decoder.immediate = self.extract_imm_31_12();
 
         panic!("Unimplemented");
     }
@@ -701,11 +715,15 @@ impl CPU {
     fn decode_j_format(&mut self) {
         self.context.decoder.destination_register =
             self.extract_destination_register();
-        // self.context.decoder.need_to_read_memory = false;
-        // self.context.decoder.need_to_write_memory = false;
-        // self.context.decoder.need_to_write_back = false;
+        self.context.decoder.need_to_read_memory = false;
+        self.context.decoder.need_to_write_memory = false;
+        self.context.decoder.need_to_write_back = true;
 
-        // extract imm
+        // extract immediate
+        self.context.decoder.immediate = self.extract_imm_10_1();
+        self.context.decoder.immediate |= self.extract_j_11();
+        self.context.decoder.immediate |= self.extract_imm_19_12();
+        self.context.decoder.immediate |= self.extract_j_20();
 
         panic!("Unimplemented");
     }
@@ -739,20 +757,6 @@ impl CPU {
         }
 
         // TODO: remove unconditional decoding
-        self.context.decoder.imm_11_0 = self.extract_imm_11_0();
-        self.context.decoder.imm_11_5 = self.extract_imm_11_5();
-        self.context.decoder.imm_4_0 = self.extract_imm_4_0();
-        self.context.decoder.imm_31_12 = self.extract_imm_31_12();
-        self.context.decoder.imm_10_5 = self.extract_imm_10_5();
-        self.context.decoder.imm_4_1 = self.extract_imm_4_1();
-        self.context.decoder.imm_10_1 = self.extract_imm_10_1();
-        self.context.decoder.imm_19_12 = self.extract_imm_19_12();
-
-        self.context.decoder.b_11 = self.extract_b_11();
-        self.context.decoder.b_12 = self.extract_b_12();
-        self.context.decoder.j_11 = self.extract_j_11();
-        self.context.decoder.j_20 = self.extract_j_20();
-
         self.context.decoder.i_imm_inst_31 = self.extract_i_imm_inst_31();
         self.context.decoder.i_imm_inst_30_25 = self.extract_i_imm_inst_30_25();
         self.context.decoder.i_imm_inst_24_21 = self.extract_i_imm_inst_24_21();
@@ -827,9 +831,12 @@ impl CPU {
         }
     }
 
-    fn memory_read(&mut self) {
+    fn memory_operation(&mut self) {
         if self.context.decoder.need_to_read_memory {
             trace!("Executing memory read...");
+            //
+        } else if self.context.decoder.need_to_write_memory {
+            trace!("Executing memory write...");
             //
         }
     }
@@ -879,101 +886,86 @@ impl CPU {
         (self.context.current_instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT
     }
 
-    // fn extend_sign_improved(
-    //     immediate: XLen,
-    //     immediate_bit_width: usize,
-    //     immediate_bit_offset: usize,
-    //     immediate_final_bit_offset: usize,
-    // ) -> XLen {
-    //     // immediate <<
-    //     const XLEN_BIT_WIDTH: usize = size_of::<XLen>() * 8;
-    //     let shift_left_amount =
-    //         XLEN_BIT_WIDTH - immediate_bit_offset - immediate_bit_width;
-    //     let left_shifted_imm = immediate << shift_left_amount;
-    //     (left_shifted_imm as i32
-    //         >> (XLEN_BIT_WIDTH - immediate_bit_width
-    //             + immediate_final_bit_offset)) as XLen
-    // }
-
     fn extract_imm_11_0(&self) -> InstructionType {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
-        let immediate =
-            self.context.current_instruction as i32 >> BIT_OFFSET_IMM_11_0;
-        // immediate [11;0] is already sign extended
-        immediate as u32
+        (self.context.current_instruction as i32
+            >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL)) as u32
     }
 
     fn extract_imm_11_5(&self) -> InstructionType {
-        let immediate = (self.context.current_instruction
-            >> BIT_OFFSET_IMM_11_5)
-            & MASK_IMM_11_5;
-        // immediate [11;5] is sign extended
-        extend_sign(immediate, MASK_IMM_11_5)
+        // right shift for signed values compiles to arithmetic shift right
+        // (ASR) with sign extension
+        (self.context.current_instruction as i32
+            >> (BIT_OFFSET_IMM_11_5 - BIT_OFFSET_IMM_11_5_FINAL)) as u32
+            & !((1 << BIT_OFFSET_IMM_11_5_FINAL) - 1)
     }
 
     fn extract_imm_4_0(&self) -> InstructionType {
-        let immediate = (self.context.current_instruction
-            >> BIT_OFFSET_IMM_4_0)
-            & MASK_IMM_4_0;
-        // immediate [4;0] is sign extended
-        extend_sign(immediate, MASK_IMM_4_0)
+        (self.context.current_instruction
+            >> (BIT_OFFSET_IMM_4_0 - BIT_OFFSET_IMM_4_0_FINAL))
+            & MASK_IMM_4_0
     }
 
     fn extract_imm_31_12(&self) -> InstructionType {
-        let immediate = (self.context.current_instruction
-            >> BIT_OFFSET_IMM_31_12)
-            & MASK_IMM_31_12;
-        // immediate [31;12] is sign extended
-        extend_sign(immediate, MASK_IMM_31_12)
+        // right shift for signed values compiles to arithmetic shift right
+        // (ASR) with sign extension
+        (self.context.current_instruction as i32
+            >> (BIT_OFFSET_IMM_31_12 - BIT_OFFSET_IMM_31_12_FINAL))
+            as u32
+            & !((1 << BIT_OFFSET_IMM_31_12_FINAL) - 1)
     }
 
     fn extract_imm_10_5(&self) -> InstructionType {
-        let immediate = (self.context.current_instruction
-            >> BIT_OFFSET_IMM_10_5)
-            & MASK_IMM_10_5;
-        // immediate [10;5] is sign extended
-        extend_sign(immediate, MASK_IMM_10_5)
+        (self.context.current_instruction
+            >> (BIT_OFFSET_IMM_10_5 - BIT_OFFSET_IMM_10_5_FINAL))
+            & MASK_IMM_10_5
     }
 
     fn extract_imm_4_1(&self) -> InstructionType {
-        let immediate = (self.context.current_instruction
-            >> BIT_OFFSET_IMM_4_1)
-            & MASK_IMM_4_1;
-        // immediate [4;1] is sign extended
-        extend_sign(immediate, MASK_IMM_4_1)
+        (self.context.current_instruction
+            >> (BIT_OFFSET_IMM_4_1 - BIT_OFFSET_IMM_4_1_FINAL))
+            & MASK_IMM_4_1
     }
 
     fn extract_imm_10_1(&self) -> InstructionType {
-        let immediate = (self.context.current_instruction
-            >> BIT_OFFSET_IMM_10_1)
-            & MASK_IMM_10_1;
-        // immediate [10;1] is sign extended
-        extend_sign(immediate, MASK_IMM_10_1)
+        (self.context.current_instruction
+            >> (BIT_OFFSET_IMM_10_1 - BIT_OFFSET_IMM_10_1_FINAL))
+            & MASK_IMM_10_1
     }
 
     fn extract_imm_19_12(&self) -> InstructionType {
-        let immediate = (self.context.current_instruction
-            >> BIT_OFFSET_IMM_19_12)
-            & MASK_IMM_19_12;
-        // immediate [19;12] is sign extended
-        extend_sign(immediate, MASK_IMM_19_12)
+        (self.context.current_instruction
+            >> (BIT_OFFSET_IMM_19_12 - BIT_OFFSET_IMM_19_12_FINAL))
+            & MASK_IMM_19_12
     }
 
     fn extract_b_11(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_B_11) & MASK_B_11
+        (self.context.current_instruction
+            << (BIT_OFFSET_B_11_FINAL - BIT_OFFSET_B_11))
+            & MASK_B_11
     }
 
     fn extract_b_12(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_B_12) & MASK_B_12
+        // right shift for signed values compiles to arithmetic shift right
+        // (ASR) with sign extension
+        (self.context.current_instruction as i32
+            >> (BIT_OFFSET_B_12 - BIT_OFFSET_B_12_FINAL)) as u32
+            & !((1 << BIT_OFFSET_B_12_FINAL) - 1)
     }
 
     fn extract_j_11(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_J_11) & MASK_J_11
+        (self.context.current_instruction
+            >> (BIT_OFFSET_J_11 - BIT_OFFSET_J_11_FINAL))
+            & MASK_J_11
     }
 
     fn extract_j_20(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_J_20) & MASK_J_20
+        // right shift for signed values compiles to arithmetic shift right
+        // (ASR) with sign extension
+        ((self.context.current_instruction as i32)
+            >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL)) as u32
+            & !((1 << BIT_OFFSET_J_20_FINAL) - 1)
     }
 
     fn extract_i_imm_inst_31(&self) -> InstructionType {
@@ -1063,7 +1055,9 @@ impl CPU {
     }
 
     fn extract_j_imm_inst_19_12(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_19_12)
+        (self.context.current_instruction
+            >> (BIT_OFFSET_J_IMM_INST_19_12
+                - BIT_OFFSET_J_IMM_INST_19_12_FINAL))
             & MASK_J_IMM_INST_19_12
     }
 
@@ -1175,7 +1169,7 @@ fn main() {
             context: Context {
                 pc: PC_RESET_VALUE,
                 register_file: RegisterFile {
-                    registers: [RISCV_X0_REGISTER_VALUE;
+                    registers: [RISCV_X0_ZERO_REGISTER_VALUE;
                         RISCV_NUM_OF_REGISTERS],
                 },
                 current_instruction: INITIAL_INSTRUCTION,
