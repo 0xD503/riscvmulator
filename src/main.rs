@@ -1007,163 +1007,435 @@ impl CPU {
 
     fn execute(&mut self) {
         match self.context.decoder.executable_instruction {
-            ExecutableInstruction::ADDI => {
-                trace!("Executing ADDI...");
+            // RV32I
+            // I_3
+            ExecutableInstruction::LB => self.instruction_load_byte(),
+            ExecutableInstruction::LH => self.instruction_load_half(),
+            ExecutableInstruction::LW => self.instruction_load_word(),
+            ExecutableInstruction::LBU => self.instruction_load_byte_unsigned(),
+            ExecutableInstruction::LHU => self.instruction_load_half_unsigned(),
+            // I_19
+            ExecutableInstruction::ADDI => self.instruction_addi(),
+            ExecutableInstruction::SLLI => self.instruction_slli(),
+            ExecutableInstruction::SLTI => self.instruction_slti(),
+            ExecutableInstruction::SLTIU => self.instruction_sltiu(),
+            ExecutableInstruction::XORI => self.instruction_xori(),
+            ExecutableInstruction::SRLI => self.instruction_srli(),
+            ExecutableInstruction::SRAI => self.instruction_srai(),
+            ExecutableInstruction::ORI => self.instruction_ori(),
+            ExecutableInstruction::ANDI => self.instruction_andi(),
+            // U_23
+            ExecutableInstruction::AUIPC => self.instruction_auipc(),
+            // S_35
+            ExecutableInstruction::SB => self.instruction_sb(),
+            ExecutableInstruction::SH => self.instruction_sh(),
+            ExecutableInstruction::SW => self.instruction_sw(),
+            // R_51
+            ExecutableInstruction::ADD => self.instruction_add(),
+            ExecutableInstruction::SUB => self.instruction_sub(),
+            ExecutableInstruction::SLL => self.instruction_sll(),
+            ExecutableInstruction::SLT => self.instruction_slt(),
+            ExecutableInstruction::SLTU => self.instruction_sltu(),
+            ExecutableInstruction::XOR => self.instruction_xor(),
+            ExecutableInstruction::SRL => self.instruction_srl(),
+            ExecutableInstruction::SRA => self.instruction_sra(),
+            ExecutableInstruction::OR => self.instruction_or(),
+            ExecutableInstruction::AND => self.instruction_and(),
+            // U_55
+            ExecutableInstruction::LUI => self.instruction_lui(),
+            // B_99
+            ExecutableInstruction::BEQ => self.instruction_beq(),
+            ExecutableInstruction::BNE => self.instruction_bne(),
+            ExecutableInstruction::BLT => self.instruction_blt(),
+            ExecutableInstruction::BGE => self.instruction_bge(),
+            ExecutableInstruction::BLTU => self.instruction_bltu(),
+            ExecutableInstruction::BGEU => self.instruction_bgeu(),
+            // I_103
+            ExecutableInstruction::JALR => self.instruction_jalr(),
+            // J_111
+            ExecutableInstruction::JAL => self.instruction_jal(),
 
-                self.context.result = self.context.decoder.source_register_1
-                    + self.context.decoder.immediate as SignedXLen as XLen;
+            // RV64I
+            // I_3
+            ExecutableInstruction::LD => self.instruction_load_double_word(),
+            ExecutableInstruction::LWU => self.instruction_load_word_unsigned(),
+            // I_27
+            ExecutableInstruction::ADDIW => {
+                self.instruction_add_immediate_word();
             }
-            ExecutableInstruction::SLLI => {
-                trace!("Executing SLLI...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    << self.context.decoder.shamt;
+            ExecutableInstruction::SLLIW => {
+                self.instruction_shift_left_logical_immediate_word();
             }
-            ExecutableInstruction::SLTI => {
-                trace!("Executing SLTI...");
-
-                self.context.result = if (self.context.decoder.source_register_1
-                    as SignedXLen)
-                    < (self.context.decoder.immediate as SignedXLen)
-                {
-                    1
-                } else {
-                    0
-                };
+            ExecutableInstruction::SRLIW => {
+                self.instruction_shift_right_logical_immediate_word();
             }
-            ExecutableInstruction::SLTIU => {
-                trace!("Executing SLTIU...");
-
-                self.context.result = if (self.context.decoder.source_register_1
-                    as UnsignedXLen)
-                    < (self.context.decoder.immediate as UnsignedXLen)
-                {
-                    1
-                } else {
-                    0
-                };
+            ExecutableInstruction::SRAIW => {
+                self.instruction_shift_right_arith_immediate_word();
             }
-            ExecutableInstruction::XORI => {
-                trace!("Executing XORI...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    ^ self.context.decoder.immediate as SignedXLen as XLen;
+            // S_35
+            ExecutableInstruction::SD => self.instruction_store_double_word(),
+            // R_59
+            ExecutableInstruction::ADDW => self.instruction_add_word(),
+            ExecutableInstruction::SUBW => self.instruction_sub_word(),
+            ExecutableInstruction::SLLW => {
+                self.instruction_shift_left_logical_word()
             }
-            ExecutableInstruction::SRLI => {
-                trace!("Executing SRLI...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    >> self.context.decoder.shamt;
+            ExecutableInstruction::SRLW => {
+                self.instruction_shift_right_logical_word()
             }
-            ExecutableInstruction::SRAI => {
-                trace!("Executing SRAI...");
-
-                self.context.result = ((self.context.decoder.source_register_1
-                    as SignedXLen)
-                    >> self.context.decoder.shamt)
-                    as XLen;
-            }
-            ExecutableInstruction::ORI => {
-                trace!("Executing ORI...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    | self.context.decoder.immediate as SignedXLen as XLen;
-            }
-            ExecutableInstruction::ANDI => {
-                trace!("Executing ANDI...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    & self.context.decoder.immediate as SignedXLen as XLen;
-            }
-
-            ExecutableInstruction::ADD => {
-                trace!("Executing ADD...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    + self.context.decoder.source_register_2;
-            }
-            ExecutableInstruction::SUB => {
-                trace!("Executing SUB...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    - self.context.decoder.source_register_2;
-            }
-            ExecutableInstruction::SLL => {
-                trace!("Executing SLL...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    << self.context.decoder.source_register_2;
-            }
-            ExecutableInstruction::SLT => {
-                trace!("Executing SLT...");
-
-                self.context.result = if (self.context.decoder.source_register_1
-                    as SignedXLen)
-                    < (self.context.decoder.source_register_2 as SignedXLen)
-                {
-                    1
-                } else {
-                    0
-                }
-            }
-            ExecutableInstruction::SLTU => {
-                trace!("Executing SLTU...");
-
-                self.context.result = if self.context.decoder.source_register_1
-                    < self.context.decoder.source_register_2
-                {
-                    1
-                } else {
-                    0
-                }
-            }
-            ExecutableInstruction::XOR => {
-                trace!("Executing XOR...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    ^ self.context.decoder.source_register_2;
-            }
-            ExecutableInstruction::SRL => {
-                trace!("Executing SRL...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    >> self.context.decoder.source_register_2;
-            }
-            ExecutableInstruction::SRA => {
-                trace!("Executing SRA...");
-
-                self.context.result = ((self.context.decoder.source_register_1
-                    as SignedXLen)
-                    >> self.context.decoder.source_register_2)
-                    as XLen;
-            }
-            ExecutableInstruction::OR => {
-                trace!("Executing OR...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    | self.context.decoder.source_register_2;
-            }
-            ExecutableInstruction::AND => {
-                trace!("Executing AND...");
-
-                self.context.result = self.context.decoder.source_register_1
-                    & self.context.decoder.source_register_2;
-            }
-
-            _ => {
-                error!("unreachable");
-                unreachable!("unreachable");
+            ExecutableInstruction::SRAW => {
+                self.instruction_shift_right_arith_word()
             }
         }
+    }
+
+    fn instruction_load_byte(&mut self) {
+        trace!("Executing LB...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_load_half(&mut self) {
+        trace!("Executing LH...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_load_word(&mut self) {
+        trace!("Executing LW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_load_byte_unsigned(&mut self) {
+        trace!("Executing LBU...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_load_half_unsigned(&mut self) {
+        trace!("Executing LHU...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_addi(&mut self) {
+        trace!("Executing ADDI...");
+
+        self.context.result = self.context.decoder.source_register_1
+            + self.context.decoder.immediate as SignedXLen as XLen;
+    }
+
+    fn instruction_slli(&mut self) {
+        trace!("Executing SLLI...");
+
+        self.context.result = self.context.decoder.source_register_1
+            << self.context.decoder.shamt;
+    }
+
+    fn instruction_slti(&mut self) {
+        trace!("Executing SLTI...");
+
+        self.context.result = if (self.context.decoder.source_register_1
+            as SignedXLen)
+            < (self.context.decoder.immediate as SignedXLen)
+        {
+            1
+        } else {
+            0
+        };
+    }
+
+    fn instruction_sltiu(&mut self) {
+        trace!("Executing SLTIU...");
+
+        self.context.result = if (self.context.decoder.source_register_1
+            as UnsignedXLen)
+            < (self.context.decoder.immediate as UnsignedXLen)
+        {
+            1
+        } else {
+            0
+        };
+    }
+
+    fn instruction_xori(&mut self) {
+        trace!("Executing XORI...");
+
+        self.context.result = self.context.decoder.source_register_1
+            ^ self.context.decoder.immediate as SignedXLen as XLen;
+    }
+
+    fn instruction_srli(&mut self) {
+        trace!("Executing SRLI...");
+
+        self.context.result = self.context.decoder.source_register_1
+            >> self.context.decoder.shamt;
+    }
+
+    fn instruction_srai(&mut self) {
+        trace!("Executing SRAI...");
+
+        self.context.result =
+            ((self.context.decoder.source_register_1 as SignedXLen)
+                >> self.context.decoder.shamt) as XLen;
+    }
+
+    fn instruction_ori(&mut self) {
+        trace!("Executing ORI...");
+
+        self.context.result = self.context.decoder.source_register_1
+            | self.context.decoder.immediate as SignedXLen as XLen;
+    }
+
+    fn instruction_andi(&mut self) {
+        trace!("Executing ANDI...");
+
+        self.context.result = self.context.decoder.source_register_1
+            & self.context.decoder.immediate as SignedXLen as XLen;
+    }
+
+    fn instruction_auipc(&mut self) {
+        trace!("Executing AUIPC...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_sb(&mut self) {
+        trace!("Executing SB...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_sh(&mut self) {
+        trace!("Executing SH...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_sw(&mut self) {
+        trace!("Executing SW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_add(&mut self) {
+        trace!("Executing ADD...");
+
+        self.context.result = self.context.decoder.source_register_1
+            + self.context.decoder.source_register_2;
+    }
+
+    fn instruction_sub(&mut self) {
+        trace!("Executing SUB...");
+
+        self.context.result = self.context.decoder.source_register_1
+            - self.context.decoder.source_register_2;
+    }
+
+    fn instruction_sll(&mut self) {
+        trace!("Executing SLL...");
+
+        self.context.result = self.context.decoder.source_register_1
+            << self.context.decoder.source_register_2;
+    }
+
+    fn instruction_slt(&mut self) {
+        trace!("Executing SLT...");
+
+        self.context.result = if (self.context.decoder.source_register_1
+            as SignedXLen)
+            < (self.context.decoder.source_register_2 as SignedXLen)
+        {
+            1
+        } else {
+            0
+        }
+    }
+
+    fn instruction_sltu(&mut self) {
+        trace!("Executing SLTU...");
+
+        self.context.result = if self.context.decoder.source_register_1
+            < self.context.decoder.source_register_2
+        {
+            1
+        } else {
+            0
+        }
+    }
+
+    fn instruction_xor(&mut self) {
+        trace!("Executing XOR...");
+
+        self.context.result = self.context.decoder.source_register_1
+            ^ self.context.decoder.source_register_2;
+    }
+
+    fn instruction_srl(&mut self) {
+        trace!("Executing SRL...");
+
+        self.context.result = self.context.decoder.source_register_1
+            >> self.context.decoder.source_register_2;
+    }
+
+    fn instruction_sra(&mut self) {
+        trace!("Executing SRA...");
+
+        self.context.result =
+            ((self.context.decoder.source_register_1 as SignedXLen)
+                >> self.context.decoder.source_register_2) as XLen;
+    }
+
+    fn instruction_or(&mut self) {
+        trace!("Executing OR...");
+
+        self.context.result = self.context.decoder.source_register_1
+            | self.context.decoder.source_register_2;
+    }
+
+    fn instruction_and(&mut self) {
+        trace!("Executing AND...");
+
+        self.context.result = self.context.decoder.source_register_1
+            & self.context.decoder.source_register_2;
+    }
+
+    fn instruction_lui(&mut self) {
+        trace!("Executing LUI...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_beq(&mut self) {
+        trace!("Executing BEQ...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_bne(&mut self) {
+        trace!("Executing BNE...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_blt(&mut self) {
+        trace!("Executing BLT...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_bge(&mut self) {
+        trace!("Executing BGE...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_bltu(&mut self) {
+        trace!("Executing BLTU...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_bgeu(&mut self) {
+        trace!("Executing BGEU...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_jalr(&mut self) {
+        trace!("Executing JALR...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_jal(&mut self) {
+        trace!("Executing JAL...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_load_double_word(&mut self) {
+        trace!("Executing LD...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_load_word_unsigned(&mut self) {
+        trace!("Executing LWU...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_add_immediate_word(&mut self) {
+        trace!("Executing ADDIW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_shift_left_logical_immediate_word(&mut self) {
+        trace!("Executing SLLIW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_shift_right_logical_immediate_word(&mut self) {
+        trace!("Executing SRLIW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_shift_right_arith_immediate_word(&mut self) {
+        trace!("Executing SRAIW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_store_double_word(&mut self) {
+        trace!("Executing SD...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_add_word(&mut self) {
+        trace!("Executing ADDW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_sub_word(&mut self) {
+        trace!("Executing SUBW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_shift_left_logical_word(&mut self) {
+        trace!("Executing SLLW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_shift_right_logical_word(&mut self) {
+        trace!("Executing SRLW...");
+
+        panic!("Unimplemented");
+    }
+
+    fn instruction_shift_right_arith_word(&mut self) {
+        trace!("Executing SRAW...");
+
+        panic!("Unimplemented");
     }
 
     fn memory_operation(&mut self) {
         if self.context.decoder.need_to_read_memory {
             trace!("Executing memory read...");
             //
+            panic!("Unimplemented");
         } else if self.context.decoder.need_to_write_memory {
             trace!("Executing memory write...");
             //
+            panic!("Unimplemented");
         }
     }
 
