@@ -444,6 +444,89 @@ impl From<InstructionType> for OP_IMM_Funct3 {
     }
 }
 
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+enum STORE_Funct3 {
+    SB = 0b000, //
+    SH = 0b001, //
+    SW = 0b010, //
+    SD = 0b011, //
+}
+
+impl From<InstructionType> for STORE_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => STORE_Funct3::SB,
+            0b001 => STORE_Funct3::SH,
+            0b010 => STORE_Funct3::SW,
+            0b011 => STORE_Funct3::SD,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+enum BRANCH_Funct3 {
+    BEQ = 0b000,  //
+    BNE = 0b001,  //
+    BLT = 0b100,  //
+    BGE = 0b101,  //
+    BLTU = 0b110, //
+    BGEU = 0b111, //
+}
+
+impl From<InstructionType> for BRANCH_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => BRANCH_Funct3::BEQ,
+            0b001 => BRANCH_Funct3::BNE,
+            0b100 => BRANCH_Funct3::BLT,
+            0b101 => BRANCH_Funct3::BGE,
+            0b110 => BRANCH_Funct3::BLTU,
+            0b111 => BRANCH_Funct3::BGEU,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+// #[allow(non_camel_case_types)]
+// #[allow(clippy::upper_case_acronyms)]
+// enum BRANCH_Funct3 {
+//     BEQ = 0b000,  //
+//     BNE = 0b001,  //
+//     BLT = 0b100,  //
+//     BGE = 0b101,  //
+//     BLTU = 0b110, //
+//     BGEU = 0b111, //
+// }
+
+// impl From<InstructionType> for BRANCH_Funct3 {
+//     fn from(value: InstructionType) -> Self {
+//         match value {
+//             0b000 => BRANCH_Funct3::BEQ,
+//             0b001 => BRANCH_Funct3::BNE,
+//             0b100 => BRANCH_Funct3::BLT,
+//             0b101 => BRANCH_Funct3::BGE,
+//             0b110 => BRANCH_Funct3::BLTU,
+//             0b111 => BRANCH_Funct3::BGEU,
+
+//             _ => {
+//                 error!("Unknown funct3: {value:#05b}");
+//                 unreachable!("Unknown funct3: {value:#05b}");
+//             }
+//         }
+//     }
+// }
+
 impl From<InstructionType> for OP_Funct3 {
     fn from(value: InstructionType) -> Self {
         match value {
@@ -1082,7 +1165,8 @@ impl CPU {
             }
 
             _ => {
-                panic!("Unimplemented");
+                error!("unreachable!");
+                unreachable!("unreachable!");
             }
         }
     }
@@ -1104,12 +1188,32 @@ impl CPU {
         self.context.decoder.funct3 = self.extract_funct3();
 
         match self.context.decoder.opcode {
-            //
-            _ => match self.context.decoder.funct3 {
-                _ => {
-                    panic!("Unimplemented");
+            // S_35
+            Opcode::STORE => {
+                match STORE_Funct3::from(self.context.decoder.funct3) {
+                    STORE_Funct3::SB => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SB;
+                    }
+                    STORE_Funct3::SH => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SH;
+                    }
+                    STORE_Funct3::SW => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SW;
+                    }
+                    STORE_Funct3::SD => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SD;
+                    }
                 }
-            },
+            }
+
+            _ => {
+                error!("unreachable!");
+                unreachable!("unreachable!");
+            }
         };
     }
 
@@ -1132,13 +1236,40 @@ impl CPU {
         self.context.decoder.funct3 = self.extract_funct3();
 
         match self.context.decoder.opcode {
-            //
-            _ => match self.context.decoder.funct3 {
-                _ => {
-                    panic!("Unimplemented");
+            Opcode::BRANCH => {
+                match BRANCH_Funct3::from(self.context.decoder.funct3) {
+                    BRANCH_Funct3::BEQ => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::BEQ
+                    }
+                    BRANCH_Funct3::BNE => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::BNE
+                    }
+                    BRANCH_Funct3::BLT => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::BLT
+                    }
+                    BRANCH_Funct3::BGE => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::BGE
+                    }
+                    BRANCH_Funct3::BLTU => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::BLTU
+                    }
+                    BRANCH_Funct3::BGEU => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::BGEU
+                    }
                 }
-            },
-        };
+            }
+
+            _ => {
+                error!("unreachable!");
+                unreachable!("unreachable!");
+            }
+        }
     }
 
     fn decode_u_format(&mut self) {
@@ -1153,12 +1284,19 @@ impl CPU {
             self.extract_imm_31_12() as UnsignedImmediate;
 
         match self.context.decoder.opcode {
-            //
-            _ => match self.context.decoder.funct3 {
-                _ => {
-                    panic!("Unimplemented");
-                }
-            },
+            Opcode::AUIPC => {
+                self.context.decoder.executable_instruction =
+                    ExecutableInstruction::AUIPC;
+            }
+            Opcode::LUI => {
+                self.context.decoder.executable_instruction =
+                    ExecutableInstruction::LUI;
+            }
+
+            _ => {
+                error!("unreachable!");
+                unreachable!("unreachable!");
+            }
         };
     }
 
@@ -1177,12 +1315,15 @@ impl CPU {
             self.extract_j_20() as UnsignedImmediate;
 
         match self.context.decoder.opcode {
-            //
-            _ => match self.context.decoder.funct3 {
-                _ => {
-                    panic!("Unimplemented");
-                }
-            },
+            Opcode::JAL => {
+                self.context.decoder.executable_instruction =
+                    ExecutableInstruction::JAL;
+            }
+
+            _ => {
+                error!("unreachable!");
+                unreachable!("unreachable!");
+            }
         };
     }
 
