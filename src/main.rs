@@ -143,8 +143,9 @@ const BIT_OFFSET_J_20_FINAL: usize = 20;
 
 //const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
 
-#[derive(Default, Clone)]
 #[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Default, Clone)]
 enum Opcode {
     LOAD = 0b0000011,
     STORE = 0b0100011,
@@ -245,6 +246,7 @@ impl From<InstructionType> for Opcode {
 }
 
 #[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
 enum OP_IMM_Funct3 {
     ADDI = 0b000,  // add immediate
     SLLI = 0b001,  // shift left logical immediate
@@ -257,6 +259,7 @@ enum OP_IMM_Funct3 {
 }
 
 #[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Clone)]
 enum OP_IMM_Funct7 {
     #[default]
@@ -300,17 +303,18 @@ impl From<InstructionType> for OP_Funct7 {
     }
 }
 
-// #[allow(non_camel_case_types)]
-// enum OP_Funct3 {
-//     ARITH = 0b000,   //
-//     SLL = 0b001,     //
-//     SLT = 0b010,     //
-//     SLTU = 0b011,    //
-//     XOR = 0b100,     //
-//     SRX = 0b101,     //
-//     OR = 0b110,      //
-//     AND = 0b111,     //
-// }
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+enum OP_Funct3 {
+    ARITH = 0b000, //
+    SLL = 0b001,   //
+    SLT = 0b010,   //
+    SLTU = 0b011,  //
+    XOR = 0b100,   //
+    SRX = 0b101,   //
+    OR = 0b110,    //
+    AND = 0b111,   //
+}
 
 impl From<InstructionType> for OP_IMM_Funct3 {
     fn from(value: InstructionType) -> Self {
@@ -332,18 +336,49 @@ impl From<InstructionType> for OP_IMM_Funct3 {
     }
 }
 
+impl From<InstructionType> for OP_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => OP_Funct3::ARITH,
+            0b001 => OP_Funct3::SLL,
+            0b010 => OP_Funct3::SLT,
+            0b011 => OP_Funct3::SLTU,
+            0b100 => OP_Funct3::XOR,
+            0b101 => OP_Funct3::SRX,
+            0b110 => OP_Funct3::OR,
+            0b111 => OP_Funct3::AND,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Clone, Debug)]
 enum ExecutableInstruction {
     #[default]
     ADDI, // add immediate
+    ADD,   // add registers
+    SUB,   // substract registers
     SLLI,  // shift left logical immediate
-    SLTI,  //
-    SLTIU, //
+    SLL,   // shift left logical registers
+    SLTI,  // set if register less then immediate
+    SLT,   // set if register less then register
+    SLTIU, // set if register less then immediate (unsigned)
+    SLTU,  // set if register less then register (unsigned)
     XORI,  // XOR with immediate
-    SRLI,  // shift right X immediate
-    SRAI,  // shift right X immediate arithmetic
+    XOR,   // XOR with register
+    SRLI,  // shift right logical immediate
+    SRL,   // shift right logical register
+    SRAI,  // shift right arithmetic immediate
+    SRA,   // shift right arithmetic register
     ORI,   // OR with immediate
+    OR,    // OR with immediate
     ANDI,  // AND with immediate
+    AND,   // AND with immediate
 }
 
 #[derive(Clone)]
@@ -472,6 +507,7 @@ struct Context {
     result: XLen,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone)]
 struct CPU {
     context: Context,
@@ -630,8 +666,59 @@ impl CPU {
         self.context.decoder.funct3 = self.extract_funct3();
         self.context.decoder.r_funct7 = self.extract_r_funct7();
 
-        // TODO: unimplemented{
-        panic!("Unimplemented");
+        match self.context.decoder.opcode {
+            Opcode::OP => match OP_Funct3::from(self.context.decoder.funct3) {
+                OP_Funct3::ARITH => match self.context.decoder.r_funct7 {
+                    OP_Funct7::F0 => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::ADD;
+                    }
+                    OP_Funct7::F1 => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SUB;
+                    }
+                },
+                OP_Funct3::SLL => {
+                    self.context.decoder.executable_instruction =
+                        ExecutableInstruction::SLL;
+                }
+                OP_Funct3::SLT => {
+                    self.context.decoder.executable_instruction =
+                        ExecutableInstruction::SLT;
+                }
+                OP_Funct3::SLTU => {
+                    self.context.decoder.executable_instruction =
+                        ExecutableInstruction::SLTU;
+                }
+                OP_Funct3::XOR => {
+                    self.context.decoder.executable_instruction =
+                        ExecutableInstruction::XOR;
+                }
+                OP_Funct3::SRX => match self.context.decoder.r_funct7 {
+                    OP_Funct7::F0 => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SRL;
+                    }
+                    OP_Funct7::F1 => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SRA;
+                    }
+                },
+                OP_Funct3::OR => {
+                    self.context.decoder.executable_instruction =
+                        ExecutableInstruction::OR;
+                }
+                OP_Funct3::AND => {
+                    self.context.decoder.executable_instruction =
+                        ExecutableInstruction::AND;
+                }
+            },
+
+            _ => {
+                error!("unreachable!");
+                unreachable!("unreachable!");
+            }
+        }
     }
 
     fn decode_i_format(&mut self) {
@@ -693,9 +780,6 @@ impl CPU {
                             ExecutableInstruction::ANDI;
                     }
                 }
-            }
-            Opcode::OP => {
-                panic!("Unimplemented");
             }
 
             _ => {
@@ -899,6 +983,11 @@ impl CPU {
                 trace!("Executing ANDI...");
 
                 panic!("Unimplemented");
+            }
+
+            _ => {
+                error!("unreachable");
+                unreachable!("unreachable");
             }
         }
     }
