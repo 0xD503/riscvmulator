@@ -7,11 +7,18 @@ use std::mem::size_of;
 use std::{env, fs};
 
 /// architechtural defines
-type XLen = u32;
-type SignedXLen = i32;
-type UnsignedXLen = u32;
+type XLen = u64;
+type SignedXLen = i64;
+type UnsignedXLen = u64;
+// type XLen = u32;
+// type SignedXLen = i32;
+// type UnsignedXLen = u32;
 
-type SignedImmediate = i32;
+// // type SignedImmediate = i64;
+// // type UnsignedImmediate = u64;
+// // type SignedImmediateCastToRegister = SignedXLen;
+// // type UnsignedImmediateCastToRegister = UnsignedXLen;
+// type SignedImmediate = i32;
 type UnsignedImmediate = u32;
 
 // const IALIGN: i32 = 32;
@@ -27,7 +34,7 @@ const RISCV_X0_ZERO_REGISTER_VALUE: XLen = 0x00000000;
 const PC_RESET_VALUE: XLen = 0x00000000;
 const PC_STEP: XLen = 0x00000004;
 
-const INITIAL_INSTRUCTION: XLen = 0x00000000;
+const INITIAL_INSTRUCTION: InstructionType = 0x00000000;
 
 const MEM_DEFAULT_VALUE: u8 = 0x00;
 const MEM_SIZE: usize = 65536; // placeholder value, to be configured later
@@ -800,7 +807,8 @@ impl CPU {
             self.extract_source_register_1();
         self.context.decoder.destination_register_index =
             self.extract_destination_register_index();
-        self.context.decoder.immediate = self.extract_imm_11_0();
+        self.context.decoder.immediate =
+            self.extract_imm_11_0() as UnsignedImmediate;
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
@@ -873,7 +881,8 @@ impl CPU {
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_4_0();
-        self.context.decoder.immediate |= self.extract_imm_11_5();
+        self.context.decoder.immediate |=
+            self.extract_imm_11_5() as UnsignedImmediate;
 
         self.context.decoder.funct3 = self.extract_funct3();
 
@@ -900,7 +909,8 @@ impl CPU {
         self.context.decoder.immediate = self.extract_imm_4_1();
         self.context.decoder.immediate |= self.extract_imm_10_5();
         self.context.decoder.immediate |= self.extract_b_11();
-        self.context.decoder.immediate |= self.extract_b_12();
+        self.context.decoder.immediate |=
+            self.extract_b_12() as UnsignedImmediate;
 
         self.context.decoder.funct3 = self.extract_funct3();
         panic!("Unimplemented");
@@ -914,7 +924,8 @@ impl CPU {
         self.context.decoder.need_to_write_back = true;
 
         // extract immediate
-        self.context.decoder.immediate = self.extract_imm_31_12();
+        self.context.decoder.immediate =
+            self.extract_imm_31_12() as UnsignedImmediate;
 
         panic!("Unimplemented");
     }
@@ -930,7 +941,8 @@ impl CPU {
         self.context.decoder.immediate = self.extract_imm_10_1();
         self.context.decoder.immediate |= self.extract_j_11();
         self.context.decoder.immediate |= self.extract_imm_19_12();
-        self.context.decoder.immediate |= self.extract_j_20();
+        self.context.decoder.immediate |=
+            self.extract_j_20() as UnsignedImmediate;
 
         panic!("Unimplemented");
     }
@@ -999,7 +1011,7 @@ impl CPU {
                 trace!("Executing ADDI...");
 
                 self.context.result = self.context.decoder.source_register_1
-                    + self.context.decoder.immediate;
+                    + self.context.decoder.immediate as SignedXLen as XLen;
             }
             ExecutableInstruction::SLLI => {
                 trace!("Executing SLLI...");
@@ -1012,7 +1024,7 @@ impl CPU {
 
                 self.context.result = if (self.context.decoder.source_register_1
                     as SignedXLen)
-                    < (self.context.decoder.immediate as SignedImmediate)
+                    < (self.context.decoder.immediate as SignedXLen)
                 {
                     1
                 } else {
@@ -1024,7 +1036,7 @@ impl CPU {
 
                 self.context.result = if (self.context.decoder.source_register_1
                     as UnsignedXLen)
-                    < (self.context.decoder.immediate as UnsignedImmediate)
+                    < (self.context.decoder.immediate as UnsignedXLen)
                 {
                     1
                 } else {
@@ -1035,7 +1047,7 @@ impl CPU {
                 trace!("Executing XORI...");
 
                 self.context.result = self.context.decoder.source_register_1
-                    ^ self.context.decoder.immediate;
+                    ^ self.context.decoder.immediate as SignedXLen as XLen;
             }
             ExecutableInstruction::SRLI => {
                 trace!("Executing SRLI...");
@@ -1055,13 +1067,13 @@ impl CPU {
                 trace!("Executing ORI...");
 
                 self.context.result = self.context.decoder.source_register_1
-                    | self.context.decoder.immediate;
+                    | self.context.decoder.immediate as SignedXLen as XLen;
             }
             ExecutableInstruction::ANDI => {
                 trace!("Executing ANDI...");
 
                 self.context.result = self.context.decoder.source_register_1
-                    & self.context.decoder.immediate;
+                    & self.context.decoder.immediate as SignedXLen as XLen;
             }
 
             ExecutableInstruction::ADD => {
@@ -1213,201 +1225,199 @@ impl CPU {
         (self.context.current_instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT
     }
 
-    fn extract_imm_11_0(&self) -> InstructionType {
+    fn extract_imm_11_0(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (self.context.current_instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL))
-            as InstructionType
+            as SignedXLen
     }
 
-    fn extract_imm_11_5(&self) -> InstructionType {
+    fn extract_imm_11_5(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (self.context.current_instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_5 - BIT_OFFSET_IMM_11_5_FINAL))
-            as InstructionType
+            as SignedXLen
             & !((1 << BIT_OFFSET_IMM_11_5_FINAL) - 1)
     }
 
-    fn extract_imm_4_0(&self) -> InstructionType {
+    fn extract_imm_4_0(&self) -> UnsignedImmediate {
         (self.context.current_instruction
             >> (BIT_OFFSET_IMM_4_0 - BIT_OFFSET_IMM_4_0_FINAL))
             & MASK_IMM_4_0
     }
 
-    fn extract_imm_31_12(&self) -> InstructionType {
+    fn extract_imm_31_12(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (self.context.current_instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_31_12 - BIT_OFFSET_IMM_31_12_FINAL))
-            as InstructionType
+            as SignedXLen
             & !((1 << BIT_OFFSET_IMM_31_12_FINAL) - 1)
     }
 
-    fn extract_imm_10_5(&self) -> InstructionType {
+    fn extract_imm_10_5(&self) -> UnsignedImmediate {
         (self.context.current_instruction
             >> (BIT_OFFSET_IMM_10_5 - BIT_OFFSET_IMM_10_5_FINAL))
             & MASK_IMM_10_5
     }
 
-    fn extract_imm_4_1(&self) -> InstructionType {
+    fn extract_imm_4_1(&self) -> UnsignedImmediate {
         (self.context.current_instruction
             >> (BIT_OFFSET_IMM_4_1 - BIT_OFFSET_IMM_4_1_FINAL))
             & MASK_IMM_4_1
     }
 
-    fn extract_imm_10_1(&self) -> InstructionType {
+    fn extract_imm_10_1(&self) -> UnsignedImmediate {
         (self.context.current_instruction
             >> (BIT_OFFSET_IMM_10_1 - BIT_OFFSET_IMM_10_1_FINAL))
             & MASK_IMM_10_1
     }
 
-    fn extract_imm_19_12(&self) -> InstructionType {
+    fn extract_imm_19_12(&self) -> UnsignedImmediate {
         (self.context.current_instruction
             >> (BIT_OFFSET_IMM_19_12 - BIT_OFFSET_IMM_19_12_FINAL))
             & MASK_IMM_19_12
     }
 
-    fn extract_b_11(&self) -> InstructionType {
+    fn extract_b_11(&self) -> UnsignedImmediate {
         (self.context.current_instruction
             << (BIT_OFFSET_B_11_FINAL - BIT_OFFSET_B_11))
             & MASK_B_11
     }
 
-    fn extract_b_12(&self) -> InstructionType {
+    fn extract_b_12(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (self.context.current_instruction as SignedInstructionType
-            >> (BIT_OFFSET_B_12 - BIT_OFFSET_B_12_FINAL))
-            as InstructionType
+            >> (BIT_OFFSET_B_12 - BIT_OFFSET_B_12_FINAL)) as SignedXLen
             & !((1 << BIT_OFFSET_B_12_FINAL) - 1)
     }
 
-    fn extract_j_11(&self) -> InstructionType {
+    fn extract_j_11(&self) -> UnsignedImmediate {
         (self.context.current_instruction
             >> (BIT_OFFSET_J_11 - BIT_OFFSET_J_11_FINAL))
             & MASK_J_11
     }
 
-    fn extract_j_20(&self) -> InstructionType {
+    fn extract_j_20(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         ((self.context.current_instruction as SignedInstructionType)
-            >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL))
-            as InstructionType
+            >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL)) as SignedXLen
             & !((1 << BIT_OFFSET_J_20_FINAL) - 1)
     }
 
-    // fn extract_i_imm_inst_31(&self) -> InstructionType {
+    // fn extract_i_imm_inst_31(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_I_IMM_INST_31)
     //         & MASK_I_IMM_INST_31
     // }
 
-    // fn extract_i_imm_inst_30_25(&self) -> InstructionType {
+    // fn extract_i_imm_inst_30_25(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_I_IMM_INST_30_25)
     //         & MASK_I_IMM_INST_30_25
     // }
 
-    // fn extract_i_imm_inst_24_21(&self) -> InstructionType {
+    // fn extract_i_imm_inst_24_21(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_I_IMM_INST_24_21)
     //         & MASK_I_IMM_INST_24_21
     // }
 
-    // fn extract_i_imm_20(&self) -> InstructionType {
+    // fn extract_i_imm_20(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_I_IMM_20)
     //         & MASK_I_IMM_20
     // }
 
-    // fn extract_s_imm_inst_31(&self) -> InstructionType {
+    // fn extract_s_imm_inst_31(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_S_IMM_INST_31)
     //         & MASK_S_IMM_INST_31
     // }
 
-    // fn extract_s_imm_inst_30_25(&self) -> InstructionType {
+    // fn extract_s_imm_inst_30_25(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_S_IMM_INST_30_25)
     //         & MASK_S_IMM_INST_30_25
     // }
 
-    // fn extract_s_imm_inst_11_8(&self) -> InstructionType {
+    // fn extract_s_imm_inst_11_8(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_S_IMM_INST_11_8)
     //         & MASK_S_IMM_INST_11_8
     // }
 
-    // fn extract_s_imm_7(&self) -> InstructionType {
+    // fn extract_s_imm_7(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_S_IMM_7) & MASK_S_IMM_7
     // }
 
-    // fn extract_b_imm_inst_31(&self) -> InstructionType {
+    // fn extract_b_imm_inst_31(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_INST_31)
     //         & MASK_B_IMM_INST_31
     // }
 
-    // fn extract_b_imm_7(&self) -> InstructionType {
+    // fn extract_b_imm_7(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_7) & MASK_B_IMM_7
     // }
 
-    // fn extract_b_imm_inst_30_25(&self) -> InstructionType {
+    // fn extract_b_imm_inst_30_25(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_INST_30_25)
     //         & MASK_B_IMM_INST_30_25
     // }
 
-    // fn extract_b_imm_inst_11_8(&self) -> InstructionType {
+    // fn extract_b_imm_inst_11_8(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_INST_11_8)
     //         & MASK_B_IMM_INST_11_8
     // }
 
-    // fn extract_b_imm_0(&self) -> InstructionType {
+    // fn extract_b_imm_0(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_0) & MASK_B_IMM_0
     // }
 
-    // fn extract_u_imm_31(&self) -> InstructionType {
+    // fn extract_u_imm_31(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_U_IMM_31)
     //         & MASK_U_IMM_31
     // }
 
-    // fn extract_u_imm_inst_30_20(&self) -> InstructionType {
+    // fn extract_u_imm_inst_30_20(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_U_IMM_INST_30_20)
     //         & MASK_U_IMM_INST_30_20
     // }
 
-    // fn extract_u_imm_inst_19_12(&self) -> InstructionType {
+    // fn extract_u_imm_inst_19_12(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_U_IMM_INST_19_12)
     //         & MASK_U_IMM_INST_19_12
     // }
 
-    // fn extract_u_imm_0(&self) -> InstructionType {
+    // fn extract_u_imm_0(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_U_IMM_0) & MASK_U_IMM_0
     // }
 
-    // fn extract_j_imm_inst_31(&self) -> InstructionType {
+    // fn extract_j_imm_inst_31(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_31)
     //         & MASK_J_IMM_INST_31
     // }
 
-    // fn extract_j_imm_inst_19_12(&self) -> InstructionType {
+    // fn extract_j_imm_inst_19_12(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction
     //         >> (BIT_OFFSET_J_IMM_INST_19_12
     //             - BIT_OFFSET_J_IMM_INST_19_12_FINAL))
     //         & MASK_J_IMM_INST_19_12
     // }
 
-    // fn extract_j_imm_20(&self) -> InstructionType {
+    // fn extract_j_imm_20(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_20)
     //         & MASK_J_IMM_20
     // }
 
-    // fn extract_j_imm_inst_30_25(&self) -> InstructionType {
+    // fn extract_j_imm_inst_30_25(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_30_25)
     //         & MASK_J_IMM_INST_30_25
     // }
 
-    // fn extract_j_imm_inst_24_21(&self) -> InstructionType {
+    // fn extract_j_imm_inst_24_21(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_24_21)
     //         & MASK_J_IMM_INST_24_21
     // }
 
-    // fn extract_j_imm_0(&self) -> InstructionType {
+    // fn extract_j_imm_0(&self) -> UnsignedImmediate {
     //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_0) & MASK_J_IMM_0
     // }
 }
