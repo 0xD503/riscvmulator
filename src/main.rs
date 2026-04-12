@@ -287,6 +287,37 @@ impl From<u8> for Opcode {
 
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
+enum OPCODE_LOAD_Funct3 {
+    LB = 0b000,  // load byte
+    LH = 0b001,  // load half word
+    LW = 0b010,  // load word
+    LD = 0b011,  // load double word
+    LBU = 0b100, // load byte unsigned
+    LHU = 0b101, // load half word unsigned
+    LWU = 0b110, // load word unsigned
+}
+
+impl From<InstructionType> for OPCODE_LOAD_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => OPCODE_LOAD_Funct3::LB,
+            0b001 => OPCODE_LOAD_Funct3::LH,
+            0b010 => OPCODE_LOAD_Funct3::LW,
+            0b011 => OPCODE_LOAD_Funct3::LD,
+            0b100 => OPCODE_LOAD_Funct3::LBU,
+            0b101 => OPCODE_LOAD_Funct3::LHU,
+            0b110 => OPCODE_LOAD_Funct3::LWU,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
 enum OP_IMM_Funct3 {
     ADDI = 0b000,  // add immediate
     SLLI = 0b001,  // shift left logical immediate
@@ -303,14 +334,14 @@ enum OP_IMM_Funct3 {
 #[derive(Default, Clone)]
 enum OP_IMM_Funct7 {
     #[default]
-    SRLI = 0b0000000,
+    SXLI = 0b0000000,
     SRAI = 0b0100000,
 }
 
 impl From<InstructionType> for OP_IMM_Funct7 {
     fn from(value: InstructionType) -> Self {
         match value {
-            0b0000000 => OP_IMM_Funct7::SRLI,
+            0b0000000 => OP_IMM_Funct7::SXLI,
             0b0100000 => OP_IMM_Funct7::SRAI,
 
             _ => {
@@ -364,6 +395,35 @@ enum OP_32_Funct3 {
     SRXW = 0b101,   //
 }
 
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+enum OP_IMM_32_Funct3 {
+    ADDIW = 0b000, //
+    SLLIW = 0b001, //
+    SRXIW = 0b101, //
+}
+
+impl From<InstructionType> for OP_IMM_32_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => OP_IMM_32_Funct3::ADDIW,
+            0b001 => OP_IMM_32_Funct3::SLLIW,
+            0b101 => OP_IMM_32_Funct3::SRXIW,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+enum JALR_Funct3 {
+    JALR = 0b000, //
+}
+
 impl From<InstructionType> for OP_IMM_Funct3 {
     fn from(value: InstructionType) -> Self {
         match value {
@@ -410,6 +470,19 @@ impl From<InstructionType> for OP_32_Funct3 {
             0b000 => OP_32_Funct3::ARITHW,
             0b001 => OP_32_Funct3::SLLW,
             0b010 => OP_32_Funct3::SRXW,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+impl From<InstructionType> for JALR_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => JALR_Funct3::JALR,
 
             _ => {
                 error!("Unknown funct3: {value:#05b}");
@@ -868,6 +941,40 @@ impl CPU {
         self.context.decoder.funct3 = self.extract_funct3();
 
         match self.context.decoder.opcode {
+            // I_3
+            Opcode::LOAD => {
+                match OPCODE_LOAD_Funct3::from(self.context.decoder.funct3) {
+                    OPCODE_LOAD_Funct3::LB => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::LB
+                    }
+                    OPCODE_LOAD_Funct3::LH => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::LH
+                    }
+                    OPCODE_LOAD_Funct3::LW => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::LW
+                    }
+                    OPCODE_LOAD_Funct3::LD => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::LD
+                    }
+                    OPCODE_LOAD_Funct3::LBU => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::LBU
+                    }
+                    OPCODE_LOAD_Funct3::LHU => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::LHU
+                    }
+                    OPCODE_LOAD_Funct3::LWU => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::LWU
+                    }
+                }
+            }
+            // I_19
             Opcode::OP_IMM => {
                 match OP_IMM_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_Funct3::ADDI => {
@@ -876,9 +983,19 @@ impl CPU {
                     }
                     OP_IMM_Funct3::SLLI => {
                         self.context.decoder.shamt = self.extract_shamt();
-                        // self.context.decoder.i_funct7 = self.extract_i_funct7();    // TODO: WHY THE FUCK???
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SLLI;
+                        self.context.decoder.i_funct7 = self.extract_i_funct7();
+                        match self.context.decoder.i_funct7 {
+                            OP_IMM_Funct7::SXLI => {
+                                // funct3 equals SLLI
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::SLLI
+                            }
+
+                            _ => {
+                                error!("unreachable!");
+                                unreachable!("unreachable!");
+                            }
+                        }
                     }
                     OP_IMM_Funct3::SLTI => {
                         self.context.decoder.executable_instruction =
@@ -896,7 +1013,8 @@ impl CPU {
                         self.context.decoder.shamt = self.extract_shamt();
                         self.context.decoder.i_funct7 = self.extract_i_funct7();
                         match self.context.decoder.i_funct7 {
-                            OP_IMM_Funct7::SRLI => {
+                            OP_IMM_Funct7::SXLI => {
+                                // funct3 equals SRLI
                                 self.context.decoder.executable_instruction =
                                     ExecutableInstruction::SRLI;
                             }
@@ -913,6 +1031,52 @@ impl CPU {
                     OP_IMM_Funct3::ANDI => {
                         self.context.decoder.executable_instruction =
                             ExecutableInstruction::ANDI;
+                    }
+                }
+            }
+            // I_27
+            Opcode::OP_IMM_32 => {
+                match OP_IMM_32_Funct3::from(self.context.decoder.funct3) {
+                    OP_IMM_32_Funct3::ADDIW => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::ADDIW
+                    }
+                    OP_IMM_32_Funct3::SLLIW => {
+                        match self.context.decoder.i_funct7 {
+                            OP_IMM_Funct7::SXLI => {
+                                // funct3 equals SLLIW
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::SLLIW
+                            }
+
+                            _ => {
+                                error!("unreachable!");
+                                unreachable!("unreachable!");
+                            }
+                        }
+                    }
+                    OP_IMM_32_Funct3::SRXIW => {
+                        match self.context.decoder.i_funct7 {
+                            OP_IMM_Funct7::SXLI => {
+                                // funct3 equals SRXIW
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::SRLIW
+                            }
+                            OP_IMM_Funct7::SRAI => {
+                                // funct3 equals SRXIW
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::SRAIW
+                            }
+                        }
+                    }
+                }
+            }
+            // I_103
+            Opcode::JALR => {
+                match JALR_Funct3::from(self.context.decoder.funct3) {
+                    JALR_Funct3::JALR => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::JALR
                     }
                 }
             }
@@ -966,7 +1130,15 @@ impl CPU {
             self.extract_b_12() as UnsignedImmediate;
 
         self.context.decoder.funct3 = self.extract_funct3();
-        panic!("Unimplemented");
+
+        match self.context.decoder.opcode {
+            //
+            _ => match self.context.decoder.funct3 {
+                _ => {
+                    panic!("Unimplemented");
+                }
+            },
+        };
     }
 
     fn decode_u_format(&mut self) {
@@ -980,7 +1152,14 @@ impl CPU {
         self.context.decoder.immediate =
             self.extract_imm_31_12() as UnsignedImmediate;
 
-        panic!("Unimplemented");
+        match self.context.decoder.opcode {
+            //
+            _ => match self.context.decoder.funct3 {
+                _ => {
+                    panic!("Unimplemented");
+                }
+            },
+        };
     }
 
     fn decode_j_format(&mut self) {
@@ -997,11 +1176,26 @@ impl CPU {
         self.context.decoder.immediate |=
             self.extract_j_20() as UnsignedImmediate;
 
-        panic!("Unimplemented");
+        match self.context.decoder.opcode {
+            //
+            _ => match self.context.decoder.funct3 {
+                _ => {
+                    panic!("Unimplemented");
+                }
+            },
+        };
     }
 
     fn decode_r4_format(&mut self) {
-        panic!("Unimplemented");
+        //
+        match self.context.decoder.opcode {
+            //
+            _ => match self.context.decoder.funct3 {
+                _ => {
+                    panic!("Unimplemented");
+                }
+            },
+        };
     }
 
     fn decode(&mut self) {
