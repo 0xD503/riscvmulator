@@ -1046,18 +1046,96 @@ impl CPU {
             ExecutableInstruction::SRAI => {
                 trace!("Executing SRAI...");
 
-                self.context.result = self.context.decoder.source_register_1
-                    >> self.context.decoder.shamt;
+                self.context.result = ((self.context.decoder.source_register_1
+                    as SignedXLen)
+                    >> self.context.decoder.shamt)
+                    as XLen;
             }
             ExecutableInstruction::ORI => {
                 trace!("Executing ORI...");
 
-                panic!("Unimplemented");
+                self.context.result = self.context.decoder.source_register_1
+                    | self.context.decoder.immediate;
             }
             ExecutableInstruction::ANDI => {
                 trace!("Executing ANDI...");
 
-                panic!("Unimplemented");
+                self.context.result = self.context.decoder.source_register_1
+                    & self.context.decoder.immediate;
+            }
+
+            ExecutableInstruction::ADD => {
+                trace!("Executing ADD...");
+
+                self.context.result = self.context.decoder.source_register_1
+                    + self.context.decoder.source_register_2;
+            }
+            ExecutableInstruction::SUB => {
+                trace!("Executing SUB...");
+
+                self.context.result = self.context.decoder.source_register_1
+                    - self.context.decoder.source_register_2;
+            }
+            ExecutableInstruction::SLL => {
+                trace!("Executing SLL...");
+
+                self.context.result = self.context.decoder.source_register_1
+                    << self.context.decoder.source_register_2;
+            }
+            ExecutableInstruction::SLT => {
+                trace!("Executing SLT...");
+
+                self.context.result = if (self.context.decoder.source_register_1
+                    as SignedXLen)
+                    < (self.context.decoder.source_register_2 as SignedXLen)
+                {
+                    1
+                } else {
+                    0
+                }
+            }
+            ExecutableInstruction::SLTU => {
+                trace!("Executing SLTU...");
+
+                self.context.result = if self.context.decoder.source_register_1
+                    < self.context.decoder.source_register_2
+                {
+                    1
+                } else {
+                    0
+                }
+            }
+            ExecutableInstruction::XOR => {
+                trace!("Executing XOR...");
+
+                self.context.result = self.context.decoder.source_register_1
+                    ^ self.context.decoder.source_register_2;
+            }
+            ExecutableInstruction::SRL => {
+                trace!("Executing SRL...");
+
+                self.context.result = self.context.decoder.source_register_1
+                    >> self.context.decoder.source_register_2;
+            }
+            ExecutableInstruction::SRA => {
+                trace!("Executing SRA...");
+
+                self.context.result = ((self.context.decoder.source_register_1
+                    as SignedXLen)
+                    >> self.context.decoder.source_register_2)
+                    as XLen;
+            }
+            ExecutableInstruction::OR => {
+                trace!("Executing OR...");
+
+                self.context.result = self.context.decoder.source_register_1
+                    | self.context.decoder.source_register_2;
+            }
+            ExecutableInstruction::AND => {
+                trace!("Executing AND...");
+
+                self.context.result = self.context.decoder.source_register_1
+                    & self.context.decoder.source_register_2;
             }
 
             _ => {
