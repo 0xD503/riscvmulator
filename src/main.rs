@@ -1078,13 +1078,13 @@ impl CPU {
             ExecutableInstruction::ADDW => self.instruction_add_word(),
             ExecutableInstruction::SUBW => self.instruction_sub_word(),
             ExecutableInstruction::SLLW => {
-                self.instruction_shift_left_logical_word()
+                self.instruction_shift_left_logical_word();
             }
             ExecutableInstruction::SRLW => {
-                self.instruction_shift_right_logical_word()
+                self.instruction_shift_right_logical_word();
             }
             ExecutableInstruction::SRAW => {
-                self.instruction_shift_right_arith_word()
+                self.instruction_shift_right_arith_word();
             }
         }
     }
