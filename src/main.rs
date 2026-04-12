@@ -143,50 +143,83 @@ const BIT_OFFSET_J_20_FINAL: usize = 20;
 
 //const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
 
+const OPCODE_LOAD: u8 = 0b0000011;
+const OPCODE_STORE: u8 = 0b0100011;
+const OPCODE_MADD: u8 = 0b1000011;
+const OPCODE_BRANCH: u8 = 0b1100011;
+const OPCODE_LOAD_FP: u8 = 0b0000111;
+const OPCODE_STORE_FP: u8 = 0b0100111;
+const OPCODE_MSUB: u8 = 0b1000111;
+const OPCODE_JALR: u8 = 0b1100111;
+const OPCODE_CUSTOM_0: u8 = 0b0001011;
+const OPCODE_CUSTOM_1: u8 = 0b0101011;
+const OPCODE_NMSUB: u8 = 0b1001011;
+const OPCODE_RESERVED_1: u8 = 0b1101011;
+const OPCODE_MISC_MEM: u8 = 0b0001111;
+const OPCODE_AMO: u8 = 0b0101111;
+const OPCODE_NMADD: u8 = 0b1001111;
+const OPCODE_JAL: u8 = 0b1101111;
+const OPCODE_OP_IMM: u8 = 0b0010011;
+const OPCODE_OP: u8 = 0b0110011;
+const OPCODE_OP_FP: u8 = 0b1010011;
+const OPCODE_SYSTEM: u8 = 0b1110011;
+const OPCODE_AUIPC: u8 = 0b0010111;
+const OPCODE_LUI: u8 = 0b0110111;
+const OPCODE_OP_V: u8 = 0b1010111;
+const OPCODE_OP_VE: u8 = 0b1110111;
+const OPCODE_OP_IMM_32: u8 = 0b0011011;
+const OPCODE_OP_32: u8 = 0b0111011;
+const OPCODE_CUSTOM_2: u8 = 0b1011011;
+const OPCODE_CUSTOM_3: u8 = 0b1111011;
+const OPCODE_RESERVED_2: u8 = 0b0011111;
+const OPCODE_RESERVED_3: u8 = 0b0111111;
+const OPCODE_RESERVED_4: u8 = 0b1011111;
+const OPCODE_RESERVED_5: u8 = 0b1111111;
+
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Clone)]
 enum Opcode {
-    LOAD = 0b0000011,
-    STORE = 0b0100011,
-    MADD = 0b1000011,
-    BRANCH = 0b1100011,
+    LOAD = OPCODE_LOAD as isize,
+    STORE = OPCODE_STORE as isize,
+    MADD = OPCODE_MADD as isize,
+    BRANCH = OPCODE_BRANCH as isize,
 
-    LOAD_FP = 0b0000111,
-    STORE_FP = 0b0100111,
-    MSUB = 0b1000111,
-    JALR = 0b1100111,
+    LOAD_FP = OPCODE_LOAD_FP as isize,
+    STORE_FP = OPCODE_STORE_FP as isize,
+    MSUB = OPCODE_MSUB as isize,
+    JALR = OPCODE_JALR as isize,
 
-    custom_0 = 0b0001011,
-    custom_1 = 0b0101011,
-    NMSUB = 0b1001011,
-    reserved_1 = 0b1101011,
+    custom_0 = OPCODE_CUSTOM_0 as isize,
+    custom_1 = OPCODE_CUSTOM_1 as isize,
+    NMSUB = OPCODE_NMSUB as isize,
+    reserved_1 = OPCODE_RESERVED_1 as isize,
 
-    MISC_MEM = 0b0001111,
-    AMO = 0b0101111,
-    NMADD = 0b1001111,
-    JAL = 0b1101111,
+    MISC_MEM = OPCODE_MISC_MEM as isize,
+    AMO = OPCODE_AMO as isize,
+    NMADD = OPCODE_NMADD as isize,
+    JAL = OPCODE_JAL as isize,
 
     #[default]
-    OP_IMM = 0b0010011,
-    OP = 0b0110011,
-    OP_FP = 0b1010011,
-    SYSTEM = 0b1110011,
+    OP_IMM = OPCODE_OP_IMM as isize,
+    OP = OPCODE_OP as isize,
+    OP_FP = OPCODE_OP_FP as isize,
+    SYSTEM = OPCODE_SYSTEM as isize,
 
-    AUIPC = 0b0010111,
-    LUI = 0b0110111,
-    OP_V = 0b1010111,
-    OP_VE = 0b1110111,
+    AUIPC = OPCODE_AUIPC as isize,
+    LUI = OPCODE_LUI as isize,
+    OP_V = OPCODE_OP_V as isize,
+    OP_VE = OPCODE_OP_VE as isize,
 
-    OP_IMM_32 = 0b0011011,
-    OP_32 = 0b0111011,
-    custom_2 = 0b1011011,
-    custom_3 = 0b1111011,
+    OP_IMM_32 = OPCODE_OP_IMM_32 as isize,
+    OP_32 = OPCODE_OP_32 as isize,
+    custom_2 = OPCODE_CUSTOM_2 as isize,
+    custom_3 = OPCODE_CUSTOM_3 as isize,
 
-    reserved_2 = 0b0011111,
-    reserved_3 = 0b0111111,
-    reserved_4 = 0b1011111,
-    reserved_5 = 0b1111111,
+    reserved_2 = OPCODE_RESERVED_2 as isize,
+    reserved_3 = OPCODE_RESERVED_3 as isize,
+    reserved_4 = OPCODE_RESERVED_4 as isize,
+    reserved_5 = OPCODE_RESERVED_5 as isize,
 }
 
 impl Binary for Opcode {
@@ -195,48 +228,48 @@ impl Binary for Opcode {
     }
 }
 
-impl From<InstructionType> for Opcode {
-    fn from(value: InstructionType) -> Self {
+impl From<u8> for Opcode {
+    fn from(value: u8) -> Self {
         match value {
-            0b0000011 => Self::LOAD,
-            0b0100011 => Self::STORE,
-            0b1000011 => Self::MADD,
-            0b1100011 => Self::BRANCH,
+            OPCODE_LOAD => Self::LOAD,
+            OPCODE_STORE => Self::STORE,
+            OPCODE_MADD => Self::MADD,
+            OPCODE_BRANCH => Self::BRANCH,
 
-            0b0000111 => Self::LOAD_FP,
-            0b0100111 => Self::STORE_FP,
-            0b1000111 => Self::MSUB,
-            0b1100111 => Self::JALR,
+            OPCODE_LOAD_FP => Self::LOAD_FP,
+            OPCODE_STORE_FP => Self::STORE_FP,
+            OPCODE_MSUB => Self::MSUB,
+            OPCODE_JALR => Self::JALR,
 
-            0b0001011 => Self::custom_0,
-            0b0101011 => Self::custom_1,
-            0b1001011 => Self::NMSUB,
-            0b1101011 => Self::reserved_1,
+            OPCODE_CUSTOM_0 => Self::custom_0,
+            OPCODE_CUSTOM_1 => Self::custom_1,
+            OPCODE_NMSUB => Self::NMSUB,
+            OPCODE_RESERVED_1 => Self::reserved_1,
 
-            0b0001111 => Self::MISC_MEM,
-            0b0101111 => Self::AMO,
-            0b1001111 => Self::NMADD,
-            0b1101111 => Self::JAL,
+            OPCODE_MISC_MEM => Self::MISC_MEM,
+            OPCODE_AMO => Self::AMO,
+            OPCODE_NMADD => Self::NMADD,
+            OPCODE_JAL => Self::JAL,
 
-            0b0010011 => Self::OP_IMM,
-            0b0110011 => Self::OP,
-            0b1010011 => Self::OP_FP,
-            0b1110011 => Self::SYSTEM,
+            OPCODE_OP_IMM => Self::OP_IMM,
+            OPCODE_OP => Self::OP,
+            OPCODE_OP_FP => Self::OP_FP,
+            OPCODE_SYSTEM => Self::SYSTEM,
 
-            0b0010111 => Self::AUIPC,
-            0b0110111 => Self::LUI,
-            0b1010111 => Self::OP_V,
-            0b1110111 => Self::OP_VE,
+            OPCODE_AUIPC => Self::AUIPC,
+            OPCODE_LUI => Self::LUI,
+            OPCODE_OP_V => Self::OP_V,
+            OPCODE_OP_VE => Self::OP_VE,
 
-            0b0011011 => Self::OP_IMM_32,
-            0b0111011 => Self::OP_32,
-            0b1011011 => Self::custom_2,
-            0b1111011 => Self::custom_3,
+            OPCODE_OP_IMM_32 => Self::OP_IMM_32,
+            OPCODE_OP_32 => Self::OP_32,
+            OPCODE_CUSTOM_2 => Self::custom_2,
+            OPCODE_CUSTOM_3 => Self::custom_3,
 
-            0b0011111 => Self::reserved_2,
-            0b0111111 => Self::reserved_3,
-            0b1011111 => Self::reserved_4,
-            0b1111111 => Self::reserved_5,
+            OPCODE_RESERVED_2 => Self::reserved_2,
+            OPCODE_RESERVED_3 => Self::reserved_3,
+            OPCODE_RESERVED_4 => Self::reserved_4,
+            OPCODE_RESERVED_5 => Self::reserved_5,
             _ => {
                 error!("Unknown opcode: {value:#018X}");
                 unreachable!("Unknown opcode: {value:#018X}");
@@ -360,25 +393,65 @@ impl From<InstructionType> for OP_Funct3 {
 #[derive(Default, Clone, Debug)]
 enum ExecutableInstruction {
     #[default]
-    ADDI, // add immediate
-    ADD,   // add registers
-    SUB,   // substract registers
+    LB, // load byte
+    LH, // load halfword
+    LW, // load word
+
+    LD,  // load double word
+    LBU, // load byte (unsigned)
+    LHU, // load halfword (unsigned)
+    LWU, // load word (unsigned)
+
+    ADD,  // add registers
+    SUB,  // subtract registers
+    SLL,  // shift left logical registers
+    SLT,  // set if register less then register
+    SLTU, // set if register less then register (unsigned)
+    XOR,  // XOR with register
+    SRL,  // shift right logical register
+    SRA,  // shift right arithmetic register
+    OR,   // OR with register
+    AND,  // AND with register
+
+    ADDW, // add word (register)
+    SUBW, // subtract word (register)
+    SLLW, // shift left logical register word
+    SRLW, // shift right logical register word
+    SRAW, // shift right arithmetic register word
+
+    ADDI,  // add immediate
     SLLI,  // shift left logical immediate
-    SLL,   // shift left logical registers
     SLTI,  // set if register less then immediate
-    SLT,   // set if register less then register
     SLTIU, // set if register less then immediate (unsigned)
-    SLTU,  // set if register less then register (unsigned)
     XORI,  // XOR with immediate
-    XOR,   // XOR with register
     SRLI,  // shift right logical immediate
-    SRL,   // shift right logical register
     SRAI,  // shift right arithmetic immediate
-    SRA,   // shift right arithmetic register
     ORI,   // OR with immediate
-    OR,    // OR with immediate
     ANDI,  // AND with immediate
-    AND,   // AND with immediate
+    JALR,  // jump and link register
+
+    ADDIW, // add immediate word
+    SLLIW, // shift left logical immediate word
+    SRLIW, // shift right logical immediate word
+    SRAIW, // shift right arithmetic immediate word
+
+    SB, // store byte
+    SH, // store halfword
+    SW, // store word
+
+    SD, // store double word
+
+    AUIPC, // add upper intermideate to PC
+    LUI,   // load upper intermideate
+
+    BEQ,  // branch if equal
+    BNE,  // branch if not equal
+    BLT,  // branch if less than
+    BGE,  // branch if greater or equal than
+    BLTU, // branch if less than (unsigned)
+    BGEU, // branch if greater or equal than (unsigned)
+
+    JAL, // jump and link
 }
 
 #[derive(Clone)]
@@ -386,40 +459,41 @@ struct RegisterFile {
     registers: [XLen; RISCV_NUM_OF_REGISTERS],
 }
 
-// enum RegisterName {
-//     x0_zero,
-//     x1_ra,
-//     x2_sp,
-//     x3_gp,
-//     x4_tp,
-//     x5_t0,
-//     x6_t1,
-//     x7_t2,
-//     x8_s0_fp,
-//     x9_s1,
-//     x10_a0,
-//     x11_a1,
-//     x12_a2,
-//     x13_a3,
-//     x14_a4,
-//     x15_a5,
-//     x16_a6,
-//     x17_a7,
-//     x18_s2,
-//     x19_s3,
-//     x20_s4,
-//     x21_s5,
-//     x22_s6,
-//     x23_s7,
-//     x24_s8,
-//     x25_s9,
-//     x26_s10,
-//     x27_s11,
-//     x28_t3,
-//     x29_t4,
-//     x30_t5,
-//     x31_t6,
-// }
+#[allow(non_camel_case_types, dead_code)]
+enum RegisterName {
+    x0_zero,  // always zero
+    x1_ra,    // return address
+    x2_sp,    // stack pointer
+    x3_gp,    // global pointer
+    x4_tp,    // thread pointer
+    x5_t0,    // temporary register 0
+    x6_t1,    // temporary register 1
+    x7_t2,    // temporary register 2
+    x8_s0_fp, // saved register 0 / frame pointer
+    x9_s1,    // saved register 1
+    x10_a0,   // function argument 0 / return value 0
+    x11_a1,   // function argument 1 / return value 1
+    x12_a2,   // function argument 2
+    x13_a3,   // function argument 3
+    x14_a4,   // function argument 4
+    x15_a5,   // function argument 5
+    x16_a6,   // function argument 6
+    x17_a7,   // function argument 7
+    x18_s2,   // saved register 2
+    x19_s3,   // saved register 3
+    x20_s4,   // saved register 4
+    x21_s5,   // saved register 5
+    x22_s6,   // saved register 6
+    x23_s7,   // saved register 7
+    x24_s8,   // saved register 8
+    x25_s9,   // saved register 9
+    x26_s10,  // saved register 10
+    x27_s11,  // saved register 11
+    x28_t3,   // temporary register 3
+    x29_t4,   // temporary register 4
+    x30_t5,   // temporary register 5
+    x31_t6,   // temporary register 6
+}
 
 impl RegisterFile {
     fn read(&self, offset: usize) -> XLen {
@@ -428,7 +502,7 @@ impl RegisterFile {
 
     fn write(&mut self, offset: usize, value: XLen) {
         // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
-        if offset != 0 {
+        if offset != (RegisterName::x0_zero as usize) {
             self.registers[offset] = value;
         } else {
             trace!(
@@ -804,6 +878,7 @@ impl CPU {
         self.context.decoder.funct3 = self.extract_funct3();
 
         match self.context.decoder.opcode {
+            //
             _ => match self.context.decoder.funct3 {
                 _ => {
                     panic!("Unimplemented");
@@ -1014,8 +1089,8 @@ impl CPU {
 
     fn extract_opcode(&self) -> Opcode {
         Opcode::from(
-            (self.context.current_instruction >> BIT_OFFSET_OPCODE)
-                & MASK_OPCODE,
+            ((self.context.current_instruction >> BIT_OFFSET_OPCODE)
+                & MASK_OPCODE) as u8,
         )
     }
 
