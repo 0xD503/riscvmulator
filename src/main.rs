@@ -323,17 +323,17 @@ impl From<InstructionType> for OP_IMM_Funct7 {
 
 #[allow(non_camel_case_types)]
 #[derive(Default, Clone)]
-enum OP_Funct7 {
+enum Funct7 {
     #[default]
     F0 = 0b0000000,
     F1 = 0b0100000,
 }
 
-impl From<InstructionType> for OP_Funct7 {
+impl From<InstructionType> for Funct7 {
     fn from(value: InstructionType) -> Self {
         match value {
-            0b0000000 => OP_Funct7::F0,
-            0b0100000 => OP_Funct7::F1,
+            0b0000000 => Funct7::F0,
+            0b0100000 => Funct7::F1,
 
             _ => {
                 error!("Unknown funct7: {value:#09b}");
@@ -354,6 +354,14 @@ enum OP_Funct3 {
     SRX = 0b101,   //
     OR = 0b110,    //
     AND = 0b111,   //
+}
+
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+enum OP_32_Funct3 {
+    ARITHW = 0b000, //
+    SLLW = 0b001,   //
+    SRXW = 0b101,   //
 }
 
 impl From<InstructionType> for OP_IMM_Funct3 {
@@ -387,6 +395,21 @@ impl From<InstructionType> for OP_Funct3 {
             0b101 => OP_Funct3::SRX,
             0b110 => OP_Funct3::OR,
             0b111 => OP_Funct3::AND,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+impl From<InstructionType> for OP_32_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => OP_32_Funct3::ARITHW,
+            0b001 => OP_32_Funct3::SLLW,
+            0b010 => OP_32_Funct3::SRXW,
 
             _ => {
                 error!("Unknown funct3: {value:#05b}");
@@ -540,7 +563,7 @@ struct Decoder {
 
     funct3: InstructionType,
     i_funct7: OP_IMM_Funct7,
-    r_funct7: OP_Funct7,
+    r_funct7: Funct7,
 
     shamt: InstructionType,
 
@@ -750,11 +773,11 @@ impl CPU {
         match self.context.decoder.opcode {
             Opcode::OP => match OP_Funct3::from(self.context.decoder.funct3) {
                 OP_Funct3::ARITH => match self.context.decoder.r_funct7 {
-                    OP_Funct7::F0 => {
+                    Funct7::F0 => {
                         self.context.decoder.executable_instruction =
                             ExecutableInstruction::ADD;
                     }
-                    OP_Funct7::F1 => {
+                    Funct7::F1 => {
                         self.context.decoder.executable_instruction =
                             ExecutableInstruction::SUB;
                     }
@@ -776,11 +799,11 @@ impl CPU {
                         ExecutableInstruction::XOR;
                 }
                 OP_Funct3::SRX => match self.context.decoder.r_funct7 {
-                    OP_Funct7::F0 => {
+                    Funct7::F0 => {
                         self.context.decoder.executable_instruction =
                             ExecutableInstruction::SRL;
                     }
-                    OP_Funct7::F1 => {
+                    Funct7::F1 => {
                         self.context.decoder.executable_instruction =
                             ExecutableInstruction::SRA;
                     }
@@ -794,6 +817,36 @@ impl CPU {
                         ExecutableInstruction::AND;
                 }
             },
+            Opcode::OP_32 => {
+                match OP_32_Funct3::from(self.context.decoder.funct3) {
+                    OP_32_Funct3::ARITHW => {
+                        match self.context.decoder.r_funct7 {
+                            Funct7::F0 => {
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::ADDW;
+                            }
+                            Funct7::F1 => {
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::SUBW;
+                            }
+                        }
+                    }
+                    OP_32_Funct3::SLLW => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SLLW;
+                    }
+                    OP_32_Funct3::SRXW => match self.context.decoder.r_funct7 {
+                        Funct7::F0 => {
+                            self.context.decoder.executable_instruction =
+                                ExecutableInstruction::SRLW;
+                        }
+                        Funct7::F1 => {
+                            self.context.decoder.executable_instruction =
+                                ExecutableInstruction::SRAW;
+                        }
+                    },
+                }
+            }
 
             _ => {
                 error!("unreachable!");
@@ -1486,7 +1539,7 @@ impl CPU {
         )
     }
 
-    fn extract_r_funct7(&self) -> OP_Funct7 {
+    fn extract_r_funct7(&self) -> Funct7 {
         From::from(
             (self.context.current_instruction >> BIT_OFFSET_R_FUNCT7)
                 & MASK_R_FUNCT7,
