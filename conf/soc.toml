@@ -1,2 +1,5 @@
+[soc.cpu]
+cores_num = 1
+
 [soc.memory]
 size_bytes = 65536
