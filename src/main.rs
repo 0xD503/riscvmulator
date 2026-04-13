@@ -12,7 +12,7 @@ type SignedXLen = i64;
 type UnsignedXLen = u64;
 type XLen32 = u32;
 type SignedXLen32 = i32;
-type UnsignedXLen32 = u32;
+// type UnsignedXLen32 = u32;
 // type XLen = u32;
 // type SignedXLen = i32;
 // type UnsignedXLen = u32;
@@ -62,7 +62,8 @@ const BIT_OFFSET_R_FUNCT7: usize = 25;
 const MASK_R_FUNCT7: InstructionType = 0x7F;
 
 const BIT_OFFSET_SHAMT: usize = 20;
-const MASK_SHAMT: InstructionType = 0x1F;
+//const MASK_SHAMT: InstructionType = 0x1F;
+const MASK_SHAMT: InstructionType = XLen::BITS - 1;
 
 const BIT_OFFSET_IMM_11_0: usize = 20;
 const BIT_OFFSET_IMM_11_0_FINAL: usize = 0;
@@ -657,10 +658,14 @@ enum RegisterName {
 
 impl RegisterFile {
     fn read(&self, offset: usize) -> XLen {
+        trace!("Reading register file...");
+
         self.registers[offset]
     }
 
     fn write(&mut self, offset: usize, value: XLen) {
+        trace!("Writing register file...");
+
         // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
         if offset != (RegisterName::x0_zero as usize) {
             self.registers[offset] = value;
@@ -732,6 +737,7 @@ struct Decoder {
     // j_imm_0: InstructionType,
 }
 
+#[allow(non_snake_case)]
 #[derive(Clone)]
 struct Context {
     PC: XLen,
@@ -912,40 +918,86 @@ impl CPU {
                             ExecutableInstruction::SUB;
                     }
                 },
-                OP_Funct3::SLL => {
-                    self.context.decoder.executable_instruction =
-                        ExecutableInstruction::SLL;
-                }
-                OP_Funct3::SLT => {
-                    self.context.decoder.executable_instruction =
-                        ExecutableInstruction::SLT;
-                }
-                OP_Funct3::SLTU => {
-                    self.context.decoder.executable_instruction =
-                        ExecutableInstruction::SLTU;
-                }
-                OP_Funct3::XOR => {
-                    self.context.decoder.executable_instruction =
-                        ExecutableInstruction::XOR;
-                }
-                OP_Funct3::SRX => match self.context.decoder.r_funct7 {
+                OP_Funct3::SLL => match self.context.decoder.r_funct7 {
                     Funct7::F0 => {
+                        self.context.decoder.shamt = self.extract_shamt();
                         self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SRL;
+                            ExecutableInstruction::SLL;
                     }
-                    Funct7::F1 => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SRA;
+
+                    _ => {
+                        error!("unreachable!");
+                        unreachable!("unreachable!");
                     }
                 },
-                OP_Funct3::OR => {
-                    self.context.decoder.executable_instruction =
-                        ExecutableInstruction::OR;
+                OP_Funct3::SLT => match self.context.decoder.r_funct7 {
+                    Funct7::F0 => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SLT;
+                    }
+
+                    _ => {
+                        error!("unreachable!");
+                        unreachable!("unreachable!");
+                    }
+                },
+                OP_Funct3::SLTU => match self.context.decoder.r_funct7 {
+                    Funct7::F0 => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::SLTU;
+                    }
+
+                    _ => {
+                        error!("unreachable!");
+                        unreachable!("unreachable!");
+                    }
+                },
+                OP_Funct3::XOR => match self.context.decoder.r_funct7 {
+                    Funct7::F0 => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::XOR;
+                    }
+
+                    _ => {
+                        error!("unreachable!");
+                        unreachable!("unreachable!");
+                    }
+                },
+                OP_Funct3::SRX => {
+                    self.context.decoder.shamt = self.extract_shamt();
+                    match self.context.decoder.r_funct7 {
+                        Funct7::F0 => {
+                            self.context.decoder.executable_instruction =
+                                ExecutableInstruction::SRL;
+                        }
+                        Funct7::F1 => {
+                            self.context.decoder.executable_instruction =
+                                ExecutableInstruction::SRA;
+                        }
+                    }
                 }
-                OP_Funct3::AND => {
-                    self.context.decoder.executable_instruction =
-                        ExecutableInstruction::AND;
-                }
+                OP_Funct3::OR => match self.context.decoder.r_funct7 {
+                    Funct7::F0 => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::OR;
+                    }
+
+                    _ => {
+                        error!("unreachable!");
+                        unreachable!("unreachable!");
+                    }
+                },
+                OP_Funct3::AND => match self.context.decoder.r_funct7 {
+                    Funct7::F0 => {
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::AND;
+                    }
+
+                    _ => {
+                        error!("unreachable!");
+                        unreachable!("unreachable!");
+                    }
+                },
             },
             Opcode::OP_32 => {
                 match OP_32_Funct3::from(self.context.decoder.funct3) {
@@ -962,19 +1014,23 @@ impl CPU {
                         }
                     }
                     OP_32_Funct3::SLLW => {
+                        self.context.decoder.shamt = self.extract_shamt();
                         self.context.decoder.executable_instruction =
                             ExecutableInstruction::SLLW;
                     }
-                    OP_32_Funct3::SRXW => match self.context.decoder.r_funct7 {
-                        Funct7::F0 => {
-                            self.context.decoder.executable_instruction =
-                                ExecutableInstruction::SRLW;
+                    OP_32_Funct3::SRXW => {
+                        self.context.decoder.shamt = self.extract_shamt();
+                        match self.context.decoder.r_funct7 {
+                            Funct7::F0 => {
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::SRLW;
+                            }
+                            Funct7::F1 => {
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::SRAW;
+                            }
                         }
-                        Funct7::F1 => {
-                            self.context.decoder.executable_instruction =
-                                ExecutableInstruction::SRAW;
-                        }
-                    },
+                    }
                 }
             }
 
@@ -1101,6 +1157,7 @@ impl CPU {
                             ExecutableInstruction::ADDIW
                     }
                     OP_IMM_32_Funct3::SLLIW => {
+                        self.context.decoder.shamt = self.extract_shamt();
                         match self.context.decoder.i_funct7 {
                             OP_IMM_Funct7::SXLI => {
                                 // funct3 equals SLLIW
@@ -1115,6 +1172,7 @@ impl CPU {
                         }
                     }
                     OP_IMM_32_Funct3::SRXIW => {
+                        self.context.decoder.shamt = self.extract_shamt();
                         match self.context.decoder.i_funct7 {
                             OP_IMM_Funct7::SXLI => {
                                 // funct3 equals SRXIW
@@ -1736,64 +1794,80 @@ impl CPU {
     fn instruction_add_immediate_word(&mut self) {
         trace!("Executing ADDIW...");
 
-        let result32 = ((self.context.decoder.source_register_1 as XLen32)
-            + self.context.decoder.immediate);
+        let result32 = (self.context.decoder.source_register_1 as XLen32)
+            + self.context.decoder.immediate;
         self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_left_logical_immediate_word(&mut self) {
         trace!("Executing SLLIW...");
 
-        //
-        panic!("TODO: unimplemented");
+        let result32 = (self.context.decoder.source_register_1 as XLen32)
+            << self.context.decoder.immediate;
+        self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_logical_immediate_word(&mut self) {
         trace!("Executing SRLIW...");
 
-        panic!("TODO: unimplemented");
+        let result32 = (self.context.decoder.source_register_1 as XLen32)
+            >> self.context.decoder.immediate;
+        self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_arith_immediate_word(&mut self) {
         trace!("Executing SRAIW...");
 
-        panic!("TODO: unimplemented");
+        let result32 = (self.context.decoder.source_register_1 as SignedXLen32)
+            >> self.context.decoder.immediate;
+        self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_store_double_word(&mut self) {
         trace!("Executing SD...");
 
+        //
         panic!("TODO: unimplemented");
     }
 
     fn instruction_add_word(&mut self) {
         trace!("Executing ADDW...");
 
-        panic!("TODO: unimplemented");
+        let result32 = self.context.decoder.source_register_1 as SignedXLen32
+            + self.context.decoder.source_register_2 as SignedXLen32;
+        self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_sub_word(&mut self) {
         trace!("Executing SUBW...");
 
-        panic!("TODO: unimplemented");
+        let result32 = self.context.decoder.source_register_1 as SignedXLen32
+            - self.context.decoder.source_register_2 as SignedXLen32;
+        self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_left_logical_word(&mut self) {
         trace!("Executing SLLW...");
 
-        panic!("TODO: unimplemented");
+        let result32 = (self.context.decoder.source_register_1 as XLen32)
+            << self.context.decoder.shamt;
+        self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_logical_word(&mut self) {
         trace!("Executing SRLW...");
 
-        panic!("TODO: unimplemented");
+        let result32 = (self.context.decoder.source_register_1 as XLen32)
+            >> self.context.decoder.shamt;
+        self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_arith_word(&mut self) {
         trace!("Executing SRAW...");
 
-        panic!("TODO: unimplemented");
+        let result32 = (self.context.decoder.source_register_1 as SignedXLen32)
+            >> self.context.decoder.shamt;
+        self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn memory_operation(&mut self) {
