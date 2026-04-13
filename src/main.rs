@@ -17,6 +17,17 @@ type SignedXLen32 = i32;
 // type SignedXLen = i32;
 // type UnsignedXLen = u32;
 
+type Byte = u8;
+type SignedByte = i8;
+type HalfWord = u16;
+type SignedHalfWord = i16;
+type Word = u32;
+type SignedWord = i32;
+type DoubleWord = u64;
+type SignedDoubleWord = i8;
+// type QuadWord = u128;
+// type SignedQuadWord = i128;
+
 // // type SignedImmediate = i64;
 // // type UnsignedImmediate = u64;
 // // type SignedImmediateCastToRegister = SignedXLen;
@@ -741,8 +752,9 @@ struct Decoder {
 #[derive(Default, Clone)]
 struct ExecutionContext {
     result: XLen,
-    branch_target_adress: XLen,
-    jump_target_adress: XLen,
+    branch_target_address: XLen,
+    jump_target_address: XLen,
+    memory_address: XLen,
     need_to_branch: bool,
 }
 
@@ -762,40 +774,55 @@ struct CPU {
     context: Context,
 }
 
-struct Memory {
-    byte_array: Vec<u8>,
+trait Bus<AddrType, MemoryUnit> {
+    // fn read_byte(&self, address: XLen) -> Byte;
+    // fn read_half_word(&self, address: XLen) -> HalfWord;
+    // fn read_word(&self, address: XLen) -> Word;
+    // fn read_double_word(&self, address: XLen) -> DoubleWord;
+    // fn read_quad_word(&self, address: XLen) -> QuadWord;
+
+    fn read(&self, address: AddrType) -> MemoryUnit;
+
+    // fn read_data(&self, address: XLen, size: usize) -> Vec<Byte>;
+
+    // fn write_byte(&self, address: XLen, value: Byte);
+    // fn write_half_word(&self, address: XLen, value: HalfWord);
+    // fn write_word(&self, address: XLen, value: Word);
+    // fn write_double_word(&self, address: XLen, value: DoubleWord);
+    // fn write_quad_word(&self, address: XLen, value: QuadWord);
+
+    fn write(&self, address: AddrType, value: MemoryUnit);
+
+    // fn write_data(&mut self, address: XLen, data: Vec<Byte>);
 }
 
-trait Bus {
-    fn read_byte(&self, address: XLen) -> u8;
-    fn read_half_word(&self, address: XLen) -> u16;
-    fn read_word(&self, address: XLen) -> u32;
-    fn read_double_word(&self, address: XLen) -> u64;
-    fn read_quad_word(&self, address: XLen) -> u128;
+struct Memory {
+    byte_array: Vec<Byte>,
+}
 
-    fn read_reg(&self, address: XLen) -> XLen;
+struct SystemBus {
+    memory: Memory,
+}
 
-    fn read_data(&self, address: XLen, size: usize) -> Vec<u8>;
-
-    fn write_byte(&self, address: XLen, value: u8);
-    fn write_half_word(&self, address: XLen, value: u16);
-    fn write_word(&self, address: XLen, value: u32);
-    fn write_double_word(&self, address: XLen, value: u64);
-    fn write_quad_word(&self, address: XLen, value: u128);
-
-    fn write_reg(&self, address: XLen, value: XLen);
-
-    fn write_data(&mut self, address: XLen, data: Vec<u8>);
+impl Bus<XLen, XLen> for SystemBus {
+    fn read(&self, address: XLen) -> XLen {
+        // self.memory.read
+        panic!("TODO: unimplemented: segregated address space for memory/IO");
+    }
+    fn write(&self, address: XLen, value: XLen) {
+        // self.memory.write
+        panic!("TODO: unimplemented: segregated address space for memory/IO");
+    }
 }
 
 struct SoC {
     cpu: CPU,
-    memory: Memory,
+    bus: SystemBus,
 }
 
 impl SoC {
     fn fetch(&mut self) {
-        let bytes = self.memory.byte_array[self.cpu.context.PC as usize
+        let bytes = self.bus.memory.byte_array[self.cpu.context.PC as usize
             ..self.cpu.context.PC as usize + size_of::<InstructionType>()]
             .try_into()
             .unwrap();
@@ -821,9 +848,9 @@ impl SoC {
         self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
 
         // fill memory with NOP's
-        self.memory.byte_array = [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec();
+        self.bus.memory.byte_array = [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec();
         for i in (0..MEM_SIZE).step_by(PC_STEP as usize) {
-            self.memory.byte_array[i] = Opcode::OP_IMM as u8;
+            self.bus.memory.byte_array[i] = Opcode::OP_IMM as Byte;
         }
     }
 
@@ -833,7 +860,7 @@ impl SoC {
         self.fetch();
         self.cpu.decode();
         self.cpu.execute();
-        self.cpu.memory_operation();
+        self.cpu.memory_operation(&mut self.bus);
         self.cpu.write_back();
 
         // step PC
@@ -1560,18 +1587,33 @@ impl CPU {
     fn instruction_load_byte(&mut self) {
         trace!("Executing LB...");
 
+        // self.context.execution.memory_address =
+        //     ((self.context.decoder.source_register_1
+        //         + (self.context.decoder.immediate as SignedXLen as XLen))
+        //         & (Byte::MAX as XLen)) as SignedByte as SignedXLen
+        //         as XLen;
         panic!("TODO: unimplemented");
     }
 
     fn instruction_load_half(&mut self) {
         trace!("Executing LH...");
 
+        // self.context.execution.memory_address =
+        //     ((self.context.decoder.source_register_1
+        //         + (self.context.decoder.immediate as SignedXLen as XLen))
+        //         & (HalfWord::MAX as XLen)) as SignedHalfWord
+        //         as SignedXLen as XLen;
         panic!("TODO: unimplemented");
     }
 
     fn instruction_load_word(&mut self) {
         trace!("Executing LW...");
 
+        // self.context.execution.memory_address =
+        //     ((self.context.decoder.source_register_1
+        //         + (self.context.decoder.immediate as SignedXLen as XLen))
+        //         & (Word::MAX as XLen)) as SignedWord as SignedXLen
+        //         as XLen;
         panic!("TODO: unimplemented");
     }
 
@@ -1784,7 +1826,7 @@ impl CPU {
         if self.context.decoder.source_register_1
             == self.context.decoder.source_register_2
         {
-            self.context.execution.branch_target_adress = self.context.PC
+            self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
@@ -1799,7 +1841,7 @@ impl CPU {
         if self.context.decoder.source_register_1
             != self.context.decoder.source_register_2
         {
-            self.context.execution.branch_target_adress = self.context.PC
+            self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
@@ -1814,7 +1856,7 @@ impl CPU {
         if (self.context.decoder.source_register_1 as SignedXLen)
             < (self.context.decoder.source_register_2 as SignedXLen)
         {
-            self.context.execution.branch_target_adress = self.context.PC
+            self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
@@ -1829,7 +1871,7 @@ impl CPU {
         if (self.context.decoder.source_register_1 as SignedXLen)
             >= (self.context.decoder.source_register_2 as SignedXLen)
         {
-            self.context.execution.branch_target_adress = self.context.PC
+            self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
@@ -1844,7 +1886,7 @@ impl CPU {
         if (self.context.decoder.source_register_1 as UnsignedXLen)
             < (self.context.decoder.source_register_2 as UnsignedXLen)
         {
-            self.context.execution.branch_target_adress = self.context.PC
+            self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
@@ -1859,7 +1901,7 @@ impl CPU {
         if (self.context.decoder.source_register_1 as UnsignedXLen)
             >= (self.context.decoder.source_register_2 as UnsignedXLen)
         {
-            self.context.execution.branch_target_adress = self.context.PC
+            self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
@@ -1871,7 +1913,7 @@ impl CPU {
     fn instruction_jalr(&mut self) {
         trace!("Executing JALR...");
 
-        self.context.execution.jump_target_adress =
+        self.context.execution.jump_target_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedXLen as XLen);
         self.context.execution.result = self.context.PC + PC_STEP;
@@ -1883,7 +1925,7 @@ impl CPU {
     fn instruction_jal(&mut self) {
         trace!("Executing JAL...");
 
-        self.context.execution.jump_target_adress = self.context.PC
+        self.context.execution.jump_target_address = self.context.PC
             + (self.context.decoder.immediate as SignedXLen as XLen);
         self.context.execution.result = self.context.PC + PC_STEP;
         panic!(
@@ -1982,14 +2024,16 @@ impl CPU {
         self.context.execution.result = result32 as SignedXLen as XLen;
     }
 
-    fn memory_operation(&mut self) {
+    fn memory_operation(&mut self, bus: &mut SystemBus) {
         if self.context.decoder.need_to_read_memory {
             trace!("Executing memory read...");
-            //
-            panic!("TODO: unimplemented");
+
+            self.context.execution.result =
+                bus.read(self.context.execution.memory_address);
         } else if self.context.decoder.need_to_write_memory {
             trace!("Executing memory write...");
-            //
+
+            // bus.write(address, value);
             panic!("TODO: unimplemented");
         }
     }
@@ -2006,12 +2050,12 @@ impl CPU {
             if self.context.decoder.need_to_jump {
                 trace!("Updating PC to JTA...");
 
-                self.context.PC = self.context.execution.jump_target_adress;
+                self.context.PC = self.context.execution.jump_target_address;
             }
         } else if self.context.execution.need_to_branch {
             trace!("Updating PC to BTA...");
 
-            self.context.PC = self.context.execution.branch_target_adress;
+            self.context.PC = self.context.execution.branch_target_address;
         }
         panic!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -2361,14 +2405,17 @@ fn main() {
                 },
                 execution: ExecutionContext {
                     result: XLen::MIN,
-                    branch_target_adress: PC_RESET_VALUE,
-                    jump_target_adress: PC_RESET_VALUE,
+                    branch_target_address: PC_RESET_VALUE,
+                    jump_target_address: PC_RESET_VALUE,
+                    memory_address: XLen::MIN,
                     need_to_branch: false,
                 },
             },
         },
-        memory: Memory {
-            byte_array: [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec(),
+        bus: SystemBus {
+            memory: Memory {
+                byte_array: [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec(),
+            },
         },
     };
 
