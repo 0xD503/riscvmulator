@@ -737,14 +737,21 @@ struct Decoder {
     // j_imm_0: InstructionType,
 }
 
+#[derive(Default, Clone)]
+struct ExecutionContext {
+    result: XLen,
+    branch_target_adress: XLen,
+    need_to_branch: bool,
+}
+
 #[allow(non_snake_case)]
 #[derive(Clone)]
 struct Context {
-    PC: XLen,
     register_file: RegisterFile,
+    PC: XLen,
     current_instruction: InstructionType,
     decoder: Decoder,
-    result: XLen,
+    execution_context: ExecutionContext,
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -903,6 +910,7 @@ impl CPU {
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
+        self.context.execution_context.need_to_branch = false;
         self.context.decoder.funct3 = self.extract_funct3();
         self.context.decoder.r_funct7 = self.extract_r_funct7();
 
@@ -1051,6 +1059,7 @@ impl CPU {
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
+        self.context.execution_context.need_to_branch = false;
         self.context.decoder.funct3 = self.extract_funct3();
 
         match self.context.decoder.opcode {
@@ -1213,6 +1222,7 @@ impl CPU {
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = true;
         self.context.decoder.need_to_write_back = false;
+        self.context.execution_context.need_to_branch = false;
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_4_0();
@@ -1259,6 +1269,8 @@ impl CPU {
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = false;
+        // reset branch flag, will be updated during execution stage
+        self.context.execution_context.need_to_branch = false;
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_4_1();
@@ -1312,6 +1324,7 @@ impl CPU {
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
+        self.context.execution_context.need_to_branch = false;
 
         // extract immediate
         self.context.decoder.immediate =
@@ -1340,6 +1353,8 @@ impl CPU {
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
+        // reset branch flag, will be updated during execution stage
+        self.context.execution_context.need_to_branch = false;
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_10_1();
@@ -1544,61 +1559,65 @@ impl CPU {
     fn instruction_addi(&mut self) {
         trace!("Executing ADDI...");
 
-        self.context.result = self.context.decoder.source_register_1
-            + self.context.decoder.immediate as SignedXLen as XLen;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                + self.context.decoder.immediate as SignedXLen as XLen;
     }
 
     fn instruction_slli(&mut self) {
         trace!("Executing SLLI...");
 
-        self.context.result = self.context.decoder.source_register_1
-            << self.context.decoder.shamt;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                << self.context.decoder.shamt;
     }
 
     fn instruction_slti(&mut self) {
         trace!("Executing SLTI...");
 
-        self.context.result = if (self.context.decoder.source_register_1
-            as SignedXLen)
-            < (self.context.decoder.immediate as SignedXLen)
-        {
-            1
-        } else {
-            0
-        };
+        self.context.execution_context.result =
+            if (self.context.decoder.source_register_1 as SignedXLen)
+                < (self.context.decoder.immediate as SignedXLen)
+            {
+                1
+            } else {
+                0
+            };
     }
 
     fn instruction_sltiu(&mut self) {
         trace!("Executing SLTIU...");
 
-        self.context.result = if (self.context.decoder.source_register_1
-            as UnsignedXLen)
-            < (self.context.decoder.immediate as UnsignedXLen)
-        {
-            1
-        } else {
-            0
-        };
+        self.context.execution_context.result =
+            if (self.context.decoder.source_register_1 as UnsignedXLen)
+                < (self.context.decoder.immediate as UnsignedXLen)
+            {
+                1
+            } else {
+                0
+            };
     }
 
     fn instruction_xori(&mut self) {
         trace!("Executing XORI...");
 
-        self.context.result = self.context.decoder.source_register_1
-            ^ self.context.decoder.immediate as SignedXLen as XLen;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                ^ self.context.decoder.immediate as SignedXLen as XLen;
     }
 
     fn instruction_srli(&mut self) {
         trace!("Executing SRLI...");
 
-        self.context.result = self.context.decoder.source_register_1
-            >> self.context.decoder.shamt;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                >> self.context.decoder.shamt;
     }
 
     fn instruction_srai(&mut self) {
         trace!("Executing SRAI...");
 
-        self.context.result =
+        self.context.execution_context.result =
             ((self.context.decoder.source_register_1 as SignedXLen)
                 >> self.context.decoder.shamt) as XLen;
     }
@@ -1606,21 +1625,23 @@ impl CPU {
     fn instruction_ori(&mut self) {
         trace!("Executing ORI...");
 
-        self.context.result = self.context.decoder.source_register_1
-            | self.context.decoder.immediate as SignedXLen as XLen;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                | self.context.decoder.immediate as SignedXLen as XLen;
     }
 
     fn instruction_andi(&mut self) {
         trace!("Executing ANDI...");
 
-        self.context.result = self.context.decoder.source_register_1
-            & self.context.decoder.immediate as SignedXLen as XLen;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                & self.context.decoder.immediate as SignedXLen as XLen;
     }
 
     fn instruction_auipc(&mut self) {
         trace!("Executing AUIPC...");
 
-        self.context.result = self.context.PC
+        self.context.execution_context.result = self.context.PC
             + self.context.decoder.immediate as SignedXLen as XLen;
     }
 
@@ -1645,67 +1666,73 @@ impl CPU {
     fn instruction_add(&mut self) {
         trace!("Executing ADD...");
 
-        self.context.result = self.context.decoder.source_register_1
-            + self.context.decoder.source_register_2;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                + self.context.decoder.source_register_2;
     }
 
     fn instruction_sub(&mut self) {
         trace!("Executing SUB...");
 
-        self.context.result = self.context.decoder.source_register_1
-            - self.context.decoder.source_register_2;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                - self.context.decoder.source_register_2;
     }
 
     fn instruction_sll(&mut self) {
         trace!("Executing SLL...");
 
-        self.context.result = self.context.decoder.source_register_1
-            << self.context.decoder.source_register_2;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                << self.context.decoder.source_register_2;
     }
 
     fn instruction_slt(&mut self) {
         trace!("Executing SLT...");
 
-        self.context.result = if (self.context.decoder.source_register_1
-            as SignedXLen)
-            < (self.context.decoder.source_register_2 as SignedXLen)
-        {
-            1
-        } else {
-            0
-        }
+        self.context.execution_context.result =
+            if (self.context.decoder.source_register_1 as SignedXLen)
+                < (self.context.decoder.source_register_2 as SignedXLen)
+            {
+                1
+            } else {
+                0
+            }
     }
 
     fn instruction_sltu(&mut self) {
         trace!("Executing SLTU...");
 
-        self.context.result = if self.context.decoder.source_register_1
-            < self.context.decoder.source_register_2
-        {
-            1
-        } else {
-            0
-        }
+        self.context.execution_context.result =
+            if self.context.decoder.source_register_1
+                < self.context.decoder.source_register_2
+            {
+                1
+            } else {
+                0
+            }
     }
 
     fn instruction_xor(&mut self) {
         trace!("Executing XOR...");
 
-        self.context.result = self.context.decoder.source_register_1
-            ^ self.context.decoder.source_register_2;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                ^ self.context.decoder.source_register_2;
     }
 
     fn instruction_srl(&mut self) {
         trace!("Executing SRL...");
 
-        self.context.result = self.context.decoder.source_register_1
-            >> self.context.decoder.source_register_2;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                >> self.context.decoder.source_register_2;
     }
 
     fn instruction_sra(&mut self) {
         trace!("Executing SRA...");
 
-        self.context.result =
+        self.context.execution_context.result =
             ((self.context.decoder.source_register_1 as SignedXLen)
                 >> self.context.decoder.source_register_2) as XLen;
     }
@@ -1713,58 +1740,102 @@ impl CPU {
     fn instruction_or(&mut self) {
         trace!("Executing OR...");
 
-        self.context.result = self.context.decoder.source_register_1
-            | self.context.decoder.source_register_2;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                | self.context.decoder.source_register_2;
     }
 
     fn instruction_and(&mut self) {
         trace!("Executing AND...");
 
-        self.context.result = self.context.decoder.source_register_1
-            & self.context.decoder.source_register_2;
+        self.context.execution_context.result =
+            self.context.decoder.source_register_1
+                & self.context.decoder.source_register_2;
     }
 
     fn instruction_lui(&mut self) {
         trace!("Executing LUI...");
 
-        self.context.result =
+        self.context.execution_context.result =
             self.context.decoder.immediate as SignedXLen as XLen;
     }
 
     fn instruction_beq(&mut self) {
         trace!("Executing BEQ...");
 
-        panic!("TODO: unimplemented");
+        if self.context.decoder.source_register_1
+            == self.context.decoder.source_register_2
+        {
+            self.context.execution_context.branch_target_adress =
+                self.context.PC
+                    + (self.context.decoder.immediate as SignedXLen as XLen);
+            self.context.execution_context.need_to_branch = true;
+        }
     }
 
     fn instruction_bne(&mut self) {
         trace!("Executing BNE...");
 
-        panic!("TODO: unimplemented");
+        if self.context.decoder.source_register_1
+            != self.context.decoder.source_register_2
+        {
+            self.context.execution_context.branch_target_adress =
+                self.context.PC
+                    + (self.context.decoder.immediate as SignedXLen as XLen);
+            self.context.execution_context.need_to_branch = true;
+        }
     }
 
     fn instruction_blt(&mut self) {
         trace!("Executing BLT...");
 
-        panic!("TODO: unimplemented");
+        if (self.context.decoder.source_register_1 as SignedXLen)
+            < (self.context.decoder.source_register_2 as SignedXLen)
+        {
+            self.context.execution_context.branch_target_adress =
+                self.context.PC
+                    + (self.context.decoder.immediate as SignedXLen as XLen);
+            self.context.execution_context.need_to_branch = true;
+        }
     }
 
     fn instruction_bge(&mut self) {
         trace!("Executing BGE...");
 
-        panic!("TODO: unimplemented");
+        if (self.context.decoder.source_register_1 as SignedXLen)
+            >= (self.context.decoder.source_register_2 as SignedXLen)
+        {
+            self.context.execution_context.branch_target_adress =
+                self.context.PC
+                    + (self.context.decoder.immediate as SignedXLen as XLen);
+            self.context.execution_context.need_to_branch = true;
+        }
     }
 
     fn instruction_bltu(&mut self) {
         trace!("Executing BLTU...");
 
-        panic!("TODO: unimplemented");
+        if (self.context.decoder.source_register_1 as UnsignedXLen)
+            < (self.context.decoder.source_register_2 as UnsignedXLen)
+        {
+            self.context.execution_context.branch_target_adress =
+                self.context.PC
+                    + (self.context.decoder.immediate as SignedXLen as XLen);
+            self.context.execution_context.need_to_branch = true;
+        }
     }
 
     fn instruction_bgeu(&mut self) {
         trace!("Executing BGEU...");
 
-        panic!("TODO: unimplemented");
+        if (self.context.decoder.source_register_1 as UnsignedXLen)
+            >= (self.context.decoder.source_register_2 as UnsignedXLen)
+        {
+            self.context.execution_context.branch_target_adress =
+                self.context.PC
+                    + (self.context.decoder.immediate as SignedXLen as XLen);
+            self.context.execution_context.need_to_branch = true;
+        }
     }
 
     fn instruction_jalr(&mut self) {
@@ -1796,7 +1867,7 @@ impl CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             + self.context.decoder.immediate;
-        self.context.result = result32 as SignedXLen as XLen;
+        self.context.execution_context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_left_logical_immediate_word(&mut self) {
@@ -1804,7 +1875,7 @@ impl CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             << self.context.decoder.immediate;
-        self.context.result = result32 as SignedXLen as XLen;
+        self.context.execution_context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_logical_immediate_word(&mut self) {
@@ -1812,7 +1883,7 @@ impl CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             >> self.context.decoder.immediate;
-        self.context.result = result32 as SignedXLen as XLen;
+        self.context.execution_context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_arith_immediate_word(&mut self) {
@@ -1820,7 +1891,7 @@ impl CPU {
 
         let result32 = (self.context.decoder.source_register_1 as SignedXLen32)
             >> self.context.decoder.immediate;
-        self.context.result = result32 as SignedXLen as XLen;
+        self.context.execution_context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_store_double_word(&mut self) {
@@ -1835,7 +1906,7 @@ impl CPU {
 
         let result32 = self.context.decoder.source_register_1 as SignedXLen32
             + self.context.decoder.source_register_2 as SignedXLen32;
-        self.context.result = result32 as SignedXLen as XLen;
+        self.context.execution_context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_sub_word(&mut self) {
@@ -1843,7 +1914,7 @@ impl CPU {
 
         let result32 = self.context.decoder.source_register_1 as SignedXLen32
             - self.context.decoder.source_register_2 as SignedXLen32;
-        self.context.result = result32 as SignedXLen as XLen;
+        self.context.execution_context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_left_logical_word(&mut self) {
@@ -1851,7 +1922,7 @@ impl CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             << self.context.decoder.shamt;
-        self.context.result = result32 as SignedXLen as XLen;
+        self.context.execution_context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_logical_word(&mut self) {
@@ -1859,7 +1930,7 @@ impl CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             >> self.context.decoder.shamt;
-        self.context.result = result32 as SignedXLen as XLen;
+        self.context.execution_context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_arith_word(&mut self) {
@@ -1867,7 +1938,7 @@ impl CPU {
 
         let result32 = (self.context.decoder.source_register_1 as SignedXLen32)
             >> self.context.decoder.shamt;
-        self.context.result = result32 as SignedXLen as XLen;
+        self.context.execution_context.result = result32 as SignedXLen as XLen;
     }
 
     fn memory_operation(&mut self) {
@@ -1887,7 +1958,7 @@ impl CPU {
             trace!("Executing register write back...");
             self.context.register_file.write(
                 self.context.decoder.destination_register_index,
-                self.context.result,
+                self.context.execution_context.result,
             );
         }
     }
@@ -2233,7 +2304,11 @@ fn main() {
                 decoder: Decoder {
                     ..Default::default()
                 },
-                result: Default::default(),
+                execution_context: ExecutionContext {
+                    result: XLen::MIN,
+                    branch_target_adress: PC_RESET_VALUE,
+                    need_to_branch: false,
+                },
             },
         },
         memory: Memory {
