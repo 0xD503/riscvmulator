@@ -1440,7 +1440,7 @@ impl CPU {
             //
             _ => match self.context.decoder.funct3 {
                 _ => {
-                    panic!("TODO: unimplemented");
+                    todo!("TODO: unimplemented");
                 }
             },
         };
@@ -1522,9 +1522,9 @@ impl CPU {
             // U_23
             ExecutableInstruction::AUIPC => self.instruction_auipc(),
             // S_35
-            ExecutableInstruction::SB => self.instruction_sb(),
-            ExecutableInstruction::SH => self.instruction_sh(),
-            ExecutableInstruction::SW => self.instruction_sw(),
+            ExecutableInstruction::SB => self.instruction_store_byte(),
+            ExecutableInstruction::SH => self.instruction_store_half_word(),
+            ExecutableInstruction::SW => self.instruction_store_word(),
             // R_51
             ExecutableInstruction::ADD => self.instruction_add(),
             ExecutableInstruction::SUB => self.instruction_sub(),
@@ -1587,46 +1587,46 @@ impl CPU {
     fn instruction_load_byte(&mut self) {
         trace!("Executing LB...");
 
-        // self.context.execution.memory_address =
-        //     ((self.context.decoder.source_register_1
-        //         + (self.context.decoder.immediate as SignedXLen as XLen))
-        //         & (Byte::MAX as XLen)) as SignedByte as SignedXLen
-        //         as XLen;
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen);
+        todo!("TODO: unimplemented");
     }
 
     fn instruction_load_half(&mut self) {
         trace!("Executing LH...");
 
-        // self.context.execution.memory_address =
-        //     ((self.context.decoder.source_register_1
-        //         + (self.context.decoder.immediate as SignedXLen as XLen))
-        //         & (HalfWord::MAX as XLen)) as SignedHalfWord
-        //         as SignedXLen as XLen;
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen);
+        todo!("TODO: unimplemented");
     }
 
     fn instruction_load_word(&mut self) {
         trace!("Executing LW...");
 
-        // self.context.execution.memory_address =
-        //     ((self.context.decoder.source_register_1
-        //         + (self.context.decoder.immediate as SignedXLen as XLen))
-        //         & (Word::MAX as XLen)) as SignedWord as SignedXLen
-        //         as XLen;
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen);
+        todo!("TODO: unimplemented");
     }
 
     fn instruction_load_byte_unsigned(&mut self) {
         trace!("Executing LBU...");
 
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen);
+        todo!("TODO: unimplemented");
     }
 
     fn instruction_load_half_unsigned(&mut self) {
         trace!("Executing LHU...");
 
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen);
+        todo!("TODO: unimplemented");
     }
 
     fn instruction_addi(&mut self) {
@@ -1712,22 +1712,31 @@ impl CPU {
             + self.context.decoder.immediate as SignedXLen as XLen;
     }
 
-    fn instruction_sb(&mut self) {
+    fn instruction_store_byte(&mut self) {
         trace!("Executing SB...");
 
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen);
+        todo!("TODO: unimplemented");
     }
 
-    fn instruction_sh(&mut self) {
+    fn instruction_store_half_word(&mut self) {
         trace!("Executing SH...");
 
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen);
+        todo!("TODO: unimplemented");
     }
 
-    fn instruction_sw(&mut self) {
+    fn instruction_store_word(&mut self) {
         trace!("Executing SW...");
 
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen);
+        todo!("TODO: unimplemented");
     }
 
     fn instruction_add(&mut self) {
@@ -1936,13 +1945,17 @@ impl CPU {
     fn instruction_load_double_word(&mut self) {
         trace!("Executing LD...");
 
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen)
     }
 
     fn instruction_load_word_unsigned(&mut self) {
         trace!("Executing LWU...");
 
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen)
     }
 
     fn instruction_add_immediate_word(&mut self) {
@@ -1980,8 +1993,10 @@ impl CPU {
     fn instruction_store_double_word(&mut self) {
         trace!("Executing SD...");
 
-        //
-        panic!("TODO: unimplemented");
+        self.context.execution.memory_address =
+            self.context.decoder.source_register_1
+                + (self.context.decoder.immediate as SignedXLen as XLen);
+        todo!("TODO: unimplemented");
     }
 
     fn instruction_add_word(&mut self) {
@@ -2034,7 +2049,7 @@ impl CPU {
             trace!("Executing memory write...");
 
             // bus.write(address, value);
-            panic!("TODO: unimplemented");
+            todo!("TODO: unimplemented");
         }
     }
 
@@ -2057,8 +2072,8 @@ impl CPU {
 
             self.context.PC = self.context.execution.branch_target_address;
         }
-        panic!(
-            "TODO: unimplemented: generate exception if address is misaligned"
+        error!(
+            "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
         );
     }
 
