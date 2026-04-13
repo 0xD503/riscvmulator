@@ -10,6 +10,9 @@ use std::{env, fs};
 type XLen = u64;
 type SignedXLen = i64;
 type UnsignedXLen = u64;
+type XLen32 = u32;
+type SignedXLen32 = i32;
+type UnsignedXLen32 = u32;
 // type XLen = u32;
 // type SignedXLen = i32;
 // type UnsignedXLen = u32;
@@ -498,35 +501,6 @@ impl From<InstructionType> for BRANCH_Funct3 {
     }
 }
 
-// #[allow(non_camel_case_types)]
-// #[allow(clippy::upper_case_acronyms)]
-// enum BRANCH_Funct3 {
-//     BEQ = 0b000,  //
-//     BNE = 0b001,  //
-//     BLT = 0b100,  //
-//     BGE = 0b101,  //
-//     BLTU = 0b110, //
-//     BGEU = 0b111, //
-// }
-
-// impl From<InstructionType> for BRANCH_Funct3 {
-//     fn from(value: InstructionType) -> Self {
-//         match value {
-//             0b000 => BRANCH_Funct3::BEQ,
-//             0b001 => BRANCH_Funct3::BNE,
-//             0b100 => BRANCH_Funct3::BLT,
-//             0b101 => BRANCH_Funct3::BGE,
-//             0b110 => BRANCH_Funct3::BLTU,
-//             0b111 => BRANCH_Funct3::BGEU,
-
-//             _ => {
-//                 error!("Unknown funct3: {value:#05b}");
-//                 unreachable!("Unknown funct3: {value:#05b}");
-//             }
-//         }
-//     }
-// }
-
 impl From<InstructionType> for OP_Funct3 {
     fn from(value: InstructionType) -> Self {
         match value {
@@ -760,7 +734,7 @@ struct Decoder {
 
 #[derive(Clone)]
 struct Context {
-    pc: XLen,
+    PC: XLen,
     register_file: RegisterFile,
     current_instruction: InstructionType,
     decoder: Decoder,
@@ -784,8 +758,8 @@ struct SoC {
 
 impl SoC {
     fn fetch(&mut self) {
-        let bytes = self.memory.byte_array[self.cpu.context.pc as usize
-            ..self.cpu.context.pc as usize + size_of::<InstructionType>()]
+        let bytes = self.memory.byte_array[self.cpu.context.PC as usize
+            ..self.cpu.context.PC as usize + size_of::<InstructionType>()]
             .try_into()
             .unwrap();
         // NOTICE: so far emulator only supports little-endian
@@ -799,7 +773,7 @@ impl SoC {
     }
 
     fn reset(&mut self) {
-        self.cpu.context.pc = PC_RESET_VALUE;
+        self.cpu.context.PC = PC_RESET_VALUE;
         // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
         for i in 1..RISCV_NUM_OF_REGISTERS {
             self.cpu
@@ -817,7 +791,7 @@ impl SoC {
     }
 
     fn step(&mut self) {
-        trace!("Current PC: {:#018X}", self.cpu.context.pc);
+        trace!("Current PC: {:#018X}", self.cpu.context.PC);
 
         self.fetch();
         self.cpu.decode();
@@ -826,7 +800,7 @@ impl SoC {
         self.cpu.write_back();
 
         // step PC
-        self.cpu.context.pc += PC_STEP;
+        self.cpu.context.PC += PC_STEP;
     }
 }
 
@@ -1119,6 +1093,8 @@ impl CPU {
             }
             // I_27
             Opcode::OP_IMM_32 => {
+                // self.context.decoder.source_register_1 &=
+                //     UnsignedImmediate::MAX as XLen;
                 match OP_IMM_32_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_32_Funct3::ADDIW => {
                         self.context.decoder.executable_instruction =
@@ -1333,7 +1309,7 @@ impl CPU {
             //
             _ => match self.context.decoder.funct3 {
                 _ => {
-                    panic!("Unimplemented");
+                    panic!("TODO: unimplemented");
                 }
             },
         };
@@ -1480,31 +1456,31 @@ impl CPU {
     fn instruction_load_byte(&mut self) {
         trace!("Executing LB...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_load_half(&mut self) {
         trace!("Executing LH...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_load_word(&mut self) {
         trace!("Executing LW...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_load_byte_unsigned(&mut self) {
         trace!("Executing LBU...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_load_half_unsigned(&mut self) {
         trace!("Executing LHU...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_addi(&mut self) {
@@ -1586,25 +1562,26 @@ impl CPU {
     fn instruction_auipc(&mut self) {
         trace!("Executing AUIPC...");
 
-        panic!("Unimplemented");
+        self.context.result = self.context.PC
+            + self.context.decoder.immediate as SignedXLen as XLen;
     }
 
     fn instruction_sb(&mut self) {
         trace!("Executing SB...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_sh(&mut self) {
         trace!("Executing SH...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_sw(&mut self) {
         trace!("Executing SW...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_add(&mut self) {
@@ -1692,138 +1669,142 @@ impl CPU {
     fn instruction_lui(&mut self) {
         trace!("Executing LUI...");
 
-        panic!("Unimplemented");
+        self.context.result =
+            self.context.decoder.immediate as SignedXLen as XLen;
     }
 
     fn instruction_beq(&mut self) {
         trace!("Executing BEQ...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_bne(&mut self) {
         trace!("Executing BNE...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_blt(&mut self) {
         trace!("Executing BLT...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_bge(&mut self) {
         trace!("Executing BGE...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_bltu(&mut self) {
         trace!("Executing BLTU...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_bgeu(&mut self) {
         trace!("Executing BGEU...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_jalr(&mut self) {
         trace!("Executing JALR...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_jal(&mut self) {
         trace!("Executing JAL...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_load_double_word(&mut self) {
         trace!("Executing LD...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_load_word_unsigned(&mut self) {
         trace!("Executing LWU...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_add_immediate_word(&mut self) {
         trace!("Executing ADDIW...");
 
-        panic!("Unimplemented");
+        let result32 = ((self.context.decoder.source_register_1 as XLen32)
+            + self.context.decoder.immediate);
+        self.context.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_left_logical_immediate_word(&mut self) {
         trace!("Executing SLLIW...");
 
-        panic!("Unimplemented");
+        //
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_shift_right_logical_immediate_word(&mut self) {
         trace!("Executing SRLIW...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_shift_right_arith_immediate_word(&mut self) {
         trace!("Executing SRAIW...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_store_double_word(&mut self) {
         trace!("Executing SD...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_add_word(&mut self) {
         trace!("Executing ADDW...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_sub_word(&mut self) {
         trace!("Executing SUBW...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_shift_left_logical_word(&mut self) {
         trace!("Executing SLLW...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_shift_right_logical_word(&mut self) {
         trace!("Executing SRLW...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn instruction_shift_right_arith_word(&mut self) {
         trace!("Executing SRAW...");
 
-        panic!("Unimplemented");
+        panic!("TODO: unimplemented");
     }
 
     fn memory_operation(&mut self) {
         if self.context.decoder.need_to_read_memory {
             trace!("Executing memory read...");
             //
-            panic!("Unimplemented");
+            panic!("TODO: unimplemented");
         } else if self.context.decoder.need_to_write_memory {
             trace!("Executing memory write...");
             //
-            panic!("Unimplemented");
+            panic!("TODO: unimplemented");
         }
     }
 
@@ -2116,6 +2097,7 @@ struct Args {
     #[arg(long, required = false, action = clap::ArgAction::SetTrue)]
     license: bool,
 }
+
 // #[derive(Parser, Debug)]
 // #[command(version, about, long_about = None)]
 // struct Args {
@@ -2168,7 +2150,7 @@ fn main() {
     let mut soc: SoC = SoC {
         cpu: CPU {
             context: Context {
-                pc: PC_RESET_VALUE,
+                PC: PC_RESET_VALUE,
                 register_file: RegisterFile {
                     registers: [RISCV_X0_ZERO_REGISTER_VALUE;
                         RISCV_NUM_OF_REGISTERS],
