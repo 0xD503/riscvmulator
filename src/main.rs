@@ -766,6 +766,28 @@ struct Memory {
     byte_array: Vec<u8>,
 }
 
+trait Bus {
+    fn read_byte(&self, address: XLen) -> u8;
+    fn read_half_word(&self, address: XLen) -> u16;
+    fn read_word(&self, address: XLen) -> u32;
+    fn read_double_word(&self, address: XLen) -> u64;
+    fn read_quad_word(&self, address: XLen) -> u128;
+
+    fn read_reg(&self, address: XLen) -> XLen;
+
+    fn read_data(&self, address: XLen, size: usize) -> Vec<u8>;
+
+    fn write_byte(&self, address: XLen, value: u8);
+    fn write_half_word(&self, address: XLen, value: u16);
+    fn write_word(&self, address: XLen, value: u32);
+    fn write_double_word(&self, address: XLen, value: u64);
+    fn write_quad_word(&self, address: XLen, value: u128);
+
+    fn write_reg(&self, address: XLen, value: XLen);
+
+    fn write_data(&mut self, address: XLen, data: Vec<u8>);
+}
+
 struct SoC {
     cpu: CPU,
     memory: Memory,
