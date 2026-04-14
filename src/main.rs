@@ -2065,16 +2065,19 @@ impl CPU {
             if self.context.decoder.need_to_jump {
                 trace!("Updating PC to JTA...");
 
+                error!(
+                    "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
+                );
                 self.context.PC = self.context.execution.jump_target_address;
             }
         } else if self.context.execution.need_to_branch {
             trace!("Updating PC to BTA...");
 
+            error!(
+                "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
+            );
             self.context.PC = self.context.execution.branch_target_address;
         }
-        error!(
-            "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
-        );
     }
 
     fn extract_opcode(&self) -> Opcode {
