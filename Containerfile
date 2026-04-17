@@ -1,16 +1,11 @@
-## 0. prepare container BUILD stage environment (doesn't affect runtime)
-ARG USERNAME=appuser
-ARG SHELL=/bin/bash
-ARG WD=/app
-ARG APP_NAME=riscvmulator
-ARG LOG_LEVEL=info
-ARG LISTEN_PORT=53732
-ARG BUILD_TYPE=release
-
-
 ## 1. BUILD stage   ------------------------------------------------------------
 
 FROM rust:slim AS builder
+
+## declare stage vars (doesn't affect runtime)
+ARG WD=/app
+ARG BUILD_TYPE=release
+
 
 ## install RISC-V toolchain, build deps and clean cache to keep the image small
 RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
@@ -21,7 +16,7 @@ RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     make \
     git \
     less patch \
-    && rm -rf /var/lib/apt/lists/*    \
+    && rm -rf /var/lib/apt/lists/*
 
 ## set WORKDIR
 WORKDIR ${WD}
@@ -49,13 +44,23 @@ RUN touch src/main.rs && cargo build --${BUILD_TYPE}
 
 FROM debian:stable-slim as runner
 
+## declare stage vars (doesn't affect runtime)
+ARG USERNAME=appuser
+ARG USER_SHELL=/bin/bash
+ARG WD=/app
+ARG BUILD_TYPE=release
+ARG APP_NAME=riscvmulator
+ARG LOG_LEVEL=info
+ARG LISTEN_PORT=53732
+
+
 ## install deps and clean cache to keep the image small
 RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -s /bin/bash ${USERNAME}
+RUN useradd -m -s ${USER_SHELL} ${USERNAME}
 USER ${USERNAME}
 
 WORKDIR ${WD}
@@ -64,11 +69,12 @@ COPY --from=builder ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
 
 ## set runtime environment variables
 ENV RUST_LOG=${LOG_LEVEL}
+ENV APP_NAME_ENV=${APP_NAME}
 
 ## set listening port for container
 EXPOSE ${LISTEN_PORT}
 
 
 ## run application and pass default arguments that can be overriden fro CLI
-ENTRYPOINT = ["./${APP_NAME}"]
-CMD = [""]
+ENTRYPOINT ["./${APP_NAME_ENV}"]
+CMD [""]
