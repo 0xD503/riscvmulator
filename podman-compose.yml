@@ -1,1 +1,21 @@
+services:
+  emulator:
+    build: .
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - ./roms:/app/roms:ro
 
+  dev:
+    build:
+      context: .
+      target: builder
+    working_dir: /app
+    volumes:
+      - .:/app
+      - cargo-cache:/usr/local/cargo/registry
+    environment:
+      RUST_LOG=debug
+
+volumes:
+  cargo-cache:
