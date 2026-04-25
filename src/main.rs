@@ -1,10 +1,15 @@
+// addr: {address:#018X?}
+
 use clap::Parser;
 use log::{debug, error, info, trace, warn};
 use serde::Deserialize;
+
+use std::cmp::PartialOrd;
 use std::convert::From;
-use std::fmt::{self, Binary};
+use std::fmt::{self, Binary, Debug};
+use std::marker::PhantomData;
 use std::mem::size_of;
-use std::{env, fs};
+use std::{env, fs, u8};
 
 /// architechtural defines
 type XLen = u64;
@@ -41,6 +46,8 @@ type UnsignedImmediate = u32;
 type InstructionType = u32;
 type SignedInstructionType = i32;
 
+type BusAddrType = XLen;
+
 const RISCV_NUM_OF_REGISTERS: usize = 32;
 const RISCV_X0_ZERO_REGISTER_VALUE: XLen = 0x00000000;
 
@@ -51,7 +58,9 @@ const PC_STEP: XLen = 0x00000004;
 const INITIAL_INSTRUCTION: InstructionType = 0x00000000;
 
 const MEM_DEFAULT_VALUE: u8 = 0x00;
-const MEM_SIZE: usize = 65536; // placeholder value, to be configured later
+const DRAM_BASE: XLen = 0x80000000;
+const DRAM_SIZE: usize = 65536; // placeholder value, to be configured later
+const DRAM_END: XLen = DRAM_BASE + DRAM_SIZE as XLen;
 
 // decoder constants
 const BIT_OFFSET_OPCODE: usize = 0;
@@ -769,19 +778,20 @@ struct Context {
 }
 
 #[allow(clippy::upper_case_acronyms)]
+#[allow(non_camel_case_types)]
 #[derive(Clone)]
-struct CPU {
+struct RISC_V_CPU {
     context: Context,
 }
 
-trait Bus<AddrType, MemoryUnit> {
+trait Bus<AddrType> {
     // fn read_byte(&self, address: XLen) -> Byte;
     // fn read_half_word(&self, address: XLen) -> HalfWord;
     // fn read_word(&self, address: XLen) -> Word;
     // fn read_double_word(&self, address: XLen) -> DoubleWord;
     // fn read_quad_word(&self, address: XLen) -> QuadWord;
 
-    fn read(&self, address: AddrType) -> MemoryUnit;
+    fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
 
     // fn read_data(&self, address: XLen, size: usize) -> Vec<Byte>;
 
@@ -791,44 +801,146 @@ trait Bus<AddrType, MemoryUnit> {
     // fn write_double_word(&self, address: XLen, value: DoubleWord);
     // fn write_quad_word(&self, address: XLen, value: QuadWord);
 
-    fn write(&self, address: AddrType, value: MemoryUnit);
+    fn write<MemValType: MemoryValue>(
+        &mut self,
+        address: AddrType,
+        value: MemValType,
+    );
 
     // fn write_data(&mut self, address: XLen, data: Vec<Byte>);
 }
 
-struct Memory {
-    byte_array: Vec<Byte>,
+trait MemoryValue: Sized {
+    fn from_le_bytes(bytes: &[u8]) -> Self;
+    fn to_le_bytes(&self) -> Vec<u8>;
 }
 
-struct SystemBus {
-    memory: Memory,
-}
-
-impl Bus<XLen, XLen> for SystemBus {
-    fn read(&self, address: XLen) -> XLen {
-        // self.memory.read
-        panic!("TODO: unimplemented: segregated address space for memory/IO");
+impl MemoryValue for u8 {
+    fn from_le_bytes(bytes: &[u8]) -> Self {
+        Self::from_le_bytes(bytes.try_into().unwrap())
     }
-    fn write(&self, address: XLen, value: XLen) {
-        // self.memory.write
-        panic!("TODO: unimplemented: segregated address space for memory/IO");
+
+    fn to_le_bytes(&self) -> Vec<u8> {
+        Self::to_le_bytes(*self).to_vec()
+    }
+}
+
+impl MemoryValue for u16 {
+    fn from_le_bytes(bytes: &[u8]) -> Self {
+        Self::from_le_bytes(bytes.try_into().unwrap())
+    }
+
+    fn to_le_bytes(&self) -> Vec<u8> {
+        Self::to_le_bytes(*self).to_vec()
+    }
+}
+impl MemoryValue for u32 {
+    fn from_le_bytes(bytes: &[u8]) -> Self {
+        Self::from_le_bytes(bytes.try_into().unwrap())
+    }
+
+    fn to_le_bytes(&self) -> Vec<u8> {
+        Self::to_le_bytes(*self).to_vec()
+    }
+}
+
+impl MemoryValue for u64 {
+    fn from_le_bytes(bytes: &[u8]) -> Self {
+        Self::from_le_bytes(bytes.try_into().unwrap())
+    }
+
+    fn to_le_bytes(&self) -> Vec<u8> {
+        Self::to_le_bytes(*self).to_vec()
+    }
+}
+
+impl MemoryValue for u128 {
+    fn from_le_bytes(bytes: &[u8]) -> Self {
+        Self::from_le_bytes(bytes.try_into().unwrap())
+    }
+
+    fn to_le_bytes(&self) -> Vec<u8> {
+        Self::to_le_bytes(*self).to_vec()
+    }
+}
+
+struct Memory<AddrType> {
+    byte_array: Vec<u8>,
+
+    _phantom_marker: PhantomData<AddrType>,
+}
+
+impl<AddrType> Memory<AddrType> {
+    fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
+        trace!("Reading memory at addr: {address:#018X?}");
+
+        let bytes = (self.byte_array)
+            [address as usize..address as usize + size_of::<MemValType>()]
+            .try_into()
+            .unwrap();
+        // TODO: notice, so far emulator only supports little-endian
+        MemValType::from_le_bytes(bytes)
+    }
+
+    fn write<MemValType: MemoryValue>(
+        &mut self,
+        address: XLen,
+        value: MemValType,
+    ) {
+        trace!("Writing memory at addr: {address:#018X?}");
+
+        let bytes = value.to_le_bytes();
+        self.byte_array
+            [address as usize..address as usize + size_of::<MemValType>()]
+            .copy_from_slice(&bytes);
+        todo!("unimplemented!");
+    }
+}
+
+struct SystemBus<AddrType> {
+    memory: Memory<AddrType>,
+}
+
+impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
+    fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
+        if (address >= DRAM_BASE) && (address < DRAM_END) {
+            self.memory.read(address)
+        } else {
+            error!("an attempt to read from unimplemented address space!");
+            panic!("an attempt to read from unimplemented address space");
+        }
+    }
+    fn write<MemValType: MemoryValue>(
+        &mut self,
+        address: XLen,
+        value: MemValType,
+    ) {
+        if (address >= DRAM_BASE) && (address < DRAM_END) {
+            self.memory.write(address, value);
+        } else {
+            error!("an attempt to write to unimplemented address space!");
+            panic!("an attempt to write to unimplemented address space");
+        }
+        todo!("TODO: unimplemented: segregated address space for memory/IO");
     }
 }
 
 struct SoC {
-    cpu: CPU,
-    bus: SystemBus,
+    cpu: RISC_V_CPU,
+    bus: SystemBus<BusAddrType>,
 }
 
 impl SoC {
     fn fetch(&mut self) {
-        let bytes = self.bus.memory.byte_array[self.cpu.context.PC as usize
-            ..self.cpu.context.PC as usize + size_of::<InstructionType>()]
-            .try_into()
-            .unwrap();
-        // NOTICE: so far emulator only supports little-endian
-        let instruction = InstructionType::from_le_bytes(bytes);
-        self.cpu.context.current_instruction = instruction;
+        // let bytes = self.bus.memory.byte_array[self.cpu.context.PC as usize
+        //     ..self.cpu.context.PC as usize + size_of::<InstructionType>()]
+        //     .try_into()
+        //     .unwrap();
+        // // NOTICE: so far emulator only supports little-endian
+        // let instruction = InstructionType::from_le_bytes(bytes);
+        // self.cpu.context.current_instruction = instruction;
+        self.cpu.context.current_instruction =
+            self.bus.memory.read(self.cpu.context.PC);
 
         trace!(
             "Fetched instruction: {:#018X?}",
@@ -848,8 +960,8 @@ impl SoC {
         self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
 
         // fill memory with NOP's
-        self.bus.memory.byte_array = [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec();
-        for i in (0..MEM_SIZE).step_by(PC_STEP as usize) {
+        self.bus.memory.byte_array = [MEM_DEFAULT_VALUE; DRAM_SIZE].to_vec();
+        for i in (0..DRAM_SIZE).step_by(PC_STEP as usize) {
             self.bus.memory.byte_array[i] = Opcode::OP_IMM as Byte;
         }
     }
@@ -950,7 +1062,7 @@ impl From<Opcode> for OpcodeToInstructionFormat {
     }
 }
 
-impl CPU {
+impl RISC_V_CPU {
     fn decode_r_format(&mut self) {
         self.context.decoder.source_register_1 =
             self.extract_source_register_1();
@@ -2039,7 +2151,7 @@ impl CPU {
         self.context.execution.result = result32 as SignedXLen as XLen;
     }
 
-    fn memory_operation(&mut self, bus: &mut SystemBus) {
+    fn memory_operation(&mut self, bus: &mut SystemBus<BusAddrType>) {
         if self.context.decoder.need_to_read_memory {
             trace!("Executing memory read...");
 
@@ -2410,7 +2522,7 @@ fn main() {
     init();
 
     let mut soc: SoC = SoC {
-        cpu: CPU {
+        cpu: RISC_V_CPU {
             context: Context {
                 PC: PC_RESET_VALUE,
                 register_file: RegisterFile {
@@ -2432,7 +2544,9 @@ fn main() {
         },
         bus: SystemBus {
             memory: Memory {
-                byte_array: [MEM_DEFAULT_VALUE; MEM_SIZE].to_vec(),
+                byte_array: [MEM_DEFAULT_VALUE; DRAM_SIZE].to_vec(),
+
+                _phantom_marker: Default::default(),
             },
         },
     };
