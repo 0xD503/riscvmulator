@@ -11,4 +11,6 @@
 -[ ] `F` extension (floating point)
 -[ ] `D` extension ()
 -[ ] basic privilleged ISA
+-[ ] `G` extensions (general purpose `IMAFD` + privilleged extensions)
+-[ ] Linux-able
 -[ ] RV64/32E
