@@ -9,7 +9,7 @@ use std::convert::From;
 use std::fmt::{self, Binary, Debug};
 use std::marker::PhantomData;
 use std::mem::size_of;
-use std::{env, fs, u8};
+use std::{env, fs};
 
 /// architechtural defines
 type XLen = u64;
@@ -18,9 +18,6 @@ type UnsignedXLen = u64;
 type XLen32 = u32;
 type SignedXLen32 = i32;
 // type UnsignedXLen32 = u32;
-// type XLen = u32;
-// type SignedXLen = i32;
-// type UnsignedXLen = u32;
 
 type Byte = u8;
 type SignedByte = i8;
@@ -29,7 +26,7 @@ type SignedHalfWord = i16;
 type Word = u32;
 type SignedWord = i32;
 type DoubleWord = u64;
-type SignedDoubleWord = i8;
+type SignedDoubleWord = i64;
 // type QuadWord = u128;
 // type SignedQuadWord = i128;
 
@@ -37,7 +34,7 @@ type SignedDoubleWord = i8;
 // // type UnsignedImmediate = u64;
 // // type SignedImmediateCastToRegister = SignedXLen;
 // // type UnsignedImmediateCastToRegister = UnsignedXLen;
-// type SignedImmediate = i32;
+type SignedImmediate = i32;
 type UnsignedImmediate = u32;
 
 // const IALIGN: i32 = 32;
@@ -57,10 +54,10 @@ const PC_STEP: XLen = 0x00000004;
 
 const INITIAL_INSTRUCTION: InstructionType = 0x00000000;
 
-const MEM_DEFAULT_VALUE: u8 = 0x00;
-const DRAM_BASE: XLen = 0x80000000;
-const DRAM_SIZE: usize = 65536; // placeholder value, to be configured later
-const DRAM_END: XLen = DRAM_BASE + DRAM_SIZE as XLen;
+const MEM_DEFAULT_VALUE: Byte = 0x00;
+const RAM_BASE: XLen = 0x80000000;
+const RAM_SIZE: usize = 65536; // placeholder value, to be configured later
+const RAM_END: XLen = RAM_BASE + RAM_SIZE as XLen;
 
 // decoder constants
 const BIT_OFFSET_OPCODE: usize = 0;
@@ -678,13 +675,13 @@ enum RegisterName {
 
 impl RegisterFile {
     fn read(&self, offset: usize) -> XLen {
-        trace!("Reading register file...");
+        trace!("Reading register x{offset:#?}...");
 
         self.registers[offset]
     }
 
     fn write(&mut self, offset: usize, value: XLen) {
-        trace!("Writing register file...");
+        trace!("Writing register x{offset:#?}...");
 
         // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
         if offset != (RegisterName::x0_zero as usize) {
@@ -714,7 +711,7 @@ struct Decoder {
     opcode: Opcode,
     source_register_1: XLen,
     source_register_2: XLen,
-    destination_register_index: usize,
+    destination_register_offset: usize,
 
     funct3: InstructionType,
     i_funct7: OP_IMM_Funct7,
@@ -758,6 +755,22 @@ struct Decoder {
     // j_imm_0: InstructionType,
 }
 
+#[allow(clippy::upper_case_acronyms)]
+#[allow(non_camel_case_types)]
+#[derive(Default, Clone)]
+enum MemoryValueType {
+    BYTE,
+    HALF_WORD,
+    WORD,
+    #[default]
+    DOUBLE_WORD,
+    // QUAD_WORD,
+    UNSIGNED_BYTE,
+    UNSIGNED_HALF_WORD,
+    UNSIGNED_WORD,
+    // UNSIGNED_DOUBLE_WORD,
+}
+
 #[derive(Default, Clone)]
 struct ExecutionContext {
     result: XLen,
@@ -765,6 +778,12 @@ struct ExecutionContext {
     jump_target_address: XLen,
     memory_address: XLen,
     need_to_branch: bool,
+    value_to_store_u8: Byte,
+    value_to_store_u16: HalfWord,
+    value_to_store_u32: Word,
+    value_to_store_u64: DoubleWord,
+    // value_to_store_u128: u128,
+    memory_value_type: MemoryValueType,
 }
 
 #[allow(non_snake_case)]
@@ -811,61 +830,61 @@ trait Bus<AddrType> {
 }
 
 trait MemoryValue: Sized {
-    fn from_le_bytes(bytes: &[u8]) -> Self;
-    fn to_le_bytes(&self) -> Vec<u8>;
+    fn from_le_bytes(bytes: &[Byte]) -> Self;
+    fn to_le_bytes(&self) -> Vec<Byte>;
 }
 
-impl MemoryValue for u8 {
-    fn from_le_bytes(bytes: &[u8]) -> Self {
+impl MemoryValue for Byte {
+    fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
 
-    fn to_le_bytes(&self) -> Vec<u8> {
+    fn to_le_bytes(&self) -> Vec<Byte> {
         Self::to_le_bytes(*self).to_vec()
     }
 }
 
-impl MemoryValue for u16 {
-    fn from_le_bytes(bytes: &[u8]) -> Self {
+impl MemoryValue for HalfWord {
+    fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
 
-    fn to_le_bytes(&self) -> Vec<u8> {
+    fn to_le_bytes(&self) -> Vec<Byte> {
         Self::to_le_bytes(*self).to_vec()
     }
 }
-impl MemoryValue for u32 {
-    fn from_le_bytes(bytes: &[u8]) -> Self {
+impl MemoryValue for Word {
+    fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
 
-    fn to_le_bytes(&self) -> Vec<u8> {
+    fn to_le_bytes(&self) -> Vec<Byte> {
         Self::to_le_bytes(*self).to_vec()
     }
 }
 
-impl MemoryValue for u64 {
-    fn from_le_bytes(bytes: &[u8]) -> Self {
+impl MemoryValue for DoubleWord {
+    fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
 
-    fn to_le_bytes(&self) -> Vec<u8> {
+    fn to_le_bytes(&self) -> Vec<Byte> {
         Self::to_le_bytes(*self).to_vec()
     }
 }
 
 impl MemoryValue for u128 {
-    fn from_le_bytes(bytes: &[u8]) -> Self {
+    fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
 
-    fn to_le_bytes(&self) -> Vec<u8> {
+    fn to_le_bytes(&self) -> Vec<Byte> {
         Self::to_le_bytes(*self).to_vec()
     }
 }
 
 struct Memory<AddrType> {
-    byte_array: Vec<u8>,
+    byte_array: Vec<Byte>,
 
     _phantom_marker: PhantomData<AddrType>,
 }
@@ -893,7 +912,7 @@ impl<AddrType> Memory<AddrType> {
         self.byte_array
             [address as usize..address as usize + size_of::<MemValType>()]
             .copy_from_slice(&bytes);
-        todo!("unimplemented!");
+        todo!("unimplemented");
     }
 }
 
@@ -903,7 +922,7 @@ struct SystemBus<AddrType> {
 
 impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
     fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
-        if (address >= DRAM_BASE) && (address < DRAM_END) {
+        if (RAM_BASE..RAM_END).contains(&address) {
             self.memory.read(address)
         } else {
             error!("an attempt to read from unimplemented address space!");
@@ -915,7 +934,7 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
         address: XLen,
         value: MemValType,
     ) {
-        if (address >= DRAM_BASE) && (address < DRAM_END) {
+        if (RAM_BASE..RAM_END).contains(&address) {
             self.memory.write(address, value);
         } else {
             error!("an attempt to write to unimplemented address space!");
@@ -960,8 +979,8 @@ impl SoC {
         self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
 
         // fill memory with NOP's
-        self.bus.memory.byte_array = [MEM_DEFAULT_VALUE; DRAM_SIZE].to_vec();
-        for i in (0..DRAM_SIZE).step_by(PC_STEP as usize) {
+        self.bus.memory.byte_array = [MEM_DEFAULT_VALUE; RAM_SIZE].to_vec();
+        for i in (0..RAM_SIZE).step_by(PC_STEP as usize) {
             self.bus.memory.byte_array[i] = Opcode::OP_IMM as Byte;
         }
     }
@@ -1068,7 +1087,7 @@ impl RISC_V_CPU {
             self.extract_source_register_1();
         self.context.decoder.source_register_2 =
             self.extract_source_register_2();
-        self.context.decoder.destination_register_index =
+        self.context.decoder.destination_register_offset =
             self.extract_destination_register_index();
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
@@ -1216,20 +1235,22 @@ impl RISC_V_CPU {
     fn decode_i_format(&mut self) {
         self.context.decoder.source_register_1 =
             self.extract_source_register_1();
-        self.context.decoder.destination_register_index =
+        self.context.decoder.destination_register_offset =
             self.extract_destination_register_index();
         self.context.decoder.immediate =
             self.extract_imm_11_0() as UnsignedImmediate;
-        self.context.decoder.need_to_read_memory = false;
+
+        self.context.decoder.funct3 = self.extract_funct3();
+
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
         self.context.decoder.need_to_jump = false;
         self.context.execution.need_to_branch = false;
-        self.context.decoder.funct3 = self.extract_funct3();
 
         match self.context.decoder.opcode {
             // I_3
             Opcode::LOAD => {
+                self.context.decoder.need_to_read_memory = true;
                 match OPCODE_LOAD_Funct3::from(self.context.decoder.funct3) {
                     OPCODE_LOAD_Funct3::LB => {
                         self.context.decoder.executable_instruction =
@@ -1263,6 +1284,7 @@ impl RISC_V_CPU {
             }
             // I_19
             Opcode::OP_IMM => {
+                self.context.decoder.need_to_read_memory = false;
                 match OP_IMM_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_Funct3::ADDI => {
                         self.context.decoder.executable_instruction =
@@ -1323,6 +1345,7 @@ impl RISC_V_CPU {
             }
             // I_27
             Opcode::OP_IMM_32 => {
+                self.context.decoder.need_to_read_memory = false;
                 // self.context.decoder.source_register_1 &=
                 //     UnsignedImmediate::MAX as XLen;
                 match OP_IMM_32_Funct3::from(self.context.decoder.funct3) {
@@ -1364,6 +1387,7 @@ impl RISC_V_CPU {
             }
             // I_103
             Opcode::JALR => {
+                self.context.decoder.need_to_read_memory = false;
                 match JALR_Funct3::from(self.context.decoder.funct3) {
                     JALR_Funct3::JALR => {
                         self.context.decoder.need_to_jump = true;
@@ -1487,7 +1511,7 @@ impl RISC_V_CPU {
     }
 
     fn decode_u_format(&mut self) {
-        self.context.decoder.destination_register_index =
+        self.context.decoder.destination_register_offset =
             self.extract_destination_register_index();
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
@@ -1517,7 +1541,7 @@ impl RISC_V_CPU {
     }
 
     fn decode_j_format(&mut self) {
-        self.context.decoder.destination_register_index =
+        self.context.decoder.destination_register_offset =
             self.extract_destination_register_index();
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
@@ -1701,8 +1725,9 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
-        todo!("TODO: unimplemented");
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.memory_value_type = MemoryValueType::BYTE;
     }
 
     fn instruction_load_half(&mut self) {
@@ -1710,8 +1735,9 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
-        todo!("TODO: unimplemented");
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.memory_value_type = MemoryValueType::HALF_WORD;
     }
 
     fn instruction_load_word(&mut self) {
@@ -1719,8 +1745,9 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
-        todo!("TODO: unimplemented");
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.memory_value_type = MemoryValueType::WORD;
     }
 
     fn instruction_load_byte_unsigned(&mut self) {
@@ -1728,8 +1755,10 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
-        todo!("TODO: unimplemented");
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.memory_value_type =
+            MemoryValueType::UNSIGNED_BYTE;
     }
 
     fn instruction_load_half_unsigned(&mut self) {
@@ -1737,15 +1766,18 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
-        todo!("TODO: unimplemented");
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.memory_value_type =
+            MemoryValueType::UNSIGNED_HALF_WORD;
     }
 
     fn instruction_addi(&mut self) {
         trace!("Executing ADDI...");
 
         self.context.execution.result = self.context.decoder.source_register_1
-            + self.context.decoder.immediate as SignedXLen as XLen;
+            + self.context.decoder.immediate as SignedImmediate as SignedXLen
+                as XLen;
     }
 
     fn instruction_slli(&mut self) {
@@ -1760,7 +1792,8 @@ impl RISC_V_CPU {
 
         self.context.execution.result =
             if (self.context.decoder.source_register_1 as SignedXLen)
-                < (self.context.decoder.immediate as SignedXLen)
+                < (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen)
             {
                 1
             } else {
@@ -1785,7 +1818,8 @@ impl RISC_V_CPU {
         trace!("Executing XORI...");
 
         self.context.execution.result = self.context.decoder.source_register_1
-            ^ self.context.decoder.immediate as SignedXLen as XLen;
+            ^ self.context.decoder.immediate as SignedImmediate as SignedXLen
+                as XLen;
     }
 
     fn instruction_srli(&mut self) {
@@ -1807,21 +1841,24 @@ impl RISC_V_CPU {
         trace!("Executing ORI...");
 
         self.context.execution.result = self.context.decoder.source_register_1
-            | self.context.decoder.immediate as SignedXLen as XLen;
+            | self.context.decoder.immediate as SignedImmediate as SignedXLen
+                as XLen;
     }
 
     fn instruction_andi(&mut self) {
         trace!("Executing ANDI...");
 
         self.context.execution.result = self.context.decoder.source_register_1
-            & self.context.decoder.immediate as SignedXLen as XLen;
+            & self.context.decoder.immediate as SignedImmediate as SignedXLen
+                as XLen;
     }
 
     fn instruction_auipc(&mut self) {
         trace!("Executing AUIPC...");
 
         self.context.execution.result = self.context.PC
-            + self.context.decoder.immediate as SignedXLen as XLen;
+            + self.context.decoder.immediate as SignedImmediate as SignedXLen
+                as XLen;
     }
 
     fn instruction_store_byte(&mut self) {
@@ -1829,8 +1866,11 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
-        todo!("TODO: unimplemented");
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.value_to_store_u8 =
+            self.context.decoder.source_register_2 as Byte;
+        self.context.execution.memory_value_type = MemoryValueType::BYTE;
     }
 
     fn instruction_store_half_word(&mut self) {
@@ -1838,8 +1878,11 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
-        todo!("TODO: unimplemented");
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.value_to_store_u16 =
+            self.context.decoder.source_register_2 as HalfWord;
+        self.context.execution.memory_value_type = MemoryValueType::HALF_WORD;
     }
 
     fn instruction_store_word(&mut self) {
@@ -1847,8 +1890,11 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
-        todo!("TODO: unimplemented");
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.value_to_store_u32 =
+            self.context.decoder.source_register_2 as Word;
+        self.context.execution.memory_value_type = MemoryValueType::WORD;
     }
 
     fn instruction_add(&mut self) {
@@ -1937,8 +1983,9 @@ impl RISC_V_CPU {
     fn instruction_lui(&mut self) {
         trace!("Executing LUI...");
 
-        self.context.execution.result =
-            self.context.decoder.immediate as SignedXLen as XLen;
+        self.context.execution.result = self.context.decoder.immediate
+            as SignedImmediate
+            as SignedXLen as XLen;
     }
 
     fn instruction_beq(&mut self) {
@@ -1948,7 +1995,8 @@ impl RISC_V_CPU {
             == self.context.decoder.source_register_2
         {
             self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedXLen as XLen);
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
         todo!(
@@ -1963,7 +2011,8 @@ impl RISC_V_CPU {
             != self.context.decoder.source_register_2
         {
             self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedXLen as XLen);
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
         todo!(
@@ -1978,7 +2027,8 @@ impl RISC_V_CPU {
             < (self.context.decoder.source_register_2 as SignedXLen)
         {
             self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedXLen as XLen);
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
         todo!(
@@ -1993,7 +2043,8 @@ impl RISC_V_CPU {
             >= (self.context.decoder.source_register_2 as SignedXLen)
         {
             self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedXLen as XLen);
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
         todo!(
@@ -2008,7 +2059,8 @@ impl RISC_V_CPU {
             < (self.context.decoder.source_register_2 as UnsignedXLen)
         {
             self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedXLen as XLen);
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
         todo!(
@@ -2023,7 +2075,8 @@ impl RISC_V_CPU {
             >= (self.context.decoder.source_register_2 as UnsignedXLen)
         {
             self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedXLen as XLen);
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
         todo!(
@@ -2036,7 +2089,8 @@ impl RISC_V_CPU {
 
         self.context.execution.jump_target_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
         self.context.execution.result = self.context.PC + PC_STEP;
         todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -2047,7 +2101,8 @@ impl RISC_V_CPU {
         trace!("Executing JAL...");
 
         self.context.execution.jump_target_address = self.context.PC
-            + (self.context.decoder.immediate as SignedXLen as XLen);
+            + (self.context.decoder.immediate as SignedImmediate as SignedXLen
+                as XLen);
         self.context.execution.result = self.context.PC + PC_STEP;
         todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -2059,7 +2114,9 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen)
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.memory_value_type = MemoryValueType::DOUBLE_WORD;
     }
 
     fn instruction_load_word_unsigned(&mut self) {
@@ -2067,7 +2124,10 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen)
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.memory_value_type =
+            MemoryValueType::UNSIGNED_WORD;
     }
 
     fn instruction_add_immediate_word(&mut self) {
@@ -2075,7 +2135,8 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             + self.context.decoder.immediate;
-        self.context.execution.result = result32 as SignedXLen as XLen;
+        self.context.execution.result =
+            result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_left_logical_immediate_word(&mut self) {
@@ -2083,7 +2144,8 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             << self.context.decoder.immediate;
-        self.context.execution.result = result32 as SignedXLen as XLen;
+        self.context.execution.result =
+            result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_logical_immediate_word(&mut self) {
@@ -2091,7 +2153,8 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             >> self.context.decoder.immediate;
-        self.context.execution.result = result32 as SignedXLen as XLen;
+        self.context.execution.result =
+            result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_arith_immediate_word(&mut self) {
@@ -2107,8 +2170,11 @@ impl RISC_V_CPU {
 
         self.context.execution.memory_address =
             self.context.decoder.source_register_1
-                + (self.context.decoder.immediate as SignedXLen as XLen);
-        todo!("TODO: unimplemented");
+                + (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as XLen);
+        self.context.execution.value_to_store_u64 =
+            self.context.decoder.source_register_2;
+        self.context.execution.memory_value_type = MemoryValueType::DOUBLE_WORD;
     }
 
     fn instruction_add_word(&mut self) {
@@ -2155,24 +2221,98 @@ impl RISC_V_CPU {
         if self.context.decoder.need_to_read_memory {
             trace!("Executing memory read...");
 
-            self.context.execution.result =
-                bus.read(self.context.execution.memory_address);
+            match self.context.execution.memory_value_type {
+                MemoryValueType::DOUBLE_WORD => {
+                    self.context.execution.result =
+                        bus.read::<DoubleWord>(
+                            self.context.execution.memory_address,
+                        ) as SignedDoubleWord
+                            as SignedXLen as XLen;
+                }
+                MemoryValueType::WORD => {
+                    self.context.execution.result =
+                        bus.read::<Word>(self.context.execution.memory_address)
+                            as SignedWord as SignedXLen
+                            as XLen;
+                }
+                MemoryValueType::HALF_WORD => {
+                    self.context.execution.result = bus
+                        .read::<HalfWord>(self.context.execution.memory_address)
+                        as SignedHalfWord
+                        as SignedXLen
+                        as XLen;
+                }
+                MemoryValueType::BYTE => {
+                    self.context.execution.result =
+                        bus.read::<Byte>(self.context.execution.memory_address)
+                            as SignedByte as SignedXLen
+                            as XLen;
+                }
+                MemoryValueType::UNSIGNED_WORD => {
+                    self.context.execution.result = bus
+                        .read::<Word>(self.context.execution.memory_address)
+                        as XLen;
+                }
+                MemoryValueType::UNSIGNED_HALF_WORD => {
+                    self.context.execution.result = bus
+                        .read::<HalfWord>(self.context.execution.memory_address)
+                        as XLen;
+                }
+                MemoryValueType::UNSIGNED_BYTE => {
+                    self.context.execution.result = bus
+                        .read::<Byte>(self.context.execution.memory_address)
+                        as XLen;
+                }
+            }
         } else if self.context.decoder.need_to_write_memory {
             trace!("Executing memory write...");
 
-            // bus.write(address, value);
+            match self.context.execution.memory_value_type {
+                MemoryValueType::DOUBLE_WORD => {
+                    bus.write(
+                        self.context.execution.memory_address,
+                        self.context.execution.value_to_store_u64,
+                    );
+                }
+                MemoryValueType::WORD => {
+                    bus.write(
+                        self.context.execution.memory_address,
+                        self.context.execution.value_to_store_u32,
+                    );
+                }
+                MemoryValueType::HALF_WORD => {
+                    bus.write(
+                        self.context.execution.memory_address,
+                        self.context.execution.value_to_store_u16,
+                    );
+                }
+                MemoryValueType::BYTE => {
+                    bus.write(
+                        self.context.execution.memory_address,
+                        self.context.execution.value_to_store_u8,
+                    );
+                }
+
+                MemoryValueType::UNSIGNED_WORD
+                | MemoryValueType::UNSIGNED_HALF_WORD
+                | MemoryValueType::UNSIGNED_BYTE => {
+                    error!("unreachable!");
+                    unreachable!("unreachable!");
+                }
+            }
             todo!("TODO: unimplemented");
         }
     }
 
     fn write_back(&mut self) {
         if self.context.decoder.need_to_write_back {
-            trace!("Writing back to register...");
+            let register_offset =
+                self.context.decoder.destination_register_offset;
+            trace!("Writing back to register x{register_offset:#?}...");
 
-            self.context.register_file.write(
-                self.context.decoder.destination_register_index,
-                self.context.execution.result,
-            );
+            self.context
+                .register_file
+                .write(register_offset, self.context.execution.result);
             // jumps always incur register write-back
             if self.context.decoder.need_to_jump {
                 trace!("Updating PC to JTA...");
@@ -2539,12 +2679,17 @@ fn main() {
                     jump_target_address: PC_RESET_VALUE,
                     memory_address: XLen::MIN,
                     need_to_branch: false,
+                    value_to_store_u8: Default::default(),
+                    value_to_store_u16: Default::default(),
+                    value_to_store_u32: Default::default(),
+                    value_to_store_u64: Default::default(),
+                    memory_value_type: Default::default(),
                 },
             },
         },
         bus: SystemBus {
             memory: Memory {
-                byte_array: [MEM_DEFAULT_VALUE; DRAM_SIZE].to_vec(),
+                byte_array: [MEM_DEFAULT_VALUE; RAM_SIZE].to_vec(),
 
                 _phantom_marker: Default::default(),
             },
