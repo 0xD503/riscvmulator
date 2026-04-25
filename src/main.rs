@@ -1951,7 +1951,7 @@ impl RISC_V_CPU {
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        panic!(
+        todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -1966,7 +1966,7 @@ impl RISC_V_CPU {
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        panic!(
+        todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -1981,7 +1981,7 @@ impl RISC_V_CPU {
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        panic!(
+        todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -1996,7 +1996,7 @@ impl RISC_V_CPU {
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        panic!(
+        todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2011,7 +2011,7 @@ impl RISC_V_CPU {
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        panic!(
+        todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2026,7 +2026,7 @@ impl RISC_V_CPU {
                 + (self.context.decoder.immediate as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        panic!(
+        todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2038,7 +2038,7 @@ impl RISC_V_CPU {
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedXLen as XLen);
         self.context.execution.result = self.context.PC + PC_STEP;
-        panic!(
+        todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2049,7 +2049,7 @@ impl RISC_V_CPU {
         self.context.execution.jump_target_address = self.context.PC
             + (self.context.decoder.immediate as SignedXLen as XLen);
         self.context.execution.result = self.context.PC + PC_STEP;
-        panic!(
+        todo!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
