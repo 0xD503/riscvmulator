@@ -953,13 +953,6 @@ struct SoC {
 
 impl SoC {
     fn fetch(&mut self) {
-        // let bytes = self.bus.memory.byte_array[self.cpu.context.PC as usize
-        //     ..self.cpu.context.PC as usize + size_of::<InstructionType>()]
-        //     .try_into()
-        //     .unwrap();
-        // // NOTICE: so far emulator only supports little-endian
-        // let instruction = InstructionType::from_le_bytes(bytes);
-        // self.cpu.context.current_instruction = instruction;
         self.cpu.context.current_instruction =
             self.bus.memory.read(self.cpu.context.PC);
 
@@ -1003,53 +996,53 @@ impl SoC {
 
 #[allow(non_camel_case_types)]
 enum OpcodeToInstructionFormat {
-    I_3 = 0b0000011,
-    I_7 = 0b0000111,
-    I_19 = 0b0010011,
-    U_23 = 0b0010111,
-    I_27 = 0b0011011,
-    S_35 = 0b0100011,
-    S_39 = 0b0100111,
-    R_51 = 0b0110011,
-    U_55 = 0b0110111,
-    R_59 = 0b0111011,
-    R4_67 = 0b1000011,
-    R4_71 = 0b1000111,
-    R4_75 = 0b1001011,
-    R4_79 = 0b1001111,
-    R_83 = 0b1010011,
-    B_99 = 0b1100011,
-    I_103 = 0b1100111,
-    J_111 = 0b1101111,
+    I_3_LOAD = 0b0000011,
+    I_7_LOAD_FP = 0b0000111,
+    I_19_OP_IMM = 0b0010011,
+    U_23_AUIPC = 0b0010111,
+    I_27_OP_IMM_32 = 0b0011011,
+    S_35_STORE = 0b0100011,
+    S_39_STORE_FP = 0b0100111,
+    R_51_OP = 0b0110011,
+    U_55_LUI = 0b0110111,
+    R_59_OP_32 = 0b0111011,
+    R4_67_MADD = 0b1000011,
+    R4_71_MSUB = 0b1000111,
+    R4_75_NMSUB = 0b1001011,
+    R4_79_NMADD = 0b1001111,
+    R_83_OP_FP = 0b1010011,
+    B_99_BRANCH = 0b1100011,
+    I_103_JALR = 0b1100111,
+    J_111_JAL = 0b1101111,
 }
 
 impl From<Opcode> for OpcodeToInstructionFormat {
     fn from(opcode: Opcode) -> Self {
         match opcode {
-            Opcode::LOAD => OpcodeToInstructionFormat::I_3,
-            Opcode::STORE => OpcodeToInstructionFormat::S_35,
-            Opcode::MADD => OpcodeToInstructionFormat::R4_67,
-            Opcode::BRANCH => OpcodeToInstructionFormat::B_99,
+            Opcode::LOAD => OpcodeToInstructionFormat::I_3_LOAD,
+            Opcode::STORE => OpcodeToInstructionFormat::S_35_STORE,
+            Opcode::MADD => OpcodeToInstructionFormat::R4_67_MADD,
+            Opcode::BRANCH => OpcodeToInstructionFormat::B_99_BRANCH,
 
-            Opcode::LOAD_FP => OpcodeToInstructionFormat::I_7,
-            Opcode::STORE_FP => OpcodeToInstructionFormat::S_39,
-            Opcode::MSUB => OpcodeToInstructionFormat::R4_71,
-            Opcode::JALR => OpcodeToInstructionFormat::I_103,
+            Opcode::LOAD_FP => OpcodeToInstructionFormat::I_7_LOAD_FP,
+            Opcode::STORE_FP => OpcodeToInstructionFormat::S_39_STORE_FP,
+            Opcode::MSUB => OpcodeToInstructionFormat::R4_71_MSUB,
+            Opcode::JALR => OpcodeToInstructionFormat::I_103_JALR,
 
-            Opcode::NMSUB => OpcodeToInstructionFormat::R4_75,
+            Opcode::NMSUB => OpcodeToInstructionFormat::R4_75_NMSUB,
 
-            Opcode::NMADD => OpcodeToInstructionFormat::R4_79,
-            Opcode::JAL => OpcodeToInstructionFormat::J_111,
+            Opcode::NMADD => OpcodeToInstructionFormat::R4_79_NMADD,
+            Opcode::JAL => OpcodeToInstructionFormat::J_111_JAL,
 
-            Opcode::OP_IMM => OpcodeToInstructionFormat::I_19,
-            Opcode::OP => OpcodeToInstructionFormat::R_51,
-            Opcode::OP_FP => OpcodeToInstructionFormat::R_83,
+            Opcode::OP_IMM => OpcodeToInstructionFormat::I_19_OP_IMM,
+            Opcode::OP => OpcodeToInstructionFormat::R_51_OP,
+            Opcode::OP_FP => OpcodeToInstructionFormat::R_83_OP_FP,
 
-            Opcode::AUIPC => OpcodeToInstructionFormat::U_23,
-            Opcode::LUI => OpcodeToInstructionFormat::U_55,
+            Opcode::AUIPC => OpcodeToInstructionFormat::U_23_AUIPC,
+            Opcode::LUI => OpcodeToInstructionFormat::U_55_LUI,
 
-            Opcode::OP_IMM_32 => OpcodeToInstructionFormat::I_27,
-            Opcode::OP_32 => OpcodeToInstructionFormat::R_59,
+            Opcode::OP_IMM_32 => OpcodeToInstructionFormat::I_27_OP_IMM_32,
+            Opcode::OP_32 => OpcodeToInstructionFormat::R_59_OP_32,
 
             Opcode::MISC_MEM
             | Opcode::AMO
@@ -1057,7 +1050,7 @@ impl From<Opcode> for OpcodeToInstructionFormat {
             | Opcode::OP_V
             | Opcode::OP_VE => {
                 error!("Opcode not implemented yet: {:#09b}", opcode);
-                unreachable!("Opcode not implemented yet: {:#09b}", opcode);
+                todo!("Opcode not implemented yet: {:#09b}", opcode);
             }
 
             Opcode::reserved_1
@@ -1074,7 +1067,7 @@ impl From<Opcode> for OpcodeToInstructionFormat {
             | Opcode::custom_2
             | Opcode::custom_3 => {
                 error!("Opcode reserved for custom commands: {:#09b}", opcode);
-                unreachable!(
+                unimplemented!(
                     "Opcode reserved for custom commands: {:#09b}",
                     opcode
                 );
@@ -1588,24 +1581,26 @@ impl RISC_V_CPU {
         self.context.decoder.opcode = self.extract_opcode();
 
         match From::from(self.context.decoder.opcode.clone()) {
-            OpcodeToInstructionFormat::R_51
-            | OpcodeToInstructionFormat::R_59
-            | OpcodeToInstructionFormat::R_83 => self.decode_r_format(),
-            OpcodeToInstructionFormat::I_3
-            | OpcodeToInstructionFormat::I_7
-            | OpcodeToInstructionFormat::I_19
-            | OpcodeToInstructionFormat::I_27
-            | OpcodeToInstructionFormat::I_103 => self.decode_i_format(),
-            OpcodeToInstructionFormat::S_35
-            | OpcodeToInstructionFormat::S_39 => self.decode_s_format(),
-            OpcodeToInstructionFormat::B_99 => self.decode_b_format(),
-            OpcodeToInstructionFormat::U_23
-            | OpcodeToInstructionFormat::U_55 => self.decode_u_format(),
-            OpcodeToInstructionFormat::J_111 => self.decode_j_format(),
-            OpcodeToInstructionFormat::R4_67
-            | OpcodeToInstructionFormat::R4_71
-            | OpcodeToInstructionFormat::R4_75
-            | OpcodeToInstructionFormat::R4_79 => self.decode_r4_format(),
+            OpcodeToInstructionFormat::R_51_OP
+            | OpcodeToInstructionFormat::R_59_OP_32
+            | OpcodeToInstructionFormat::R_83_OP_FP => self.decode_r_format(),
+            OpcodeToInstructionFormat::I_3_LOAD
+            | OpcodeToInstructionFormat::I_7_LOAD_FP
+            | OpcodeToInstructionFormat::I_19_OP_IMM
+            | OpcodeToInstructionFormat::I_27_OP_IMM_32
+            | OpcodeToInstructionFormat::I_103_JALR => self.decode_i_format(),
+            OpcodeToInstructionFormat::S_35_STORE
+            | OpcodeToInstructionFormat::S_39_STORE_FP => {
+                self.decode_s_format()
+            }
+            OpcodeToInstructionFormat::B_99_BRANCH => self.decode_b_format(),
+            OpcodeToInstructionFormat::U_23_AUIPC
+            | OpcodeToInstructionFormat::U_55_LUI => self.decode_u_format(),
+            OpcodeToInstructionFormat::J_111_JAL => self.decode_j_format(),
+            OpcodeToInstructionFormat::R4_67_MADD
+            | OpcodeToInstructionFormat::R4_71_MSUB
+            | OpcodeToInstructionFormat::R4_75_NMSUB
+            | OpcodeToInstructionFormat::R4_79_NMADD => self.decode_r4_format(),
         }
 
         // // TODO: remove unconditional decoding

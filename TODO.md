@@ -12,6 +12,7 @@
 -[ ] `A` extension (atomics)
 -[ ] `F` extension (floating point)
 -[ ] `D` extension ()
+-[ ] `Zicsr` extension (control and status registers (CSRs))
 -[ ] basic privilleged ISA
 -[ ] `G` extensions (general purpose `IMAFD` + privilleged extensions)
 -[ ] Linux-able
