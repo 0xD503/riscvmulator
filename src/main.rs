@@ -27,7 +27,7 @@ type Word = u32;
 type SignedWord = i32;
 type DoubleWord = u64;
 type SignedDoubleWord = i64;
-// type QuadWord = u128;
+type QuadWord = u128;
 // type SignedQuadWord = i128;
 
 // // type SignedImmediate = i64;
@@ -49,7 +49,7 @@ const RISCV_NUM_OF_REGISTERS: usize = 32;
 const RISCV_X0_ZERO_REGISTER_VALUE: XLen = 0x00000000;
 
 // default constants
-const PC_RESET_VALUE: XLen = 0x00000000;
+const PC_RESET_VALUE: XLen = RAM_BASE;
 const PC_STEP: XLen = 0x00000004;
 
 const INITIAL_INSTRUCTION: InstructionType = 0x00000000;
@@ -58,6 +58,7 @@ const MEM_DEFAULT_VALUE: Byte = 0x00;
 const RAM_BASE: XLen = 0x80000000;
 const RAM_SIZE: usize = 65536; // placeholder value, to be configured later
 const RAM_END: XLen = RAM_BASE + RAM_SIZE as XLen;
+// const MEM_SPACE_SIZE: usize = XLen::MAX as usize;
 
 // decoder constants
 const BIT_OFFSET_OPCODE: usize = 0;
@@ -98,7 +99,7 @@ const BIT_OFFSET_IMM_4_1: usize = 8;
 const BIT_OFFSET_IMM_4_1_FINAL: usize = 1;
 const MASK_IMM_4_1: InstructionType = 0x0F << BIT_OFFSET_IMM_4_1_FINAL;
 const BIT_OFFSET_IMM_10_1: usize = 21;
-const BIT_OFFSET_IMM_10_1_FINAL: usize = 21;
+const BIT_OFFSET_IMM_10_1_FINAL: usize = 1;
 const MASK_IMM_10_1: InstructionType = 0x3FF << BIT_OFFSET_IMM_10_1_FINAL;
 const BIT_OFFSET_IMM_19_12: usize = 12;
 const BIT_OFFSET_IMM_19_12_FINAL: usize = 12;
@@ -544,7 +545,7 @@ impl From<InstructionType> for OP_32_Funct3 {
         match value {
             0b000 => OP_32_Funct3::ARITHW,
             0b001 => OP_32_Funct3::SLLW,
-            0b010 => OP_32_Funct3::SRXW,
+            0b101 => OP_32_Funct3::SRXW,
 
             _ => {
                 error!("Unknown funct3: {value:#05b}");
@@ -873,7 +874,7 @@ impl MemoryValue for DoubleWord {
     }
 }
 
-impl MemoryValue for u128 {
+impl MemoryValue for QuadWord {
     fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
@@ -893,6 +894,7 @@ impl<AddrType> Memory<AddrType> {
     fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
         trace!("Reading memory at addr: {address:#018X?}");
 
+        let address = address - RAM_BASE;
         let bytes = (self.byte_array)
             [address as usize..address as usize + size_of::<MemValType>()]
             .try_into()
@@ -908,11 +910,12 @@ impl<AddrType> Memory<AddrType> {
     ) {
         trace!("Writing memory at addr: {address:#018X?}");
 
+        let address = address - RAM_BASE;
+        // TODO: notice, so far emulator only supports little-endian
         let bytes = value.to_le_bytes();
         self.byte_array
             [address as usize..address as usize + size_of::<MemValType>()]
             .copy_from_slice(&bytes);
-        todo!("unimplemented");
     }
 }
 
@@ -940,7 +943,6 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
             error!("an attempt to write to unimplemented address space!");
             panic!("an attempt to write to unimplemented address space");
         }
-        todo!("TODO: unimplemented: segregated address space for memory/IO");
     }
 }
 
@@ -980,8 +982,8 @@ impl SoC {
 
         // fill memory with NOP's
         self.bus.memory.byte_array = [MEM_DEFAULT_VALUE; RAM_SIZE].to_vec();
-        for i in (0..RAM_SIZE).step_by(PC_STEP as usize) {
-            self.bus.memory.byte_array[i] = Opcode::OP_IMM as Byte;
+        for addr in (RAM_BASE..RAM_END).step_by(PC_STEP as usize) {
+            self.bus.memory.write(addr, Opcode::OP_IMM as Byte);
         }
     }
 
@@ -1806,7 +1808,8 @@ impl RISC_V_CPU {
 
         self.context.execution.result =
             if (self.context.decoder.source_register_1 as UnsignedXLen)
-                < (self.context.decoder.immediate as UnsignedXLen)
+                < (self.context.decoder.immediate as SignedImmediate
+                    as SignedXLen as UnsignedXLen)
             {
                 1
             } else {
@@ -1999,7 +2002,7 @@ impl RISC_V_CPU {
                     as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        todo!(
+        error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2015,7 +2018,7 @@ impl RISC_V_CPU {
                     as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        todo!(
+        error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2031,7 +2034,7 @@ impl RISC_V_CPU {
                     as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        todo!(
+        error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2047,7 +2050,7 @@ impl RISC_V_CPU {
                     as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        todo!(
+        error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2063,7 +2066,7 @@ impl RISC_V_CPU {
                     as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        todo!(
+        error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2079,7 +2082,7 @@ impl RISC_V_CPU {
                     as SignedXLen as XLen);
             self.context.execution.need_to_branch = true;
         }
-        todo!(
+        error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2088,11 +2091,12 @@ impl RISC_V_CPU {
         trace!("Executing JALR...");
 
         self.context.execution.jump_target_address =
-            self.context.decoder.source_register_1
+            (self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
-                    as SignedXLen as XLen);
+                    as SignedXLen as XLen))
+                & !(XLen::MAX & 0x01);
         self.context.execution.result = self.context.PC + PC_STEP;
-        todo!(
+        error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2104,7 +2108,7 @@ impl RISC_V_CPU {
             + (self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen);
         self.context.execution.result = self.context.PC + PC_STEP;
-        todo!(
+        error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
@@ -2300,7 +2304,6 @@ impl RISC_V_CPU {
                     unreachable!("unreachable!");
                 }
             }
-            todo!("TODO: unimplemented");
         }
     }
 
