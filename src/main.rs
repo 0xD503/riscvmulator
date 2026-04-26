@@ -4,7 +4,7 @@ use clap::Parser;
 use log::{debug, error, info, trace, warn};
 use serde::Deserialize;
 
-use std::cmp::PartialOrd;
+// use std::cmp::PartialOrd;
 use std::convert::From;
 use std::fmt::{self, Binary, Debug};
 use std::marker::PhantomData;
@@ -46,7 +46,9 @@ type SignedInstructionType = i32;
 type BusAddrType = XLen;
 
 const RISCV_NUM_OF_REGISTERS: usize = 32;
+const RISCV_NUM_OF_CSR: usize = 1 << BITS_NUM_IMM_11_0;
 const RISCV_X0_ZERO_REGISTER_VALUE: XLen = 0x00000000;
+const RISCV_CSR_INITIAL_VALUE: XLen = 0x00000000;
 
 // default constants
 const PC_RESET_VALUE: XLen = RAM_BASE;
@@ -85,6 +87,9 @@ const MASK_SHAMT: InstructionType = XLen::BITS - 1;
 
 const BIT_OFFSET_IMM_11_0: usize = 20;
 const BIT_OFFSET_IMM_11_0_FINAL: usize = 0;
+const BITS_NUM_IMM_11_0: usize = 12;
+// const MASK_IMM_11_0: InstructionType =
+//     ((1 << BITS_NUM_IMM_11_0) - 1) << BIT_OFFSET_IMM_11_0_FINAL;
 const BIT_OFFSET_IMM_11_5: usize = 25;
 const BIT_OFFSET_IMM_11_5_FINAL: usize = 5;
 const BIT_OFFSET_IMM_4_0: usize = 7;
@@ -497,6 +502,32 @@ impl From<InstructionType> for SYSTEM_Funct3 {
 }
 
 #[allow(non_camel_case_types)]
+enum SYSTEM_Imm_transfer_control_return_from {
+    ECALL = 0,
+    EBREAK = 1,
+    URET = 2,
+    SRET = 258,
+    MRET = 770,
+}
+
+impl From<InstructionType> for SYSTEM_Imm_transfer_control_return_from {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0x000 => SYSTEM_Imm_transfer_control_return_from::ECALL,
+            0x001 => SYSTEM_Imm_transfer_control_return_from::EBREAK,
+            0x002 => SYSTEM_Imm_transfer_control_return_from::URET,
+            0x102 => SYSTEM_Imm_transfer_control_return_from::SRET,
+            0x302 => SYSTEM_Imm_transfer_control_return_from::MRET,
+
+            _ => {
+                error!("Unknown immediate: {value:#05X}");
+                unreachable!("Unknown immediate: {value:#05X}");
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 enum STORE_Funct3 {
     SB = 0b000, //
@@ -663,9 +694,59 @@ enum ExecutableInstruction {
     JAL, // jump and link
 }
 
+trait RegisterInterface {
+    fn read(&self) -> XLen;
+    fn write(&mut self, value: XLen);
+}
+
+trait RegisterFileInterface {
+    fn read(&self, offset: usize) -> XLen;
+    fn write(&mut self, offset: usize, value: XLen);
+}
+
+#[derive(Copy, Clone)]
+struct Register {
+    value: XLen,
+}
+
+impl RegisterInterface for Register {
+    fn read(&self) -> XLen {
+        self.value
+    }
+    fn write(&mut self, value: XLen) {
+        self.value = value;
+    }
+}
+
+// #[derive(Clone)]
+// struct RegisterFile {
+//     registers: [Register; RISCV_NUM_OF_REGISTERS],
+// }
+
 #[derive(Clone)]
-struct RegisterFile {
-    registers: [XLen; RISCV_NUM_OF_REGISTERS],
+struct RegisterFile<const REGS_NUM: usize> {
+    registers: [Register; REGS_NUM],
+}
+
+impl<const REGS_NUM: usize> RegisterFileInterface for RegisterFile<REGS_NUM> {
+    fn read(&self, offset: usize) -> XLen {
+        trace!("Reading register x{offset:#?}...");
+
+        self.registers[offset].read()
+    }
+
+    fn write(&mut self, offset: usize, value: XLen) {
+        trace!("Writing register x{offset:#?}...");
+
+        // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
+        if offset != (RegisterName::x0_zero as usize) {
+            self.registers[offset].write(value);
+        } else {
+            trace!(
+                "An attempt to write value {value} to register `x0_zero` was silently discarded"
+            );
+        }
+    }
 }
 
 #[allow(non_camel_case_types, dead_code)]
@@ -704,25 +785,13 @@ enum RegisterName {
     x31_t6,   // temporary register 6
 }
 
-impl RegisterFile {
-    fn read(&self, offset: usize) -> XLen {
-        trace!("Reading register x{offset:#?}...");
+// struct ControlStatusRegister {
+//     //
+// }
 
-        self.registers[offset]
-    }
-
-    fn write(&mut self, offset: usize, value: XLen) {
-        trace!("Writing register x{offset:#?}...");
-
-        // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
-        if offset != (RegisterName::x0_zero as usize) {
-            self.registers[offset] = value;
-        } else {
-            trace!(
-                "An attempt to write value {value} to register `x0_zero` was silently discarded"
-            );
-        }
-    }
+#[derive(Clone)]
+struct ControlStatusRegisters {
+    registers: [Register; RISCV_NUM_OF_CSR],
 }
 
 // #[derive(Default, Clone)]
@@ -820,8 +889,9 @@ struct ExecutionContext {
 #[allow(non_snake_case)]
 #[derive(Clone)]
 struct Context {
-    register_file: RegisterFile,
+    register_file: RegisterFile<RISCV_NUM_OF_REGISTERS>,
     PC: XLen,
+    control_status_registers: RegisterFile<RISCV_NUM_OF_CSR>,
     current_instruction: InstructionType,
     decoder: Decoder,
     execution: ExecutionContext,
@@ -1424,10 +1494,66 @@ impl RISC_V_CPU {
 
             // I_115 (Zicsr_extension)
             Opcode::SYSTEM => {
-                todo!("read decoding values");
-                // self.context.decoder.need_to_read_memory = ;
+                self.context.decoder.need_to_read_memory = false;
                 match SYSTEM_Funct3::from(self.context.decoder.funct3) {
                     SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM => {
+                        match From::from(self.context.decoder.immediate) {
+                            SYSTEM_Imm_transfer_control_return_from::ECALL => {
+                                //
+                                todo!();
+                            }
+                            SYSTEM_Imm_transfer_control_return_from::EBREAK => {
+                                //
+                                todo!();
+                            }
+                            SYSTEM_Imm_transfer_control_return_from::URET => {
+                                if (self.context.decoder.source_register_1 != 0)
+                                    || (self.context.register_file.read(
+                                        self.context
+                                            .decoder
+                                            .destination_register_offset,
+                                    ) != 0)
+                                {
+                                    error!("rs1 and rd should be equal 0");
+                                    unreachable!(
+                                        "rs1 and rd should be equal 0"
+                                    );
+                                }
+                                //
+                                todo!();
+                            }
+                            SYSTEM_Imm_transfer_control_return_from::SRET => {
+                                if (self.context.decoder.source_register_1 != 0)
+                                    || (self.context.register_file.read(
+                                        self.context
+                                            .decoder
+                                            .destination_register_offset,
+                                    ) != 0)
+                                {
+                                    error!("rs1 and rd should be equal 0");
+                                    unreachable!(
+                                        "rs1 and rd should be equal 0"
+                                    );
+                                }
+                                //
+                                todo!();
+                            }
+                            SYSTEM_Imm_transfer_control_return_from::MRET => {
+                                if (self.context.decoder.source_register_1 != 0)
+                                    || (self.context.register_file.read(
+                                        self.context
+                                            .decoder
+                                            .destination_register_offset,
+                                    ) != 0)
+                                {
+                                    error!("rs1 and rd should be equal 0");
+                                    unreachable!(
+                                        "rs1 and rd should be equal 0"
+                                    );
+                                }
+                                //
+                            }
+                        }
                         todo!();
                     }
                     SYSTEM_Funct3::CSRRW => {
@@ -2725,8 +2851,14 @@ fn main() {
             context: Context {
                 PC: PC_RESET_VALUE,
                 register_file: RegisterFile {
-                    registers: [RISCV_X0_ZERO_REGISTER_VALUE;
-                        RISCV_NUM_OF_REGISTERS],
+                    registers: [Register {
+                        value: RISCV_X0_ZERO_REGISTER_VALUE,
+                    }; RISCV_NUM_OF_REGISTERS],
+                },
+                control_status_registers: RegisterFile {
+                    registers: [Register {
+                        value: RISCV_CSR_INITIAL_VALUE,
+                    }; RISCV_NUM_OF_CSR],
                 },
                 current_instruction: INITIAL_INSTRUCTION,
                 decoder: Decoder {
