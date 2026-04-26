@@ -12,6 +12,8 @@ RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     --no-install-recommends \
     gcc-riscv64-linux-gnu gcc-riscv64-unknown-elf \
     binutils-riscv64-linux-gnu binutils-riscv64-unknown-elf \
+    picolibc-riscv64-unknown-elf \
+    newlib-source \
     #gdb-riscv64-linux-gnu \
     make \
     git \
