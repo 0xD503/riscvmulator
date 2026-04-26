@@ -692,6 +692,22 @@ enum ExecutableInstruction {
     BGEU, // branch if greater or equal than (unsigned)
 
     JAL, // jump and link
+
+    ECALL,  // make service request to the execution environment
+    EBREAK, // return control to debugging environment
+
+    FENCE, // order I/O and memory accesses
+
+    URET, // return from user exception
+    SRET, // return from supervisor exception
+    MRET, // return from machine exception
+
+    CSRRW,  // CSR read/write
+    CSRRS,  // CSR read/set
+    CSRRC,  // CSR read/clear
+    CSRRWI, // CSR read/write immediate
+    CSRRSI, // CSR read/set immediate
+    CSRRCI, // CSR read/clear immediate
 }
 
 trait RegisterInterface {
@@ -717,11 +733,6 @@ impl RegisterInterface for Register {
         self.value = value;
     }
 }
-
-// #[derive(Clone)]
-// struct RegisterFile {
-//     registers: [Register; RISCV_NUM_OF_REGISTERS],
-// }
 
 #[derive(Clone)]
 struct RegisterFile<const REGS_NUM: usize> {
@@ -785,15 +796,6 @@ enum RegisterName {
     x31_t6,   // temporary register 6
 }
 
-// struct ControlStatusRegister {
-//     //
-// }
-
-#[derive(Clone)]
-struct ControlStatusRegisters {
-    registers: [Register; RISCV_NUM_OF_CSR],
-}
-
 // #[derive(Default, Clone)]
 // enum InstructionFormat {
 //     R,
@@ -805,6 +807,14 @@ struct ControlStatusRegisters {
 //     J,
 //     R4,
 // }
+
+#[derive(Default, Clone)]
+struct ZicsrContext {
+    need_to_read_csr: bool,
+    need_to_write_csr: bool,
+    csr_value: XLen,
+    uimm: XLen,
+}
 
 #[derive(Default, Clone)]
 struct Decoder {
@@ -825,6 +835,8 @@ struct Decoder {
     need_to_write_memory: bool,
     need_to_write_back: bool,
     need_to_jump: bool,
+
+    zicsr: ZicsrContext,
     //
     // i_imm_inst_31: InstructionType,
     // i_imm_inst_30_25: InstructionType,
@@ -1339,12 +1351,12 @@ impl RISC_V_CPU {
 
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
-        self.context.decoder.need_to_jump = false;
         self.context.execution.need_to_branch = false;
 
         match self.context.decoder.opcode {
             // I_3
             Opcode::LOAD => {
+                self.context.decoder.need_to_jump = false;
                 self.context.decoder.need_to_read_memory = true;
                 match OPCODE_LOAD_Funct3::from(self.context.decoder.funct3) {
                     OPCODE_LOAD_Funct3::LB => {
@@ -1379,6 +1391,7 @@ impl RISC_V_CPU {
             }
             // I_19
             Opcode::OP_IMM => {
+                self.context.decoder.need_to_jump = false;
                 self.context.decoder.need_to_read_memory = false;
                 match OP_IMM_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_Funct3::ADDI => {
@@ -1440,6 +1453,7 @@ impl RISC_V_CPU {
             }
             // I_27
             Opcode::OP_IMM_32 => {
+                self.context.decoder.need_to_jump = false;
                 self.context.decoder.need_to_read_memory = false;
                 // self.context.decoder.source_register_1 &=
                 //     UnsignedImmediate::MAX as XLen;
@@ -1494,6 +1508,7 @@ impl RISC_V_CPU {
 
             // I_115 (Zicsr_extension)
             Opcode::SYSTEM => {
+                self.context.decoder.need_to_jump = false;
                 self.context.decoder.need_to_read_memory = false;
                 match SYSTEM_Funct3::from(self.context.decoder.funct3) {
                     SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM => {
@@ -1507,72 +1522,129 @@ impl RISC_V_CPU {
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::URET => {
-                                if (self.context.decoder.source_register_1 != 0)
-                                    || (self.context.register_file.read(
-                                        self.context
-                                            .decoder
-                                            .destination_register_offset,
-                                    ) != 0)
-                                {
-                                    error!("rs1 and rd should be equal 0");
-                                    unreachable!(
-                                        "rs1 and rd should be equal 0"
-                                    );
-                                }
+                                // if (self.context.decoder.source_register_1 != 0)
+                                //     || (self.context.register_file.read(
+                                //         self.context
+                                //             .decoder
+                                //             .destination_register_offset,
+                                //     ) != 0)
+                                // {
+                                //     error!("rs1 and rd should be equal 0");
+                                //     unreachable!(
+                                //         "rs1 and rd should be equal 0"
+                                //     );
+                                // }
                                 //
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::SRET => {
-                                if (self.context.decoder.source_register_1 != 0)
-                                    || (self.context.register_file.read(
-                                        self.context
-                                            .decoder
-                                            .destination_register_offset,
-                                    ) != 0)
-                                {
-                                    error!("rs1 and rd should be equal 0");
-                                    unreachable!(
-                                        "rs1 and rd should be equal 0"
-                                    );
-                                }
+                                // if (self.context.decoder.source_register_1 != 0)
+                                //     || (self.context.register_file.read(
+                                //         self.context
+                                //             .decoder
+                                //             .destination_register_offset,
+                                //     ) != 0)
+                                // {
+                                //     error!("rs1 and rd should be equal 0");
+                                //     unreachable!(
+                                //         "rs1 and rd should be equal 0"
+                                //     );
+                                // }
                                 //
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::MRET => {
-                                if (self.context.decoder.source_register_1 != 0)
-                                    || (self.context.register_file.read(
-                                        self.context
-                                            .decoder
-                                            .destination_register_offset,
-                                    ) != 0)
-                                {
-                                    error!("rs1 and rd should be equal 0");
-                                    unreachable!(
-                                        "rs1 and rd should be equal 0"
-                                    );
-                                }
+                                // if (self.context.decoder.source_register_1 != 0)
+                                //     || (self.context.register_file.read(
+                                //         self.context
+                                //             .decoder
+                                //             .destination_register_offset,
+                                //     ) != 0)
+                                // {
+                                //     error!("rs1 and rd should be equal 0");
+                                //     unreachable!(
+                                //         "rs1 and rd should be equal 0"
+                                //     );
+                                // }
                                 //
                             }
                         }
                         todo!();
                     }
+                    // CSR instructions are atomic
                     SYSTEM_Funct3::CSRRW => {
-                        todo!();
+                        self.context.decoder.zicsr.need_to_write_csr = true;
+                        if self.context.decoder.destination_register_offset
+                            == RegisterName::x0_zero as usize
+                        {
+                            self.context.decoder.zicsr.need_to_read_csr = false;
+                        } else {
+                            self.context.decoder.zicsr.need_to_read_csr = true;
+                        }
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::CSRRW;
                     }
                     SYSTEM_Funct3::CSRRS => {
-                        todo!();
+                        self.context.decoder.zicsr.need_to_read_csr = true;
+                        if self.extract_source_register_1_index() == 0 {
+                            self.context.decoder.zicsr.need_to_write_csr =
+                                false;
+                        } else {
+                            self.context.decoder.zicsr.need_to_write_csr = true;
+                        }
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::CSRRS;
                     }
                     SYSTEM_Funct3::CSRRC => {
-                        todo!();
+                        self.context.decoder.zicsr.need_to_read_csr = true;
+                        if self.extract_source_register_1_index() == 0 {
+                            self.context.decoder.zicsr.need_to_write_csr =
+                                false;
+                        } else {
+                            self.context.decoder.zicsr.need_to_write_csr = true;
+                        }
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::CSRRC;
                     }
                     SYSTEM_Funct3::CSRRWI => {
-                        todo!();
+                        self.context.decoder.zicsr.need_to_write_csr = true;
+                        self.context.decoder.zicsr.uimm =
+                            self.extract_source_register_1_index() as XLen;
+                        if self.context.decoder.destination_register_offset
+                            == RegisterName::x0_zero as usize
+                        {
+                            self.context.decoder.zicsr.need_to_read_csr = false;
+                        } else {
+                            self.context.decoder.zicsr.need_to_read_csr = true;
+                        }
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::CSRRWI;
                     }
                     SYSTEM_Funct3::CSRRSI => {
-                        todo!();
+                        self.context.decoder.zicsr.need_to_read_csr = true;
+                        if self.extract_source_register_1_index() == 0 {
+                            self.context.decoder.zicsr.need_to_write_csr =
+                                false;
+                        } else {
+                            self.context.decoder.zicsr.need_to_write_csr = true;
+                            self.context.decoder.zicsr.uimm =
+                                self.extract_source_register_1_index() as XLen;
+                        }
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::CSRRSI;
                     }
                     SYSTEM_Funct3::CSRRCI => {
-                        todo!();
+                        self.context.decoder.zicsr.need_to_read_csr = true;
+                        if self.extract_source_register_1_index() == 0 {
+                            self.context.decoder.zicsr.need_to_write_csr =
+                                false;
+                        } else {
+                            self.context.decoder.zicsr.need_to_write_csr = true;
+                            self.context.decoder.zicsr.uimm =
+                                self.extract_source_register_1_index() as XLen;
+                        }
+                        self.context.decoder.executable_instruction =
+                            ExecutableInstruction::CSRRCI;
                     }
                 }
             }
@@ -1900,6 +1972,47 @@ impl RISC_V_CPU {
             }
             ExecutableInstruction::SRAW => {
                 self.instruction_shift_right_arith_word();
+            }
+
+            ExecutableInstruction::FENCE => {
+                self.instruction_fence();
+            }
+
+            ExecutableInstruction::ECALL => {
+                self.instruction_execution_call();
+            }
+            ExecutableInstruction::EBREAK => {
+                self.instruction_execution_break();
+            }
+
+            ExecutableInstruction::URET => {
+                self.instruction_user_return();
+            }
+            ExecutableInstruction::SRET => {
+                self.instruction_supervisor_return();
+            }
+            ExecutableInstruction::MRET => {
+                self.instruction_machine_return();
+            }
+
+            // Zicsr extension
+            ExecutableInstruction::CSRRW => {
+                self.instruction_csr_read_write();
+            }
+            ExecutableInstruction::CSRRS => {
+                self.instruction_csr_read_set();
+            }
+            ExecutableInstruction::CSRRC => {
+                self.instruction_csr_read_clear();
+            }
+            ExecutableInstruction::CSRRWI => {
+                self.instruction_csr_read_write_immediate();
+            }
+            ExecutableInstruction::CSRRSI => {
+                self.instruction_csr_read_set_immediate();
+            }
+            ExecutableInstruction::CSRRCI => {
+                self.instruction_csr_read_clear_immediate();
             }
         }
     }
@@ -2403,6 +2516,110 @@ impl RISC_V_CPU {
         self.context.execution.result = result32 as SignedXLen as XLen;
     }
 
+    fn instruction_fence(&mut self) {
+        //
+        todo!();
+    }
+
+    fn instruction_execution_call(&mut self) {
+        //
+        todo!();
+    }
+
+    fn instruction_execution_break(&mut self) {
+        //
+        todo!();
+    }
+
+    fn instruction_user_return(&mut self) {
+        //
+        todo!();
+    }
+
+    fn instruction_supervisor_return(&mut self) {
+        //
+        todo!();
+    }
+
+    fn instruction_machine_return(&mut self) {
+        //
+        todo!();
+    }
+
+    fn read_csr_to_result(&mut self) {
+        self.context.execution.result = self
+            .context
+            .control_status_registers
+            .read(self.context.decoder.immediate as usize);
+    }
+
+    fn prepare_value_for_csr(&mut self, value: XLen) {
+        self.context.decoder.zicsr.csr_value = value;
+    }
+
+    fn prepare_set_bits_for_csr(&mut self, value: XLen) {
+        self.context.decoder.zicsr.csr_value |= value;
+    }
+
+    fn prepare_clear_bits_for_csr(&mut self, value: XLen) {
+        self.context.decoder.zicsr.csr_value &= !value;
+    }
+
+    fn instruction_csr_read_write(&mut self) {
+        if self.context.decoder.zicsr.need_to_read_csr {
+            self.read_csr_to_result();
+        }
+        self.prepare_value_for_csr(self.context.decoder.source_register_1);
+    }
+
+    fn instruction_csr_read_set(&mut self) {
+        self.read_csr_to_result();
+        if self.context.decoder.zicsr.need_to_write_csr {
+            self.prepare_set_bits_for_csr(
+                self.context.decoder.source_register_1,
+            );
+        }
+    }
+
+    fn instruction_csr_read_clear(&mut self) {
+        self.read_csr_to_result();
+        if self.context.decoder.zicsr.need_to_write_csr {
+            self.prepare_clear_bits_for_csr(
+                self.context.decoder.source_register_1,
+            );
+        }
+    }
+
+    fn instruction_csr_read_write_immediate(&mut self) {
+        if self.context.decoder.zicsr.need_to_read_csr {
+            self.read_csr_to_result();
+        }
+        self.prepare_value_for_csr(self.context.decoder.zicsr.uimm);
+    }
+
+    fn instruction_csr_read_set_immediate(&mut self) {
+        self.read_csr_to_result();
+        if self.context.decoder.zicsr.need_to_write_csr {
+            self.prepare_set_bits_for_csr(self.context.decoder.zicsr.uimm);
+        }
+    }
+
+    fn instruction_csr_read_clear_immediate(&mut self) {
+        self.read_csr_to_result();
+        if self.context.decoder.zicsr.need_to_write_csr {
+            self.prepare_clear_bits_for_csr(self.context.decoder.zicsr.uimm);
+        }
+    }
+
+    // fn read_memory<ValType: MemoryValue, SignedValType>(
+    //     &mut self,
+    //     bus: &mut SystemBus<BusAddrType>,
+    // ) {
+    //     self.context.execution.result =
+    //         bus.read::<ValType>(self.context.execution.memory_address)
+    //             as SignedValType as SignedXLen as XLen;
+    // }
+
     fn memory_operation(&mut self, bus: &mut SystemBus<BusAddrType>) {
         if self.context.decoder.need_to_read_memory {
             trace!("Executing memory read...");
@@ -2489,31 +2706,63 @@ impl RISC_V_CPU {
         }
     }
 
-    fn write_back(&mut self) {
-        if self.context.decoder.need_to_write_back {
-            let register_offset =
-                self.context.decoder.destination_register_offset;
-            trace!("Writing back to register x{register_offset:#?}...");
+    fn write_back_to_reg(&mut self) {
+        let register_offset = self.context.decoder.destination_register_offset;
+        trace!("Writing back to register x{register_offset:#?}...");
 
-            self.context
-                .register_file
-                .write(register_offset, self.context.execution.result);
+        self.context
+            .register_file
+            .write(register_offset, self.context.execution.result);
+    }
+
+    fn set_pc_to_target_address(&mut self, target_addr: XLen) {
+        error!(
+            "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
+        );
+        self.context.PC = target_addr;
+    }
+
+    fn jump_to_target_address(&mut self) {
+        trace!("Updating PC to JTA...");
+
+        self.set_pc_to_target_address(
+            self.context.execution.jump_target_address,
+        );
+    }
+
+    fn branch_to_target_address(&mut self) {
+        trace!("Updating PC to BTA...");
+
+        self.set_pc_to_target_address(
+            self.context.execution.branch_target_address,
+        );
+    }
+
+    fn write_to_csr(&mut self) {
+        let register_offset = self.context.decoder.immediate as usize;
+        trace!("Writing to CSR #{register_offset:#?}...");
+
+        self.context
+            .control_status_registers
+            .write(register_offset, self.context.decoder.zicsr.csr_value);
+    }
+
+    fn write_back(&mut self) {
+        // check if write to general purpose register is necessary
+        if self.context.decoder.need_to_write_back {
+            self.write_back_to_reg();
             // jumps always incur register write-back
             if self.context.decoder.need_to_jump {
-                trace!("Updating PC to JTA...");
-
-                error!(
-                    "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
-                );
-                self.context.PC = self.context.execution.jump_target_address;
+                self.jump_to_target_address();
+                return;
             }
         } else if self.context.execution.need_to_branch {
-            trace!("Updating PC to BTA...");
-
-            error!(
-                "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
-            );
-            self.context.PC = self.context.execution.branch_target_address;
+            self.branch_to_target_address();
+            return;
+        }
+        // check if write to CSR is necessary
+        if self.context.decoder.zicsr.need_to_write_csr {
+            self.write_to_csr();
         }
     }
 
@@ -2524,18 +2773,26 @@ impl RISC_V_CPU {
         )
     }
 
+    fn extract_source_register_1_index(&self) -> usize {
+        ((self.context.current_instruction >> BIT_OFFSET_SOURCE_REGISTER_1)
+            & MASK_SOURCE_REGISTER_1) as usize
+    }
+
     fn extract_source_register_1(&self) -> XLen {
-        self.context.register_file.read(
-            ((self.context.current_instruction >> BIT_OFFSET_SOURCE_REGISTER_1)
-                & MASK_SOURCE_REGISTER_1) as usize,
-        )
+        self.context
+            .register_file
+            .read(self.extract_source_register_1_index())
+    }
+
+    fn extract_source_register_2_index(&self) -> usize {
+        ((self.context.current_instruction >> BIT_OFFSET_SOURCE_REGISTER_2)
+            & MASK_SOURCE_REGISTER_2) as usize
     }
 
     fn extract_source_register_2(&self) -> XLen {
-        self.context.register_file.read(
-            ((self.context.current_instruction >> BIT_OFFSET_SOURCE_REGISTER_2)
-                & MASK_SOURCE_REGISTER_2) as usize,
-        )
+        self.context
+            .register_file
+            .read(self.extract_source_register_2_index())
     }
 
     fn extract_destination_register_index(&self) -> usize {
