@@ -1,18 +1,18 @@
 *           text=auto
 
-*.rs        text diff=rust
+*.rs        text eol=lf diff=rust
 
-*.lua       text diff=lua
+*.lua       text eol=lf diff=lua
 
-*.toml      text diff=toml
+*.toml      text eol=lf diff=toml
 
-*.py        text diff=python
-*.pxd       text diff=python
-*.py3       text diff=python
-*.pyw       text diff=python
-*.pyx       text diff=python
-*.pyz       text diff=python
-*.pyi       text diff=python
+*.py        text eol=lf diff=python
+*.pxd       text eol=lf diff=python
+*.py3       text eol=lf diff=python
+*.pyw       text eol=lf diff=python
+*.pyx       text eol=lf diff=python
+*.pyz       text eol=lf diff=python
+*.pyi       text eol=lf diff=python
 
 *.p         binary
 *.pkl       binary
@@ -23,7 +23,7 @@
 
 *.db        binary
 
-*.html      text diff=html
-*.css       text diff=css
+*.html      text eol=lf diff=html
+*.css       text eol=lf diff=css
 
-Cargo.lock  text
+Cargo.lock  text eol=lf
