@@ -1,6 +1,7 @@
 ## 1. BUILD stage   ------------------------------------------------------------
 
-FROM rust:slim AS builder
+## use fixed `major`/`minor`, but latest `patch` version
+FROM rust:1.95-slim-trixie AS builder
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
