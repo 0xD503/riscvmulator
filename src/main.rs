@@ -233,7 +233,7 @@ enum Opcode {
     OP_IMM = OPCODE_OP_IMM as isize,
     OP = OPCODE_OP as isize,
     OP_FP = OPCODE_OP_FP as isize,
-    SYSTEM = OPCODE_SYSTEM as isize,
+    SYSTEM = OPCODE_SYSTEM as isize, // (Zicsr_extension)
 
     AUIPC = OPCODE_AUIPC as isize,
     LUI = OPCODE_LUI as isize,
@@ -283,7 +283,7 @@ impl From<u8> for Opcode {
             OPCODE_OP_IMM => Self::OP_IMM,
             OPCODE_OP => Self::OP,
             OPCODE_OP_FP => Self::OP_FP,
-            OPCODE_SYSTEM => Self::SYSTEM,
+            OPCODE_SYSTEM => Self::SYSTEM, // (Zicsr_extension)
 
             OPCODE_AUIPC => Self::AUIPC,
             OPCODE_LUI => Self::LUI,
@@ -440,8 +440,8 @@ impl From<InstructionType> for OP_IMM_32_Funct3 {
     }
 }
 
-#[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
+#[allow(non_camel_case_types)]
 enum JALR_Funct3 {
     JALR = 0b000, //
 }
@@ -457,6 +457,36 @@ impl From<InstructionType> for OP_IMM_Funct3 {
             0b101 => OP_IMM_Funct3::SRXI,
             0b110 => OP_IMM_Funct3::ORI,
             0b111 => OP_IMM_Funct3::ANDI,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+enum SYSTEM_Funct3 {
+    TRANSFER_CONTROL_RETURN_FROM = 0b000,
+    CSRRW = 0b001,
+    CSRRS = 0b010,
+    CSRRC = 0b011,
+    CSRRWI = 0b101,
+    CSRRSI = 0b110,
+    CSRRCI = 0b111,
+}
+
+impl From<InstructionType> for SYSTEM_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM,
+            0b001 => SYSTEM_Funct3::CSRRW,
+            0b010 => SYSTEM_Funct3::CSRRS,
+            0b011 => SYSTEM_Funct3::CSRRC,
+            0b101 => SYSTEM_Funct3::CSRRWI,
+            0b110 => SYSTEM_Funct3::CSRRSI,
+            0b111 => SYSTEM_Funct3::CSRRCI,
 
             _ => {
                 error!("Unknown funct3: {value:#05b}");
@@ -1014,6 +1044,8 @@ enum OpcodeToInstructionFormat {
     B_99_BRANCH = 0b1100011,
     I_103_JALR = 0b1100111,
     J_111_JAL = 0b1101111,
+
+    I_115_SYSTEM = 0b1110011, // (Zicsr_extension)
 }
 
 impl From<Opcode> for OpcodeToInstructionFormat {
@@ -1044,11 +1076,9 @@ impl From<Opcode> for OpcodeToInstructionFormat {
             Opcode::OP_IMM_32 => OpcodeToInstructionFormat::I_27_OP_IMM_32,
             Opcode::OP_32 => OpcodeToInstructionFormat::R_59_OP_32,
 
-            Opcode::MISC_MEM
-            | Opcode::AMO
-            | Opcode::SYSTEM
-            | Opcode::OP_V
-            | Opcode::OP_VE => {
+            Opcode::SYSTEM => OpcodeToInstructionFormat::I_115_SYSTEM, // (Zicsr_extension)
+
+            Opcode::MISC_MEM | Opcode::AMO | Opcode::OP_V | Opcode::OP_VE => {
                 error!("Opcode not implemented yet: {:#09b}", opcode);
                 todo!("Opcode not implemented yet: {:#09b}", opcode);
             }
@@ -1392,6 +1422,35 @@ impl RISC_V_CPU {
                 }
             }
 
+            // I_115 (Zicsr_extension)
+            Opcode::SYSTEM => {
+                todo!("read decoding values");
+                // self.context.decoder.need_to_read_memory = ;
+                match SYSTEM_Funct3::from(self.context.decoder.funct3) {
+                    SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM => {
+                        todo!();
+                    }
+                    SYSTEM_Funct3::CSRRW => {
+                        todo!();
+                    }
+                    SYSTEM_Funct3::CSRRS => {
+                        todo!();
+                    }
+                    SYSTEM_Funct3::CSRRC => {
+                        todo!();
+                    }
+                    SYSTEM_Funct3::CSRRWI => {
+                        todo!();
+                    }
+                    SYSTEM_Funct3::CSRRSI => {
+                        todo!();
+                    }
+                    SYSTEM_Funct3::CSRRCI => {
+                        todo!();
+                    }
+                }
+            }
+
             _ => {
                 error!("unreachable!");
                 unreachable!("unreachable!");
@@ -1588,7 +1647,9 @@ impl RISC_V_CPU {
             | OpcodeToInstructionFormat::I_7_LOAD_FP
             | OpcodeToInstructionFormat::I_19_OP_IMM
             | OpcodeToInstructionFormat::I_27_OP_IMM_32
-            | OpcodeToInstructionFormat::I_103_JALR => self.decode_i_format(),
+            | OpcodeToInstructionFormat::I_103_JALR
+            // (Zicsr_extension)
+            | OpcodeToInstructionFormat::I_115_SYSTEM => self.decode_i_format(),
             OpcodeToInstructionFormat::S_35_STORE
             | OpcodeToInstructionFormat::S_39_STORE_FP => {
                 self.decode_s_format()
