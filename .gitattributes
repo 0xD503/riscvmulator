@@ -1,1 +1,29 @@
+*           text=auto
 
+*.rs        text diff=rust
+
+*.lua       text diff=lua
+
+*.toml      text diff=toml
+
+*.py        text diff=python
+*.pxd       text diff=python
+*.py3       text diff=python
+*.pyw       text diff=python
+*.pyx       text diff=python
+*.pyz       text diff=python
+*.pyi       text diff=python
+
+*.p         binary
+*.pkl       binary
+*.pickle    binary
+*.pyc       binary export-ignore
+*.pyo       binary export-ignore
+*.pyd       binary
+
+*.db        binary
+
+*.html      text diff=html
+*.css       text diff=css
+
+Cargo.lock  text
