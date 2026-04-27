@@ -690,7 +690,7 @@ impl<const REGS_NUM: usize> RegisterFileInterface for RegisterFile<REGS_NUM> {
         trace!("Writing register x{offset:#?}...");
 
         // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
-        if offset != (RegisterName::x0_zero as usize) {
+        if offset != (GPRegisterName::x0_zero as usize) {
             self.registers[offset].write(value);
         } else {
             trace!(
@@ -701,7 +701,7 @@ impl<const REGS_NUM: usize> RegisterFileInterface for RegisterFile<REGS_NUM> {
 }
 
 #[allow(non_camel_case_types, dead_code)]
-enum RegisterName {
+enum GPRegisterName {
     x0_zero,  // always zero
     x1_ra,    // return address
     x2_sp,    // stack pointer
@@ -734,6 +734,161 @@ enum RegisterName {
     x29_t4,   // temporary register 4
     x30_t5,   // temporary register 5
     x31_t6,   // temporary register 6
+}
+
+#[allow(non_camel_case_types, dead_code)]
+enum CSRRegisterName {
+    // user lever (unprivilleged) CSRs
+
+    // unprivilleged floating-point CSRs
+    fflags = 0x001, // floating-point accrued exceptions
+    frm = 0x002,    // floating-point dynamic rounding mode
+    fcsr = 0x003,   // floating-point control and status register (frm + fflags)
+
+    // unprivilleged vector CSRs
+    vstart = 0x008, // vector start position
+    vxsat = 0x009,  // fixed point accrued saturation flag
+    vxrm = 0x00A,   // fixed point rounding mode
+    vcsr = 0x00F,   // vector control and status register
+    vl = 0xC20,     // vector length
+    vtype = 0xC21,  // vector data type register
+    vlenb = 0xC22,  // vector register length in bytes
+
+    // unprivilleged Zicfiss extension CSR
+    ssp = 0x011, // shadow stack pointer
+
+    // unprivilleged entropy source extension CSR
+    seed = 0x015, // seed for cryptographic random bit generators
+
+    // unprivilleged Zcmt extension CSR
+    jvt = 0x017, // table jump base vector and control register (CR)
+
+    // unprivilleged counter/timers
+    cycle = 0xC00,        // cycle counter for RDCYCLE instruction
+    time = 0xC01,         // timer for RDTIME instruction
+    instret = 0xC02, // instructions-retired counter for RDINSTRET instruction
+    hpmcounter3 = 0xC03, // performance-monitoring counter
+    hpmcounter4 = 0xC04, // performance-monitoring counter
+    hpmcounter5 = 0xC05, // performance-monitoring counter
+    hpmcounter6 = 0xC06, // performance-monitoring counter
+    hpmcounter7 = 0xC07, // performance-monitoring counter
+    hpmcounter8 = 0xC08, // performance-monitoring counter
+    hpmcounter9 = 0xC09, // performance-monitoring counter
+    hpmcounter10 = 0xC0A, // performance-monitoring counter
+    hpmcounter11 = 0xC0B, // performance-monitoring counter
+    hpmcounter12 = 0xC0C, // performance-monitoring counter
+    hpmcounter13 = 0xC0D, // performance-monitoring counter
+    hpmcounter14 = 0xC0E, // performance-monitoring counter
+    hpmcounter15 = 0xC0F, // performance-monitoring counter
+    hpmcounter16 = 0xC10, // performance-monitoring counter
+    hpmcounter17 = 0xC11, // performance-monitoring counter
+    hpmcounter18 = 0xC12, // performance-monitoring counter
+    hpmcounter19 = 0xC13, // performance-monitoring counter
+    hpmcounter20 = 0xC14, // performance-monitoring counter
+    hpmcounter21 = 0xC15, // performance-monitoring counter
+    hpmcounter22 = 0xC16, // performance-monitoring counter
+    hpmcounter23 = 0xC17, // performance-monitoring counter
+    hpmcounter24 = 0xC18, // performance-monitoring counter
+    hpmcounter25 = 0xC19, // performance-monitoring counter
+    hpmcounter26 = 0xC1A, // performance-monitoring counter
+    hpmcounter27 = 0xC1B, // performance-monitoring counter
+    hpmcounter28 = 0xC1C, // performance-monitoring counter
+    hpmcounter29 = 0xC1D, // performance-monitoring counter
+    hpmcounter30 = 0xC1E, // performance-monitoring counter
+    hpmcounter31 = 0xC1F, // performance-monitoring counter
+
+    cycleh = 0xC80,        // upper 32 bits of `cycle`, RV32 only
+    timeh = 0xC81,         // upper 32 bits of `time`, RV32 only
+    instreth = 0xC82,      // upper 32 bits of `instret`, RV32 only
+    hpmcounter3h = 0xC83,  // upper 32 bits of `hpmcounter3`, RV32 only
+    hpmcounter4h = 0xC84,  // upper 32 bits of `hpmcounter4`, RV32 only
+    hpmcounter5h = 0xC85,  // upper 32 bits of `hpmcounter5`, RV32 only
+    hpmcounter6h = 0xC86,  // upper 32 bits of `hpmcounter6`, RV32 only
+    hpmcounter7h = 0xC87,  // upper 32 bits of `hpmcounter7`, RV32 only
+    hpmcounter8h = 0xC88,  // upper 32 bits of `hpmcounter8`, RV32 only
+    hpmcounter9h = 0xC89,  // upper 32 bits of `hpmcounter9`, RV32 only
+    hpmcounter10h = 0xC8A, // upper 32 bits of `hpmcounter10`, RV32 only
+    hpmcounter11h = 0xC8B, // upper 32 bits of `hpmcounter11`, RV32 only
+    hpmcounter12h = 0xC8C, // upper 32 bits of `hpmcounter12`, RV32 only
+    hpmcounter13h = 0xC8D, // upper 32 bits of `hpmcounter13`, RV32 only
+    hpmcounter14h = 0xC8E, // upper 32 bits of `hpmcounter14`, RV32 only
+    hpmcounter15h = 0xC8F, // upper 32 bits of `hpmcounter15`, RV32 only
+    hpmcounter16h = 0xC90, // upper 32 bits of `hpmcounter16`, RV32 only
+    hpmcounter17h = 0xC91, // upper 32 bits of `hpmcounter17`, RV32 only
+    hpmcounter18h = 0xC92, // upper 32 bits of `hpmcounter18`, RV32 only
+    hpmcounter19h = 0xC93, // upper 32 bits of `hpmcounter19`, RV32 only
+    hpmcounter20h = 0xC94, // upper 32 bits of `hpmcounter20`, RV32 only
+    hpmcounter21h = 0xC95, // upper 32 bits of `hpmcounter21`, RV32 only
+    hpmcounter22h = 0xC96, // upper 32 bits of `hpmcounter22`, RV32 only
+    hpmcounter23h = 0xC97, // upper 32 bits of `hpmcounter23`, RV32 only
+    hpmcounter24h = 0xC98, // upper 32 bits of `hpmcounter24`, RV32 only
+    hpmcounter25h = 0xC99, // upper 32 bits of `hpmcounter25`, RV32 only
+    hpmcounter26h = 0xC9A, // upper 32 bits of `hpmcounter26`, RV32 only
+    hpmcounter27h = 0xC9B, // upper 32 bits of `hpmcounter27`, RV32 only
+    hpmcounter28h = 0xC9C, // upper 32 bits of `hpmcounter28`, RV32 only
+    hpmcounter29h = 0xC9D, // upper 32 bits of `hpmcounter29`, RV32 only
+    hpmcounter30h = 0xC9E, // upper 32 bits of `hpmcounter30`, RV32 only
+    hpmcounter31h = 0xC9F, // upper 32 bits of `hpmcounter31`, RV32 only
+
+    // supervisor-level CSRs
+
+    // supervisor trap setup
+    sstatus = 0x100,    // supervisor status register
+    sie = 0x104,        // supervisor interrupt-enable register
+    stvec = 0x105,      // supervisor trap handler base address
+    scounteren = 0x106, // supervisor conter enable
+
+    // supervisor configuration
+    senvcfg = 0x10A, // supervisor environment configuration register
+
+    // supervisor counter setup
+    scountinhibit = 0x120, // supervisor counter-inhibit register
+
+    // supervisor trap handling
+    sscratch = 0x140,  // supervisor scratch register
+    sepc = 0x141,      // supervisor exception program counter
+    scause = 0x142,    // supervisor trap cause
+    stval = 0x143,     // supervisor trap value
+    sip = 0x144,       // supervisor interrupt pending
+    scountovf = 0xDA0, // supervisor count overflow
+
+    // supervisor indirect
+    siselect = 0x150, // supervisor indirect register select
+    sireg = 0x151,    // supervisor indirect register alias
+    sireg2 = 0x152,   // supervisor indirect register alias 2
+    sireg3 = 0x153,   // supervisor indirect register alias 3
+    sireg4 = 0x155,   // supervisor indirect register alias 4
+    sireg5 = 0x156,   // supervisor indirect register alias 5
+    sireg6 = 0x157,   // supervisor indirect register alias 6
+
+    // supervisor protection and translation
+    satp = 0x180, // supervisor address translation and protection
+
+    // supervisor timer compare
+    stimecpm = 0x14D,  // supervisor timer compare
+    stimecpmh = 0x15D, // upper 32 bits of `stimecpm`, RV32 only
+
+    // supervisor debug/trace registers
+    scontext = 0x5A8, // supervisor-mode context register
+
+    // supervisor resource management configuration
+    srmcfg = 0x181, // supervisor resource management configuration
+
+    // supervisor state enable registers
+    sstateen0 = 0x10C, // supervisor state enable 0 register
+    sstateen1 = 0x10D, // supervisor state enable 1 register
+    sstateen2 = 0x10E, // supervisor state enable 2 register
+    sstateen3 = 0x10F, // supervisor state enable 3 register
+
+    // supervisor control transfer records configuration
+    sctrctl = 0x14E, // supervisor control transfer records control register
+    sctrstatus = 0x14F, // supervisor control transfer records status register
+    sctrdepth = 0x15F, // supervisor control transfer records depth register
+
+    // hypervisor-level and VS CSRs
+
+    // hypervisor trap setup
+    hstatus = 0x600, // hypervisor status register
 }
 
 #[derive(Default, Clone)]
@@ -1504,7 +1659,7 @@ impl RISC_V_CPU {
                     SYSTEM_Funct3::CSRRW => {
                         self.context.decoder.zicsr.need_to_write_csr = true;
                         if self.context.decoder.destination_register_offset
-                            == RegisterName::x0_zero as usize
+                            == GPRegisterName::x0_zero as usize
                         {
                             self.context.decoder.zicsr.need_to_read_csr = false;
                         } else {
@@ -1540,7 +1695,7 @@ impl RISC_V_CPU {
                         self.context.decoder.zicsr.uimm =
                             self.extract_source_register_1_index() as XLen;
                         if self.context.decoder.destination_register_offset
-                            == RegisterName::x0_zero as usize
+                            == GPRegisterName::x0_zero as usize
                         {
                             self.context.decoder.zicsr.need_to_read_csr = false;
                         } else {
