@@ -21,3 +21,6 @@ fmt:
 
 lint:
   cargo clippy -- -D warnings
+
+bench:
+  cargo bench
