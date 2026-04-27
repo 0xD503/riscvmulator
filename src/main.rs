@@ -885,10 +885,95 @@ enum CSRRegisterName {
     sctrstatus = 0x14F, // supervisor control transfer records status register
     sctrdepth = 0x15F, // supervisor control transfer records depth register
 
-    // hypervisor-level and VS CSRs
+    // hypervisor-level and virtual supervisor (VS) CSRs
 
     // hypervisor trap setup
-    hstatus = 0x600, // hypervisor status register
+    hstatus = 0x600,    // hypervisor status register
+    hedeleg = 0x602,    // hypervisor exception delegation register
+    hideleg = 0x603,    // hypervisor interrupt delegation register
+    hie = 0x604,        // hypervisor interrupt-enable register
+    hcounteren = 0x606, // hypervisor counter enable
+    hgeie = 0x607,      // hypervisor guest external interrupt-enable register
+    hedelegh = 0x612,   // 32 upper bits of `hedeleg`, RV32 only
+
+    // hypervisor trap handling
+    htval = 0x643,  // hypervisor trap value
+    hip = 0x644,    // hypervisor interrupt pending
+    hvip = 0x645,   // hypervisor interrupt pending
+    htinst = 0x64A, // hypervisor count overflow
+    hgeip = 0xE12,  // hypervisor interrupt pending
+
+    // hypervisor configuration
+    henvcfg = 0x60A, // hypervisor environment configuration register
+    henvcfgh = 0x61A, // 32 upper bits of `henvcfg`, RV32 only
+
+    // hypervisor protection and translation
+    hgatp = 0x680, // hypervisor guest address translation and protection
+
+    // hypervisor debug/trace registers
+    hcontext = 0x6A8, // hypervisor-mode context register
+
+    // hypervisor counter/timer virtualization registers
+    htimedelta = 0x605,  // delta for VS/VU-mode timer
+    htimedeltah = 0x615, // 32 upper bits of `htimedelta`, RV32 only
+
+    // hypervisor state enable registers
+    hstateen0 = 0x60C,  // hypervisor state enable 0 register
+    hstateen1 = 0x60D,  // hypervisor state enable 1 register
+    hstateen2 = 0x60E,  // hypervisor state enable 2 register
+    hstateen3 = 0x60F,  // hypervisor state enable 3 register
+    hstateen0h = 0x61C, // 32 upper bits of `hstateen0`, RV32 only
+    hstateen1h = 0x61D, // 32 upper bits of `hstateen1`, RV32 only
+    hstateen2h = 0x61E, // 32 upper bits of `hstateen2`, RV32 only
+    hstateen3h = 0x61F, // 32 upper bits of `hstateen3`, RV32 only
+
+    // virtual supervisor (VS) registers
+    // virtual supervisor (VS) registers
+    vstatus = 0x200,   // virtual supervisor status register
+    vsie = 0x204,      // virtual supervisor interrupt-enable register
+    vstvec = 0x205,    // virtual supervisor trap handler base address
+    vsscratch = 0x240, // virtual supervisor scratch register
+    vsepc = 0x241,     // virtual supervisor exception program counter
+    vscause = 0x242,   // virtual supervisor trap cause
+    vstval = 0x243,    // virtual supervisor trap value
+    vsip = 0x244,      // virtual supervisor interrupt pending
+    vsatp = 0x280,     // virtual supervisor address translation and protection
+
+    // virtual supervisor indirect
+    vsiselect = 0x250, // virtual supervisor indirect register select
+    vsireg = 0x251,    // virtual supervisor indirect register alias
+    vsireg2 = 0x252,   // virtual supervisor indirect register alias 2
+    vsireg3 = 0x253,   // virtual supervisor indirect register alias 3
+    vsireg4 = 0x255,   // virtual supervisor indirect register alias 4
+    vsireg5 = 0x256,   // virtual supervisor indirect register alias 5
+    vsireg6 = 0x257,   // virtual supervisor indirect register alias 6
+
+    // virtual supervisor timer compare
+    vstimecpm = 0x24D,  // virtual supervisor timer compare
+    vstimecpmh = 0x25D, // virtual upper 32 bits of `vstimecpm`, RV32 only
+
+    // virtual supervisor control transfer records configuration
+    vsctrctl = 0x24E, // virtual supervisor control transfer records control register
+
+    // machine-level CSRs
+
+    // machine information registers
+    mvendorid = 0xF11,  // vendor ID
+    marchid = 0xF12,    // architecture ID
+    mimpid = 0xF13,     // implementation ID
+    mhartid = 0xF14,    // hardware thread ID
+    mconfigptr = 0xF15, // pointer to configuration data structure
+
+    // machine trap setup
+    mstatus = 0x300,    // machine status register
+    misa = 0x301,       // ISA and extensions
+    medeleg = 0x302,    // machine exception delegation register
+    mideleg = 0x303,    // machine interrupt delegation register
+    mie = 0x304,        // machine interrupt-enable register
+    mtvec = 0x305,      // machine trap-handler base address
+    mcounteren = 0x306, // machine counter enable
+    mstatush = 0x310,   // 32 upper bits of `mstatus`, RV32 only
+    medelegh = 0x312,   // 32 upper bits of `medeleg`, RV32 only
 }
 
 #[derive(Default, Clone)]
