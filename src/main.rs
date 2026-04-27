@@ -4,7 +4,6 @@ use clap::Parser;
 use log::{debug, error, info, trace, warn};
 use serde::Deserialize;
 
-// use std::cmp::PartialOrd;
 use std::convert::From;
 use std::fmt::{self, Binary, Debug};
 use std::marker::PhantomData;
@@ -17,7 +16,6 @@ type SignedXLen = i64;
 type UnsignedXLen = u64;
 type XLen32 = u32;
 type SignedXLen32 = i32;
-// type UnsignedXLen32 = u32;
 
 type Byte = u8;
 type SignedByte = i8;
@@ -27,13 +25,9 @@ type Word = u32;
 type SignedWord = i32;
 type DoubleWord = u64;
 type SignedDoubleWord = i64;
-type QuadWord = u128;
+// type QuadWord = u128;
 // type SignedQuadWord = i128;
 
-// // type SignedImmediate = i64;
-// // type UnsignedImmediate = u64;
-// // type SignedImmediateCastToRegister = SignedXLen;
-// // type UnsignedImmediateCastToRegister = UnsignedXLen;
 type SignedImmediate = i32;
 type UnsignedImmediate = u32;
 
@@ -120,60 +114,6 @@ const BIT_OFFSET_J_11_FINAL: usize = 11;
 const MASK_J_11: InstructionType = 0x01 << BIT_OFFSET_B_11_FINAL;
 const BIT_OFFSET_J_20: usize = 31;
 const BIT_OFFSET_J_20_FINAL: usize = 20;
-
-// const BIT_OFFSET_I_IMM_INST_31: usize = 11;
-// const MASK_I_IMM_INST_31: InstructionType = 0x1FFFFF;
-// const BIT_OFFSET_I_IMM_INST_30_25: usize = 5;
-// const MASK_I_IMM_INST_30_25: InstructionType = 0x3F;
-// const BIT_OFFSET_I_IMM_INST_24_21: usize = 1;
-// const MASK_I_IMM_INST_24_21: InstructionType = 0x0F;
-// const BIT_OFFSET_I_IMM_20: usize = 0;
-// const MASK_I_IMM_20: InstructionType = 0x01;
-
-// const BIT_OFFSET_S_IMM_INST_31: usize = 11;
-// const MASK_S_IMM_INST_31: InstructionType = 0x1FFFFF;
-// const BIT_OFFSET_S_IMM_INST_30_25: usize = 5;
-// const MASK_S_IMM_INST_30_25: InstructionType = 0x3F;
-// const BIT_OFFSET_S_IMM_INST_11_8: usize = 1;
-// const MASK_S_IMM_INST_11_8: InstructionType = 0x0F;
-// const BIT_OFFSET_S_IMM_7: usize = 0;
-// const MASK_S_IMM_7: InstructionType = 0x01;
-
-// const BIT_OFFSET_B_IMM_INST_31: usize = 12;
-// const MASK_B_IMM_INST_31: InstructionType = 0xFFFFF;
-// const BIT_OFFSET_B_IMM_7: usize = 11;
-// const MASK_B_IMM_7: InstructionType = 0x01;
-// const BIT_OFFSET_B_IMM_INST_30_25: usize = 5;
-// const MASK_B_IMM_INST_30_25: InstructionType = 0x3F;
-// const BIT_OFFSET_B_IMM_INST_11_8: usize = 1;
-// const MASK_B_IMM_INST_11_8: InstructionType = 0x0F;
-// const BIT_OFFSET_B_IMM_0: usize = 0;
-// const MASK_B_IMM_0: InstructionType = 0x01;
-
-// const BIT_OFFSET_U_IMM_31: usize = 31;
-// const MASK_U_IMM_31: InstructionType = 0x01;
-// const BIT_OFFSET_U_IMM_INST_30_20: usize = 20;
-// const MASK_U_IMM_INST_30_20: InstructionType = 0x7FF;
-// const BIT_OFFSET_U_IMM_INST_19_12: usize = 12;
-// const MASK_U_IMM_INST_19_12: InstructionType = 0xFF;
-// const BIT_OFFSET_U_IMM_0: usize = 0;
-// const MASK_U_IMM_0: InstructionType = 0xFFF;
-
-// const BIT_OFFSET_J_IMM_INST_31: usize = 20;
-// const MASK_J_IMM_INST_31: InstructionType = 0xFFF;
-// const BIT_OFFSET_J_IMM_INST_19_12: usize = 12;
-// const BIT_OFFSET_J_IMM_INST_19_12_FINAL: usize = 12;
-// const MASK_J_IMM_INST_19_12: InstructionType =
-//     0xFF << BIT_OFFSET_J_IMM_INST_19_12_FINAL;
-// const BIT_OFFSET_J_IMM_20: usize = 11;
-// const BIT_OFFSET_J_IMM_20_FINAL: usize = 20;
-// const MASK_J_IMM_20: InstructionType = 0x01 << BIT_OFFSET_J_IMM_20_FINAL;
-// const BIT_OFFSET_J_IMM_INST_30_25: usize = 5;
-// const MASK_J_IMM_INST_30_25: InstructionType = 0x3F;
-// const BIT_OFFSET_J_IMM_INST_24_21: usize = 1;
-// const MASK_J_IMM_INST_24_21: InstructionType = 0x0F;
-// const BIT_OFFSET_J_IMM_0: usize = 0;
-// const MASK_J_IMM_0: InstructionType = 0x01;
 
 //const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
 
@@ -796,18 +736,6 @@ enum RegisterName {
     x31_t6,   // temporary register 6
 }
 
-// #[derive(Default, Clone)]
-// enum InstructionFormat {
-//     R,
-//     #[default]
-//     I,
-//     S,
-//     B,
-//     U,
-//     J,
-//     R4,
-// }
-
 #[derive(Default, Clone)]
 struct ZicsrContext {
     need_to_read_csr: bool,
@@ -837,34 +765,6 @@ struct Decoder {
     need_to_jump: bool,
 
     zicsr: ZicsrContext,
-    //
-    // i_imm_inst_31: InstructionType,
-    // i_imm_inst_30_25: InstructionType,
-    // i_imm_inst_24_21: InstructionType,
-    // i_imm_inst_20: InstructionType,
-
-    // s_imm_inst_31: InstructionType,
-    // s_imm_inst_30_25: InstructionType,
-    // s_imm_inst_11_8: InstructionType,
-    // s_imm_inst_7: InstructionType,
-
-    // b_imm_inst_31: InstructionType,
-    // b_imm_7: InstructionType,
-    // b_imm_inst_30_25: InstructionType,
-    // b_imm_inst_11_8: InstructionType,
-    // b_imm_0: InstructionType,
-
-    // u_imm_31: InstructionType,
-    // u_imm_inst_30_20: InstructionType,
-    // u_imm_inst_19_12: InstructionType,
-    // u_imm_0: InstructionType,
-
-    // j_imm_inst_31: InstructionType,
-    // j_imm_inst_19_12: InstructionType,
-    // j_imm_20: InstructionType,
-    // j_imm_inst_30_25: InstructionType,
-    // j_imm_inst_24_21: InstructionType,
-    // j_imm_0: InstructionType,
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -917,34 +817,23 @@ struct RISC_V_CPU {
 }
 
 trait Bus<AddrType> {
-    // fn read_byte(&self, address: XLen) -> Byte;
-    // fn read_half_word(&self, address: XLen) -> HalfWord;
-    // fn read_word(&self, address: XLen) -> Word;
-    // fn read_double_word(&self, address: XLen) -> DoubleWord;
-    // fn read_quad_word(&self, address: XLen) -> QuadWord;
-
     fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
-
     // fn read_data(&self, address: XLen, size: usize) -> Vec<Byte>;
-
-    // fn write_byte(&self, address: XLen, value: Byte);
-    // fn write_half_word(&self, address: XLen, value: HalfWord);
-    // fn write_word(&self, address: XLen, value: Word);
-    // fn write_double_word(&self, address: XLen, value: DoubleWord);
-    // fn write_quad_word(&self, address: XLen, value: QuadWord);
 
     fn write<MemValType: MemoryValue>(
         &mut self,
         address: AddrType,
         value: MemValType,
     );
-
     // fn write_data(&mut self, address: XLen, data: Vec<Byte>);
 }
 
 trait MemoryValue: Sized {
     fn from_le_bytes(bytes: &[Byte]) -> Self;
     fn to_le_bytes(&self) -> Vec<Byte>;
+
+    fn sign_extend(&self) -> XLen;
+    fn zero_extend(&self) -> XLen;
 }
 
 impl MemoryValue for Byte {
@@ -954,6 +843,14 @@ impl MemoryValue for Byte {
 
     fn to_le_bytes(&self) -> Vec<Byte> {
         Self::to_le_bytes(*self).to_vec()
+    }
+
+    fn sign_extend(&self) -> XLen {
+        *self as SignedByte as SignedXLen as XLen
+    }
+
+    fn zero_extend(&self) -> XLen {
+        *self as XLen
     }
 }
 
@@ -965,6 +862,14 @@ impl MemoryValue for HalfWord {
     fn to_le_bytes(&self) -> Vec<Byte> {
         Self::to_le_bytes(*self).to_vec()
     }
+
+    fn sign_extend(&self) -> XLen {
+        *self as SignedHalfWord as SignedXLen as XLen
+    }
+
+    fn zero_extend(&self) -> XLen {
+        *self as XLen
+    }
 }
 impl MemoryValue for Word {
     fn from_le_bytes(bytes: &[Byte]) -> Self {
@@ -973,6 +878,14 @@ impl MemoryValue for Word {
 
     fn to_le_bytes(&self) -> Vec<Byte> {
         Self::to_le_bytes(*self).to_vec()
+    }
+
+    fn sign_extend(&self) -> XLen {
+        *self as SignedWord as SignedXLen as XLen
+    }
+
+    fn zero_extend(&self) -> XLen {
+        *self as XLen
     }
 }
 
@@ -984,17 +897,35 @@ impl MemoryValue for DoubleWord {
     fn to_le_bytes(&self) -> Vec<Byte> {
         Self::to_le_bytes(*self).to_vec()
     }
-}
 
-impl MemoryValue for QuadWord {
-    fn from_le_bytes(bytes: &[Byte]) -> Self {
-        Self::from_le_bytes(bytes.try_into().unwrap())
+    fn sign_extend(&self) -> XLen {
+        *self as SignedDoubleWord as SignedXLen as XLen
     }
 
-    fn to_le_bytes(&self) -> Vec<Byte> {
-        Self::to_le_bytes(*self).to_vec()
+    fn zero_extend(&self) -> XLen {
+        *self as XLen
     }
 }
+
+// impl MemoryValue for QuadWord {
+//     fn from_le_bytes(bytes: &[Byte]) -> Self {
+//         Self::from_le_bytes(bytes.try_into().unwrap())
+//     }
+
+//     fn to_le_bytes(&self) -> Vec<Byte> {
+//         Self::to_le_bytes(*self).to_vec()
+//     }
+
+//     // NOTICE: truncates value
+//     fn sign_extend(&self) -> XLen {
+//         *self as SignedQuadWord as SignedXLen as XLen
+//     }
+
+//     // NOTICE: truncates value
+//     fn zero_extend(&self) -> XLen {
+//         *self as XLen
+//     }
+// }
 
 struct Memory<AddrType> {
     byte_array: Vec<Byte>,
@@ -1455,8 +1386,6 @@ impl RISC_V_CPU {
             Opcode::OP_IMM_32 => {
                 self.context.decoder.need_to_jump = false;
                 self.context.decoder.need_to_read_memory = false;
-                // self.context.decoder.source_register_1 &=
-                //     UnsignedImmediate::MAX as XLen;
                 match OP_IMM_32_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_32_Funct3::ADDIW => {
                         self.context.decoder.executable_instruction =
@@ -1846,8 +1775,8 @@ impl RISC_V_CPU {
             | OpcodeToInstructionFormat::I_19_OP_IMM
             | OpcodeToInstructionFormat::I_27_OP_IMM_32
             | OpcodeToInstructionFormat::I_103_JALR
-            // (Zicsr_extension)
-            | OpcodeToInstructionFormat::I_115_SYSTEM => self.decode_i_format(),
+            | OpcodeToInstructionFormat::I_115_SYSTEM // (Zicsr_extension)
+            => self.decode_i_format(),
             OpcodeToInstructionFormat::S_35_STORE
             | OpcodeToInstructionFormat::S_39_STORE_FP => {
                 self.decode_s_format()
@@ -1861,35 +1790,6 @@ impl RISC_V_CPU {
             | OpcodeToInstructionFormat::R4_75_NMSUB
             | OpcodeToInstructionFormat::R4_79_NMADD => self.decode_r4_format(),
         }
-
-        // // TODO: remove unconditional decoding
-        // self.context.decoder.i_imm_inst_31 = self.extract_i_imm_inst_31();
-        // self.context.decoder.i_imm_inst_30_25 = self.extract_i_imm_inst_30_25();
-        // self.context.decoder.i_imm_inst_24_21 = self.extract_i_imm_inst_24_21();
-        // self.context.decoder.i_imm_inst_20 = self.extract_i_imm_20();
-
-        // self.context.decoder.s_imm_inst_31 = self.extract_s_imm_inst_31();
-        // self.context.decoder.s_imm_inst_30_25 = self.extract_s_imm_inst_30_25();
-        // self.context.decoder.s_imm_inst_11_8 = self.extract_s_imm_inst_11_8();
-        // self.context.decoder.s_imm_inst_7 = self.extract_s_imm_7();
-
-        // self.context.decoder.b_imm_inst_31 = self.extract_b_imm_inst_31();
-        // self.context.decoder.b_imm_7 = self.extract_b_imm_7();
-        // self.context.decoder.b_imm_inst_30_25 = self.extract_b_imm_inst_30_25();
-        // self.context.decoder.b_imm_inst_11_8 = self.extract_b_imm_inst_11_8();
-        // self.context.decoder.b_imm_0 = self.extract_b_imm_0();
-
-        // self.context.decoder.u_imm_31 = self.extract_u_imm_31();
-        // self.context.decoder.u_imm_inst_30_20 = self.extract_u_imm_inst_30_20();
-        // self.context.decoder.u_imm_inst_19_12 = self.extract_u_imm_inst_19_12();
-        // self.context.decoder.u_imm_0 = self.extract_u_imm_0();
-
-        // self.context.decoder.j_imm_inst_31 = self.extract_j_imm_inst_31();
-        // self.context.decoder.j_imm_inst_19_12 = self.extract_j_imm_inst_19_12();
-        // self.context.decoder.j_imm_20 = self.extract_j_imm_20();
-        // self.context.decoder.j_imm_inst_30_25 = self.extract_j_imm_inst_30_25();
-        // self.context.decoder.j_imm_inst_24_21 = self.extract_j_imm_inst_24_21();
-        // self.context.decoder.j_imm_0 = self.extract_j_imm_0();
     }
 
     fn execute(&mut self) {
@@ -2611,14 +2511,23 @@ impl RISC_V_CPU {
         }
     }
 
-    // fn read_memory<ValType: MemoryValue, SignedValType>(
-    //     &mut self,
-    //     bus: &mut SystemBus<BusAddrType>,
-    // ) {
-    //     self.context.execution.result =
-    //         bus.read::<ValType>(self.context.execution.memory_address)
-    //             as SignedValType as SignedXLen as XLen;
-    // }
+    fn read_memory_signed<ValType: MemoryValue>(
+        &mut self,
+        bus: &mut SystemBus<BusAddrType>,
+    ) {
+        self.context.execution.result = bus
+            .read::<ValType>(self.context.execution.memory_address)
+            .sign_extend();
+    }
+
+    fn read_memory_unsigned<ValType: MemoryValue>(
+        &mut self,
+        bus: &mut SystemBus<BusAddrType>,
+    ) {
+        self.context.execution.result = bus
+            .read::<ValType>(self.context.execution.memory_address)
+            .zero_extend();
+    }
 
     fn memory_operation(&mut self, bus: &mut SystemBus<BusAddrType>) {
         if self.context.decoder.need_to_read_memory {
@@ -2626,45 +2535,25 @@ impl RISC_V_CPU {
 
             match self.context.execution.memory_value_type {
                 MemoryValueType::DOUBLE_WORD => {
-                    self.context.execution.result =
-                        bus.read::<DoubleWord>(
-                            self.context.execution.memory_address,
-                        ) as SignedDoubleWord
-                            as SignedXLen as XLen;
+                    self.read_memory_signed::<DoubleWord>(bus);
                 }
                 MemoryValueType::WORD => {
-                    self.context.execution.result =
-                        bus.read::<Word>(self.context.execution.memory_address)
-                            as SignedWord as SignedXLen
-                            as XLen;
+                    self.read_memory_signed::<Word>(bus);
                 }
                 MemoryValueType::HALF_WORD => {
-                    self.context.execution.result = bus
-                        .read::<HalfWord>(self.context.execution.memory_address)
-                        as SignedHalfWord
-                        as SignedXLen
-                        as XLen;
+                    self.read_memory_signed::<HalfWord>(bus);
                 }
                 MemoryValueType::BYTE => {
-                    self.context.execution.result =
-                        bus.read::<Byte>(self.context.execution.memory_address)
-                            as SignedByte as SignedXLen
-                            as XLen;
+                    self.read_memory_signed::<Byte>(bus);
                 }
                 MemoryValueType::UNSIGNED_WORD => {
-                    self.context.execution.result = bus
-                        .read::<Word>(self.context.execution.memory_address)
-                        as XLen;
+                    self.read_memory_unsigned::<Word>(bus);
                 }
                 MemoryValueType::UNSIGNED_HALF_WORD => {
-                    self.context.execution.result = bus
-                        .read::<HalfWord>(self.context.execution.memory_address)
-                        as XLen;
+                    self.read_memory_unsigned::<HalfWord>(bus);
                 }
                 MemoryValueType::UNSIGNED_BYTE => {
-                    self.context.execution.result = bus
-                        .read::<Byte>(self.context.execution.memory_address)
-                        as XLen;
+                    self.read_memory_unsigned::<Byte>(bus);
                 }
             }
         } else if self.context.decoder.need_to_write_memory {
@@ -2905,118 +2794,6 @@ impl RISC_V_CPU {
             >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL)) as SignedXLen
             & !((1 << BIT_OFFSET_J_20_FINAL) - 1)
     }
-
-    // fn extract_i_imm_inst_31(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_I_IMM_INST_31)
-    //         & MASK_I_IMM_INST_31
-    // }
-
-    // fn extract_i_imm_inst_30_25(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_I_IMM_INST_30_25)
-    //         & MASK_I_IMM_INST_30_25
-    // }
-
-    // fn extract_i_imm_inst_24_21(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_I_IMM_INST_24_21)
-    //         & MASK_I_IMM_INST_24_21
-    // }
-
-    // fn extract_i_imm_20(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_I_IMM_20)
-    //         & MASK_I_IMM_20
-    // }
-
-    // fn extract_s_imm_inst_31(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_S_IMM_INST_31)
-    //         & MASK_S_IMM_INST_31
-    // }
-
-    // fn extract_s_imm_inst_30_25(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_S_IMM_INST_30_25)
-    //         & MASK_S_IMM_INST_30_25
-    // }
-
-    // fn extract_s_imm_inst_11_8(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_S_IMM_INST_11_8)
-    //         & MASK_S_IMM_INST_11_8
-    // }
-
-    // fn extract_s_imm_7(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_S_IMM_7) & MASK_S_IMM_7
-    // }
-
-    // fn extract_b_imm_inst_31(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_INST_31)
-    //         & MASK_B_IMM_INST_31
-    // }
-
-    // fn extract_b_imm_7(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_7) & MASK_B_IMM_7
-    // }
-
-    // fn extract_b_imm_inst_30_25(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_INST_30_25)
-    //         & MASK_B_IMM_INST_30_25
-    // }
-
-    // fn extract_b_imm_inst_11_8(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_INST_11_8)
-    //         & MASK_B_IMM_INST_11_8
-    // }
-
-    // fn extract_b_imm_0(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_B_IMM_0) & MASK_B_IMM_0
-    // }
-
-    // fn extract_u_imm_31(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_U_IMM_31)
-    //         & MASK_U_IMM_31
-    // }
-
-    // fn extract_u_imm_inst_30_20(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_U_IMM_INST_30_20)
-    //         & MASK_U_IMM_INST_30_20
-    // }
-
-    // fn extract_u_imm_inst_19_12(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_U_IMM_INST_19_12)
-    //         & MASK_U_IMM_INST_19_12
-    // }
-
-    // fn extract_u_imm_0(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_U_IMM_0) & MASK_U_IMM_0
-    // }
-
-    // fn extract_j_imm_inst_31(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_31)
-    //         & MASK_J_IMM_INST_31
-    // }
-
-    // fn extract_j_imm_inst_19_12(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction
-    //         >> (BIT_OFFSET_J_IMM_INST_19_12
-    //             - BIT_OFFSET_J_IMM_INST_19_12_FINAL))
-    //         & MASK_J_IMM_INST_19_12
-    // }
-
-    // fn extract_j_imm_20(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_20)
-    //         & MASK_J_IMM_20
-    // }
-
-    // fn extract_j_imm_inst_30_25(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_30_25)
-    //         & MASK_J_IMM_INST_30_25
-    // }
-
-    // fn extract_j_imm_inst_24_21(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_INST_24_21)
-    //         & MASK_J_IMM_INST_24_21
-    // }
-
-    // fn extract_j_imm_0(&self) -> UnsignedImmediate {
-    //     (self.context.current_instruction >> BIT_OFFSET_J_IMM_0) & MASK_J_IMM_0
-    // }
 }
 
 fn init_logger() {
