@@ -11,156 +11,20 @@ use log::{debug, error, info, trace, warn};
 
 // current project imports
 use config::configure;
+use constants::arch::*;
+use constants::soc::*;
 use logger::init_logger;
+
 use parse_args::parse_args;
 
 // modules includes
 mod config;
+mod constants;
 mod elf_loader;
 mod logger;
 mod parse_args;
 mod soc;
 mod utils;
-
-/// architechtural defines
-type XLen = u64;
-type SignedXLen = i64;
-type UnsignedXLen = u64;
-type XLen32 = u32;
-type SignedXLen32 = i32;
-
-type Byte = u8;
-type SignedByte = i8;
-type HalfWord = u16;
-type SignedHalfWord = i16;
-type Word = u32;
-type SignedWord = i32;
-type DoubleWord = u64;
-type SignedDoubleWord = i64;
-// type QuadWord = u128;
-// type SignedQuadWord = i128;
-
-type SignedImmediate = i32;
-type UnsignedImmediate = u32;
-
-// const IALIGN: i32 = 32;
-// const ILEN: i32 = IALIGN * 1;
-
-type InstructionType = u32;
-type SignedInstructionType = i32;
-
-type BusAddrType = XLen;
-
-const RISCV_NUM_OF_REGISTERS: usize = 32;
-const RISCV_NUM_OF_CSR: usize = 1 << BITS_NUM_IMM_11_0;
-const RISCV_X0_ZERO_REGISTER_VALUE: XLen = 0x00000000;
-const RISCV_CSR_INITIAL_VALUE: XLen = 0x00000000;
-
-// default constants
-const PC_RESET_VALUE: XLen = RAM_BASE;
-const PC_STEP: XLen = 0x00000004;
-
-const INITIAL_INSTRUCTION: InstructionType = 0x00000000;
-
-const MEM_DEFAULT_VALUE: Byte = 0x00;
-const RAM_BASE: XLen = 0x80000000;
-const RAM_SIZE: usize = 65536; // placeholder value, to be configured later
-const RAM_END: XLen = RAM_BASE + RAM_SIZE as XLen;
-// const MEM_SPACE_SIZE: usize = XLen::MAX as usize;
-
-// decoder constants
-const BIT_OFFSET_OPCODE: usize = 0;
-const MASK_OPCODE: InstructionType = 0x7F;
-
-const BIT_OFFSET_SOURCE_REGISTER_1: usize = 15;
-const MASK_SOURCE_REGISTER_1: InstructionType = 0x1F;
-const BIT_OFFSET_SOURCE_REGISTER_2: usize = 20;
-const MASK_SOURCE_REGISTER_2: InstructionType = 0x1F;
-
-const BIT_OFFSET_DESTINATION_REGISTER: usize = 7;
-const MASK_DESTINATION_REGISTER: InstructionType = 0x1F;
-
-const BIT_OFFSET_FUNCT3: usize = 12;
-const MASK_FUNCT3: InstructionType = 0x07;
-const BIT_OFFSET_I_FUNCT7: usize = 25;
-const MASK_I_FUNCT7: InstructionType = 0x7F;
-const BIT_OFFSET_R_FUNCT7: usize = 25;
-const MASK_R_FUNCT7: InstructionType = 0x7F;
-
-const BIT_OFFSET_SHAMT: usize = 20;
-//const MASK_SHAMT: InstructionType = 0x1F;
-const MASK_SHAMT: InstructionType = XLen::BITS - 1;
-
-const BIT_OFFSET_IMM_11_0: usize = 20;
-const BIT_OFFSET_IMM_11_0_FINAL: usize = 0;
-const BITS_NUM_IMM_11_0: usize = 12;
-// const MASK_IMM_11_0: InstructionType =
-//     ((1 << BITS_NUM_IMM_11_0) - 1) << BIT_OFFSET_IMM_11_0_FINAL;
-const BIT_OFFSET_IMM_11_5: usize = 25;
-const BIT_OFFSET_IMM_11_5_FINAL: usize = 5;
-const BIT_OFFSET_IMM_4_0: usize = 7;
-const BIT_OFFSET_IMM_4_0_FINAL: usize = 0;
-const MASK_IMM_4_0: InstructionType = 0x1F << BIT_OFFSET_IMM_4_0_FINAL;
-const BIT_OFFSET_IMM_31_12: usize = 12;
-const BIT_OFFSET_IMM_31_12_FINAL: usize = 12;
-const BIT_OFFSET_IMM_10_5: usize = 25;
-const BIT_OFFSET_IMM_10_5_FINAL: usize = 5;
-const MASK_IMM_10_5: InstructionType = 0x3F << BIT_OFFSET_IMM_10_5_FINAL;
-const BIT_OFFSET_IMM_4_1: usize = 8;
-const BIT_OFFSET_IMM_4_1_FINAL: usize = 1;
-const MASK_IMM_4_1: InstructionType = 0x0F << BIT_OFFSET_IMM_4_1_FINAL;
-const BIT_OFFSET_IMM_10_1: usize = 21;
-const BIT_OFFSET_IMM_10_1_FINAL: usize = 1;
-const MASK_IMM_10_1: InstructionType = 0x3FF << BIT_OFFSET_IMM_10_1_FINAL;
-const BIT_OFFSET_IMM_19_12: usize = 12;
-const BIT_OFFSET_IMM_19_12_FINAL: usize = 12;
-const MASK_IMM_19_12: InstructionType = 0xFF << BIT_OFFSET_IMM_19_12_FINAL;
-
-const BIT_OFFSET_B_11: usize = 7;
-const BIT_OFFSET_B_11_FINAL: usize = 11;
-const MASK_B_11: InstructionType = 0x01 << BIT_OFFSET_B_11_FINAL;
-const BIT_OFFSET_B_12: usize = 31;
-const BIT_OFFSET_B_12_FINAL: usize = 12;
-const BIT_OFFSET_J_11: usize = 20;
-const BIT_OFFSET_J_11_FINAL: usize = 11;
-const MASK_J_11: InstructionType = 0x01 << BIT_OFFSET_B_11_FINAL;
-const BIT_OFFSET_J_20: usize = 31;
-const BIT_OFFSET_J_20_FINAL: usize = 20;
-
-//const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
-
-const OPCODE_LOAD: u8 = 0b0000011;
-const OPCODE_STORE: u8 = 0b0100011;
-const OPCODE_MADD: u8 = 0b1000011;
-const OPCODE_BRANCH: u8 = 0b1100011;
-const OPCODE_LOAD_FP: u8 = 0b0000111;
-const OPCODE_STORE_FP: u8 = 0b0100111;
-const OPCODE_MSUB: u8 = 0b1000111;
-const OPCODE_JALR: u8 = 0b1100111;
-const OPCODE_CUSTOM_0: u8 = 0b0001011;
-const OPCODE_CUSTOM_1: u8 = 0b0101011;
-const OPCODE_NMSUB: u8 = 0b1001011;
-const OPCODE_RESERVED_1: u8 = 0b1101011;
-const OPCODE_MISC_MEM: u8 = 0b0001111;
-const OPCODE_AMO: u8 = 0b0101111;
-const OPCODE_NMADD: u8 = 0b1001111;
-const OPCODE_JAL: u8 = 0b1101111;
-const OPCODE_OP_IMM: u8 = 0b0010011;
-const OPCODE_OP: u8 = 0b0110011;
-const OPCODE_OP_FP: u8 = 0b1010011;
-const OPCODE_SYSTEM: u8 = 0b1110011;
-const OPCODE_AUIPC: u8 = 0b0010111;
-const OPCODE_LUI: u8 = 0b0110111;
-const OPCODE_OP_V: u8 = 0b1010111;
-const OPCODE_OP_VE: u8 = 0b1110111;
-const OPCODE_OP_IMM_32: u8 = 0b0011011;
-const OPCODE_OP_32: u8 = 0b0111011;
-const OPCODE_CUSTOM_2: u8 = 0b1011011;
-const OPCODE_CUSTOM_3: u8 = 0b1111011;
-const OPCODE_RESERVED_2: u8 = 0b0011111;
-const OPCODE_RESERVED_3: u8 = 0b0111111;
-const OPCODE_RESERVED_4: u8 = 0b1011111;
-const OPCODE_RESERVED_5: u8 = 0b1111111;
 
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
@@ -1547,7 +1411,7 @@ impl SoC {
 
         // fill memory with NOP's
         self.bus.memory.byte_array = [MEM_DEFAULT_VALUE; RAM_SIZE].to_vec();
-        for addr in (RAM_BASE..RAM_END).step_by(PC_STEP as usize) {
+        for addr in (RAM_BASE..RAM_END).step_by(RISCV_PC_STEP as usize) {
             self.bus.memory.write(addr, Opcode::OP_IMM as Byte);
         }
     }
@@ -1562,7 +1426,7 @@ impl SoC {
         self.cpu.write_back();
 
         // step PC
-        self.cpu.context.PC += PC_STEP;
+        self.cpu.context.PC += RISCV_PC_STEP;
     }
 }
 
@@ -2793,7 +2657,7 @@ impl RISC_V_CPU {
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen))
                 & !(XLen::MAX & 0x01);
-        self.context.execution.result = self.context.PC + PC_STEP;
+        self.context.execution.result = self.context.PC + RISCV_PC_STEP;
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
@@ -2805,7 +2669,7 @@ impl RISC_V_CPU {
         self.context.execution.jump_target_address = self.context.PC
             + (self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen);
-        self.context.execution.result = self.context.PC + PC_STEP;
+        self.context.execution.result = self.context.PC + RISCV_PC_STEP;
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
