@@ -1,18 +1,24 @@
 // addr: {address:#018X?}
 
-use clap::Parser;
-use log::{debug, error, info, trace, warn};
-use serde::Deserialize;
-
+// std lib imports
 use std::convert::From;
 use std::fmt::{self, Binary, Debug};
 use std::marker::PhantomData;
 use std::mem::size_of;
-use std::{env, fs};
+
+// external libs imports
+use log::{debug, error, info, trace, warn};
+
+// current project imports
+use config::configure;
+use logger::init_logger;
+use parse_args::parse_args;
 
 // modules includes
 mod config;
 mod elf_loader;
+mod logger;
+mod parse_args;
 mod soc;
 mod utils;
 
@@ -3306,62 +3312,6 @@ impl RISC_V_CPU {
             >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL)) as SignedXLen
             & !((1 << BIT_OFFSET_J_20_FINAL) - 1)
     }
-}
-
-fn init_logger() {
-    let default_log_level = "info";
-    // set default log level (unless specified with RUST_LOG environment variable)
-    env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or(default_log_level),
-    )
-    .init();
-}
-
-#[derive(Parser)]
-#[command(version, about)]
-struct Args {
-    #[arg(long, required = false, action = clap::ArgAction::SetTrue)]
-    license: bool,
-}
-
-// #[derive(Parser, Debug)]
-// #[command(version, about, long_about = None)]
-// struct Args {
-//     // /// Name of the person to greet
-//     // #[arg(short, long)]
-//     // name: String,
-//     /// Number of times to greet
-//     #[arg(short, long, default_value_t = 1)]
-//     count: u8,
-// }
-
-fn parse_args() {
-    // TODO: add `--license` argument to print license
-    // let args: Vec<String> = env::args().collect();
-    let args = Args::parse();
-
-    if args.license {
-        utils::print_license_text();
-        std::process::exit(0);
-    }
-}
-
-#[derive(Deserialize)]
-struct MemoryCfg {
-    size_bytes: Option<usize>,
-}
-
-#[derive(Deserialize)]
-struct SocConfig {
-    soc: Option<MemoryCfg>,
-}
-
-fn configure() {
-    const DEFAULT_CONFIG_PATH: &str = "conf/soc.toml";
-    let config_path = DEFAULT_CONFIG_PATH;
-    let binding = fs::read_to_string(config_path).unwrap();
-    let file_content = binding.as_str();
-    let config: SocConfig = toml::from_str(file_content).unwrap();
 }
 
 fn init() {
