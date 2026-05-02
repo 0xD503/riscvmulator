@@ -411,6 +411,7 @@ impl From<InstructionType> for OP_IMM_Funct3 {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[allow(non_camel_case_types)]
 enum SYSTEM_Funct3 {
     TRANSFER_CONTROL_RETURN_FROM = 0b000,
@@ -441,6 +442,7 @@ impl From<InstructionType> for SYSTEM_Funct3 {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[allow(non_camel_case_types)]
 enum SYSTEM_Imm_transfer_control_return_from {
     ECALL = 0,
@@ -1253,6 +1255,7 @@ enum CSRRegisterName {
 struct ZicsrContext {
     need_to_read_csr: bool,
     need_to_write_csr: bool,
+    need_to_return_from_trap: bool,
     csr_value: XLen,
     uimm: XLen,
 }
@@ -1276,6 +1279,7 @@ struct Decoder {
     need_to_write_memory: bool,
     need_to_write_back: bool,
     need_to_jump: bool,
+    need_to_branch: bool,
 
     zicsr: ZicsrContext,
 }
@@ -1301,8 +1305,8 @@ struct ExecutionContext {
     result: XLen,
     branch_target_address: XLen,
     jump_target_address: XLen,
+    return_target_address: XLen,
     memory_address: XLen,
-    need_to_branch: bool,
     value_to_store_u8: Byte,
     value_to_store_u16: HalfWord,
     value_to_store_u32: Word,
@@ -1644,7 +1648,7 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
         self.context.decoder.need_to_jump = false;
-        self.context.execution.need_to_branch = false;
+        self.context.decoder.need_to_branch = false;
         self.context.decoder.funct3 = self.extract_funct3();
         self.context.decoder.r_funct7 = self.extract_r_funct7();
 
@@ -1793,14 +1797,18 @@ impl RISC_V_CPU {
 
         self.context.decoder.funct3 = self.extract_funct3();
 
+        self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
-        self.context.execution.need_to_branch = false;
+        self.context.decoder.need_to_jump = false;
+        self.context.decoder.need_to_branch = false;
+        self.context.decoder.zicsr.need_to_read_csr = false;
+        self.context.decoder.zicsr.need_to_write_csr = false;
+        self.context.decoder.zicsr.need_to_return_from_trap = false;
 
         match self.context.decoder.opcode {
             // I_3
             Opcode::LOAD => {
-                self.context.decoder.need_to_jump = false;
                 self.context.decoder.need_to_read_memory = true;
                 match OPCODE_LOAD_Funct3::from(self.context.decoder.funct3) {
                     OPCODE_LOAD_Funct3::LB => {
@@ -1835,8 +1843,6 @@ impl RISC_V_CPU {
             }
             // I_19
             Opcode::OP_IMM => {
-                self.context.decoder.need_to_jump = false;
-                self.context.decoder.need_to_read_memory = false;
                 match OP_IMM_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_Funct3::ADDI => {
                         self.context.decoder.executable_instruction =
@@ -1897,8 +1903,6 @@ impl RISC_V_CPU {
             }
             // I_27
             Opcode::OP_IMM_32 => {
-                self.context.decoder.need_to_jump = false;
-                self.context.decoder.need_to_read_memory = false;
                 match OP_IMM_32_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_32_Funct3::ADDIW => {
                         self.context.decoder.executable_instruction =
@@ -1938,7 +1942,6 @@ impl RISC_V_CPU {
             }
             // I_103
             Opcode::JALR => {
-                self.context.decoder.need_to_read_memory = false;
                 match JALR_Funct3::from(self.context.decoder.funct3) {
                     JALR_Funct3::JALR => {
                         self.context.decoder.need_to_jump = true;
@@ -1950,65 +1953,63 @@ impl RISC_V_CPU {
 
             // I_115 (Zicsr_extension)
             Opcode::SYSTEM => {
-                self.context.decoder.need_to_jump = false;
-                self.context.decoder.need_to_read_memory = false;
                 match SYSTEM_Funct3::from(self.context.decoder.funct3) {
                     SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM => {
+                        self.context.decoder.need_to_write_back = false;
+                        let are_rd_and_rs1_zero = || -> bool {
+                            (self.context.decoder.source_register_1 == 0)
+                                && (self.context.register_file.read(
+                                    self.context
+                                        .decoder
+                                        .destination_register_offset,
+                                ) == 0)
+                        };
+                        let assert_rd_and_rs1_are_zero = || {
+                            if !are_rd_and_rs1_zero() {
+                                error!("rs1 and rd should be equal 0");
+                                unreachable!("rs1 and rd should be equal 0");
+                            }
+                        };
+
+                        assert_rd_and_rs1_are_zero();
                         match From::from(self.context.decoder.immediate) {
                             SYSTEM_Imm_transfer_control_return_from::ECALL => {
                                 //
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::ECALL;
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::EBREAK => {
                                 //
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::EBREAK;
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::URET => {
-                                // if (self.context.decoder.source_register_1 != 0)
-                                //     || (self.context.register_file.read(
-                                //         self.context
-                                //             .decoder
-                                //             .destination_register_offset,
-                                //     ) != 0)
-                                // {
-                                //     error!("rs1 and rd should be equal 0");
-                                //     unreachable!(
-                                //         "rs1 and rd should be equal 0"
-                                //     );
-                                // }
-                                //
+                                self.context
+                                    .decoder
+                                    .zicsr
+                                    .need_to_return_from_trap = true;
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::URET;
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::SRET => {
-                                // if (self.context.decoder.source_register_1 != 0)
-                                //     || (self.context.register_file.read(
-                                //         self.context
-                                //             .decoder
-                                //             .destination_register_offset,
-                                //     ) != 0)
-                                // {
-                                //     error!("rs1 and rd should be equal 0");
-                                //     unreachable!(
-                                //         "rs1 and rd should be equal 0"
-                                //     );
-                                // }
-                                //
+                                self.context
+                                    .decoder
+                                    .zicsr
+                                    .need_to_return_from_trap = true;
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::SRET;
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::MRET => {
-                                // if (self.context.decoder.source_register_1 != 0)
-                                //     || (self.context.register_file.read(
-                                //         self.context
-                                //             .decoder
-                                //             .destination_register_offset,
-                                //     ) != 0)
-                                // {
-                                //     error!("rs1 and rd should be equal 0");
-                                //     unreachable!(
-                                //         "rs1 and rd should be equal 0"
-                                //     );
-                                // }
-                                //
+                                self.context
+                                    .decoder
+                                    .zicsr
+                                    .need_to_return_from_trap = true;
+                                self.context.decoder.executable_instruction =
+                                    ExecutableInstruction::MRET;
                             }
                         }
                         todo!();
@@ -2017,10 +2018,8 @@ impl RISC_V_CPU {
                     SYSTEM_Funct3::CSRRW => {
                         self.context.decoder.zicsr.need_to_write_csr = true;
                         if self.context.decoder.destination_register_offset
-                            == GPRegisterName::x0_zero as usize
+                            != GPRegisterName::x0_zero as usize
                         {
-                            self.context.decoder.zicsr.need_to_read_csr = false;
-                        } else {
                             self.context.decoder.zicsr.need_to_read_csr = true;
                         }
                         self.context.decoder.executable_instruction =
@@ -2028,10 +2027,7 @@ impl RISC_V_CPU {
                     }
                     SYSTEM_Funct3::CSRRS => {
                         self.context.decoder.zicsr.need_to_read_csr = true;
-                        if self.extract_source_register_1_index() == 0 {
-                            self.context.decoder.zicsr.need_to_write_csr =
-                                false;
-                        } else {
+                        if self.extract_source_register_1_index() != 0 {
                             self.context.decoder.zicsr.need_to_write_csr = true;
                         }
                         self.context.decoder.executable_instruction =
@@ -2039,10 +2035,7 @@ impl RISC_V_CPU {
                     }
                     SYSTEM_Funct3::CSRRC => {
                         self.context.decoder.zicsr.need_to_read_csr = true;
-                        if self.extract_source_register_1_index() == 0 {
-                            self.context.decoder.zicsr.need_to_write_csr =
-                                false;
-                        } else {
+                        if self.extract_source_register_1_index() != 0 {
                             self.context.decoder.zicsr.need_to_write_csr = true;
                         }
                         self.context.decoder.executable_instruction =
@@ -2053,10 +2046,8 @@ impl RISC_V_CPU {
                         self.context.decoder.zicsr.uimm =
                             self.extract_source_register_1_index() as XLen;
                         if self.context.decoder.destination_register_offset
-                            == GPRegisterName::x0_zero as usize
+                            != GPRegisterName::x0_zero as usize
                         {
-                            self.context.decoder.zicsr.need_to_read_csr = false;
-                        } else {
                             self.context.decoder.zicsr.need_to_read_csr = true;
                         }
                         self.context.decoder.executable_instruction =
@@ -2064,10 +2055,7 @@ impl RISC_V_CPU {
                     }
                     SYSTEM_Funct3::CSRRSI => {
                         self.context.decoder.zicsr.need_to_read_csr = true;
-                        if self.extract_source_register_1_index() == 0 {
-                            self.context.decoder.zicsr.need_to_write_csr =
-                                false;
-                        } else {
+                        if self.extract_source_register_1_index() != 0 {
                             self.context.decoder.zicsr.need_to_write_csr = true;
                             self.context.decoder.zicsr.uimm =
                                 self.extract_source_register_1_index() as XLen;
@@ -2077,10 +2065,7 @@ impl RISC_V_CPU {
                     }
                     SYSTEM_Funct3::CSRRCI => {
                         self.context.decoder.zicsr.need_to_read_csr = true;
-                        if self.extract_source_register_1_index() == 0 {
-                            self.context.decoder.zicsr.need_to_write_csr =
-                                false;
-                        } else {
+                        if self.extract_source_register_1_index() != 0 {
                             self.context.decoder.zicsr.need_to_write_csr = true;
                             self.context.decoder.zicsr.uimm =
                                 self.extract_source_register_1_index() as XLen;
@@ -2107,7 +2092,7 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_memory = true;
         self.context.decoder.need_to_write_back = false;
         self.context.decoder.need_to_jump = false;
-        self.context.execution.need_to_branch = false;
+        self.context.decoder.need_to_branch = false;
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_4_0();
@@ -2155,8 +2140,7 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = false;
         self.context.decoder.need_to_jump = false;
-        // reset branch flag, will be updated during execution stage
-        self.context.execution.need_to_branch = false;
+        self.context.decoder.need_to_branch = true;
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_4_1();
@@ -2211,7 +2195,7 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
         self.context.decoder.need_to_jump = false;
-        self.context.execution.need_to_branch = false;
+        self.context.decoder.need_to_branch = false;
 
         // extract immediate
         self.context.decoder.immediate =
@@ -2241,8 +2225,7 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
         self.context.decoder.need_to_jump = true;
-        // reset branch flag, will be updated during execution stage
-        self.context.execution.need_to_branch = false;
+        self.context.decoder.need_to_branch = false;
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_10_1();
@@ -2269,6 +2252,7 @@ impl RISC_V_CPU {
         match self.context.decoder.opcode {
             //
             _ => match self.context.decoder.funct3 {
+                //
                 _ => {
                     todo!("TODO: unimplemented");
                 }
@@ -2708,7 +2692,6 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-            self.context.execution.need_to_branch = true;
         }
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -2724,7 +2707,6 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-            self.context.execution.need_to_branch = true;
         }
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -2740,7 +2722,6 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-            self.context.execution.need_to_branch = true;
         }
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -2756,7 +2737,6 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-            self.context.execution.need_to_branch = true;
         }
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -2772,7 +2752,6 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-            self.context.execution.need_to_branch = true;
         }
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -2788,7 +2767,6 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-            self.context.execution.need_to_branch = true;
         }
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -2955,7 +2933,10 @@ impl RISC_V_CPU {
     }
 
     fn instruction_machine_return(&mut self) {
-        //
+        self.context.execution.return_target_address = self
+            .context
+            .control_status_registers
+            .read(CSRRegisterName::mepc as usize);
         todo!();
     }
 
@@ -3124,11 +3105,11 @@ impl RISC_V_CPU {
         self.context.PC = target_addr;
     }
 
-    fn jump_to_target_address(&mut self) {
-        trace!("Updating PC to JTA...");
+    fn return_to_target_address(&mut self) {
+        trace!("Returning to target address from trap...");
 
         self.set_pc_to_target_address(
-            self.context.execution.jump_target_address,
+            self.context.execution.return_target_address,
         );
     }
 
@@ -3137,6 +3118,14 @@ impl RISC_V_CPU {
 
         self.set_pc_to_target_address(
             self.context.execution.branch_target_address,
+        );
+    }
+
+    fn jump_to_target_address(&mut self) {
+        trace!("Updating PC to JTA...");
+
+        self.set_pc_to_target_address(
+            self.context.execution.jump_target_address,
         );
     }
 
@@ -3158,13 +3147,17 @@ impl RISC_V_CPU {
                 self.jump_to_target_address();
                 return;
             }
-        } else if self.context.execution.need_to_branch {
+        } else if self.context.decoder.need_to_branch {
             self.branch_to_target_address();
             return;
         }
         // check if write to CSR is necessary
         if self.context.decoder.zicsr.need_to_write_csr {
             self.write_to_csr();
+        }
+        // check if return from trap is needed
+        else if self.context.decoder.zicsr.need_to_return_from_trap {
+            self.return_to_target_address();
         }
     }
 
@@ -3415,8 +3408,8 @@ fn main() {
                     result: XLen::MIN,
                     branch_target_address: PC_RESET_VALUE,
                     jump_target_address: PC_RESET_VALUE,
+                    return_target_address: PC_RESET_VALUE,
                     memory_address: XLen::MIN,
-                    need_to_branch: false,
                     value_to_store_u8: Default::default(),
                     value_to_store_u16: Default::default(),
                     value_to_store_u32: Default::default(),
