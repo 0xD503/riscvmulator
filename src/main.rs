@@ -10,6 +10,12 @@ use std::marker::PhantomData;
 use std::mem::size_of;
 use std::{env, fs};
 
+// modules includes
+mod config;
+mod elf_loader;
+mod soc;
+mod utils;
+
 /// architechtural defines
 type XLen = u64;
 type SignedXLen = i64;
@@ -3311,25 +3317,6 @@ fn init_logger() {
     .init();
 }
 
-fn print_license_text() {
-    static LICENSE_TEXT: &str = "
-
-    Copyright 2026 Ruslan Vostretsov
-
-    Licensed under either of:
-
-    * MIT License (LICENSE-MIT)
-        https://opensource.org/licenses/MIT
-
-    * Apache License, Version 2.0 (LICENSE-APACHE)
-        https://www.apache.org/licenses/LICENSE-2.0
-
-    at your option.
-
-";
-    print!("{LICENSE_TEXT}");
-}
-
 #[derive(Parser)]
 #[command(version, about)]
 struct Args {
@@ -3354,7 +3341,7 @@ fn parse_args() {
     let args = Args::parse();
 
     if args.license {
-        print_license_text();
+        utils::print_license_text();
         std::process::exit(0);
     }
 }
