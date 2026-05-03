@@ -21,6 +21,6 @@ elf = { version = "0.8.0" }
 #num-traits = { version = "0.2.19" }
 #bitfield = "0.19.4"
 
-[toolchain]
-## use fixed `major`/`minor`, but latest `patch` version
-#channel = "1.999"
+# [toolchain]
+# ## use fixed `major`/`minor`, but latest `patch` version
+# #channel = "1.999"
