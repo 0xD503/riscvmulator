@@ -20,7 +20,6 @@ use soc::cpu::extensions::zicsr::constants::CSRRegisterName;
 use soc::cpu::extensions::zicsr::{CSRFile, ZicsrContext};
 use soc::memory::{MemoryValue, MemoryValueType};
 use soc::memory_bus::{Bus, SystemBus};
-// use soc::cpu::core::registers
 
 use parse_args::parse_args;
 
@@ -75,7 +74,7 @@ struct ExecutionContext {
 #[allow(non_snake_case)]
 #[derive(Clone)]
 struct Context {
-    register_file: RegisterFile<RISCV_NUM_OF_REGISTERS>,
+    gp_register_file: RegisterFile<RISCV_NUM_OF_REGISTERS>,
     PC: XLen,
     control_status_registers: CSRFile<RISCV_NUM_OF_CSR>,
     current_instruction: InstructionType,
@@ -118,7 +117,7 @@ impl SoC {
         for i in 1..RISCV_NUM_OF_REGISTERS {
             self.cpu
                 .context
-                .register_file
+                .gp_register_file
                 .write(i, RISCV_X0_ZERO_REGISTER_VALUE);
         }
         self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
@@ -466,7 +465,7 @@ impl RISC_V_CPU {
                         self.context.decoder.need_to_write_back = false;
                         let are_rd_and_rs1_zero = || -> bool {
                             (self.context.decoder.source_register_1 == 0)
-                                && (self.context.register_file.read(
+                                && (self.context.gp_register_file.read(
                                     self.context
                                         .decoder
                                         .destination_register_offset,
@@ -1602,7 +1601,7 @@ impl RISC_V_CPU {
         trace!("Writing back to register x{register_offset:#?}...");
 
         self.context
-            .register_file
+            .gp_register_file
             .write(register_offset, self.context.execution.result);
     }
 
@@ -1683,7 +1682,7 @@ impl RISC_V_CPU {
 
     fn extract_source_register_1(&self) -> XLen {
         self.context
-            .register_file
+            .gp_register_file
             .read(self.extract_source_register_1_index())
     }
 
@@ -1694,7 +1693,7 @@ impl RISC_V_CPU {
 
     fn extract_source_register_2(&self) -> XLen {
         self.context
-            .register_file
+            .gp_register_file
             .read(self.extract_source_register_2_index())
     }
 
@@ -1823,7 +1822,7 @@ fn main() {
         cpu: RISC_V_CPU {
             context: Context {
                 PC: PC_RESET_VALUE,
-                register_file: RegisterFile::new(),
+                gp_register_file: RegisterFile::new(),
                 control_status_registers: CSRFile::new(),
                 current_instruction: INITIAL_INSTRUCTION,
                 decoder: Decoder {

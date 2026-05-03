@@ -1,8 +1,13 @@
 //
+use crate::soc::cpu::priveleged::machine::{MXLen, SignedMXLen, UnsignedMXLen};
 
-pub type XLen = u64;
-pub type SignedXLen = i64;
-pub type UnsignedXLen = u64;
+// XLEN is never greater than MXLEN, but XLEN might be smaller than MXLEN in
+// less-privileged modes.
+const _: () = assert!(size_of::<MXLen>() >= size_of::<XLen>());
+
+pub type XLen = MXLen;
+pub type SignedXLen = SignedMXLen;
+pub type UnsignedXLen = UnsignedMXLen;
 pub type XLen32 = u32;
 pub type SignedXLen32 = i32;
 
