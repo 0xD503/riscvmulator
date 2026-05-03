@@ -50,9 +50,18 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
 
 // #[derive(Default, Clone)]
 // pub struct ZicsrContext {
-//     need_to_read_csr: bool,
-//     need_to_write_csr: bool,
-//     need_to_return_from_trap: bool,
-//     csr_value: XLen,
-//     uimm: XLen,
+//     pub(in crate::soc::cpu) need_to_read_csr: bool,
+//     pub(in crate::soc::cpu) need_to_write_csr: bool,
+//     pub(in crate::soc::cpu) need_to_return_from_trap: bool,
+//     pub(in crate::soc::cpu) csr_value: XLen,
+//     pub(in crate::soc::cpu) uimm: XLen,
 // }
+
+#[derive(Default, Clone)]
+pub struct ZicsrContext {
+    pub(crate) need_to_read_csr: bool,
+    pub(crate) need_to_write_csr: bool,
+    pub(crate) need_to_return_from_trap: bool,
+    pub(crate) csr_value: XLen,
+    pub(crate) uimm: XLen,
+}

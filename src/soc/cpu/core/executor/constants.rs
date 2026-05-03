@@ -1,6 +1,6 @@
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Clone, Debug)]
-pub enum ExecutableInstruction {
+pub enum ExecutableCommand {
     #[default]
     LB, // load byte
     LH, // load halfword

@@ -2,7 +2,6 @@
 
 // std lib imports
 use std::convert::From;
-use std::fmt::Debug;
 
 // external libs imports
 use log::{debug, error, info, trace, warn};
@@ -13,12 +12,12 @@ use constants::arch::*;
 use constants::soc::*;
 use logger::init_logger;
 use soc::cpu::core::decoder::constants::*;
-use soc::cpu::core::executor::constants::ExecutableInstruction;
+use soc::cpu::core::executor::constants::ExecutableCommand;
 use soc::cpu::core::gp_registers::RegisterFile;
 use soc::cpu::core::gp_registers::constants::GPRegisterName;
 use soc::cpu::core::registers::RegisterFileInterface;
 use soc::cpu::extensions::zicsr::constants::CSRRegisterName;
-use soc::cpu::extensions::zicsr::{CSRFile /*, ZicsrContext*/};
+use soc::cpu::extensions::zicsr::{CSRFile, ZicsrContext};
 use soc::memory::{MemoryValue, MemoryValueType};
 use soc::memory_bus::{Bus, SystemBus};
 // use soc::cpu::core::registers
@@ -35,15 +34,6 @@ mod soc;
 mod utils;
 
 #[derive(Default, Clone)]
-struct ZicsrContext {
-    need_to_read_csr: bool,
-    need_to_write_csr: bool,
-    need_to_return_from_trap: bool,
-    csr_value: XLen,
-    uimm: XLen,
-}
-
-#[derive(Default, Clone)]
 struct Decoder {
     opcode: Opcode,
     source_register_1: XLen,
@@ -57,7 +47,7 @@ struct Decoder {
     shamt: InstructionType,
 
     immediate: UnsignedImmediate,
-    executable_instruction: ExecutableInstruction,
+    command_to_execute: ExecutableCommand,
     need_to_read_memory: bool,
     need_to_write_memory: bool,
     need_to_write_back: bool,
@@ -102,6 +92,7 @@ struct RISC_V_CPU {
 
 struct SoC {
     cpu: RISC_V_CPU,
+    // memory and memory mapped IO
     bus: SystemBus<BusAddrType>,
 }
 
@@ -173,19 +164,19 @@ impl RISC_V_CPU {
             Opcode::OP => match OP_Funct3::from(self.context.decoder.funct3) {
                 OP_Funct3::ARITH => match self.context.decoder.r_funct7 {
                     Funct7::F0 => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::ADD;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::ADD;
                     }
                     Funct7::F1 => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SUB;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SUB;
                     }
                 },
                 OP_Funct3::SLL => match self.context.decoder.r_funct7 {
                     Funct7::F0 => {
                         self.context.decoder.shamt = self.extract_shamt();
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SLL;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SLL;
                     }
 
                     _ => {
@@ -195,8 +186,8 @@ impl RISC_V_CPU {
                 },
                 OP_Funct3::SLT => match self.context.decoder.r_funct7 {
                     Funct7::F0 => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SLT;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SLT;
                     }
 
                     _ => {
@@ -206,8 +197,8 @@ impl RISC_V_CPU {
                 },
                 OP_Funct3::SLTU => match self.context.decoder.r_funct7 {
                     Funct7::F0 => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SLTU;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SLTU;
                     }
 
                     _ => {
@@ -217,8 +208,8 @@ impl RISC_V_CPU {
                 },
                 OP_Funct3::XOR => match self.context.decoder.r_funct7 {
                     Funct7::F0 => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::XOR;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::XOR;
                     }
 
                     _ => {
@@ -230,19 +221,19 @@ impl RISC_V_CPU {
                     self.context.decoder.shamt = self.extract_shamt();
                     match self.context.decoder.r_funct7 {
                         Funct7::F0 => {
-                            self.context.decoder.executable_instruction =
-                                ExecutableInstruction::SRL;
+                            self.context.decoder.command_to_execute =
+                                ExecutableCommand::SRL;
                         }
                         Funct7::F1 => {
-                            self.context.decoder.executable_instruction =
-                                ExecutableInstruction::SRA;
+                            self.context.decoder.command_to_execute =
+                                ExecutableCommand::SRA;
                         }
                     }
                 }
                 OP_Funct3::OR => match self.context.decoder.r_funct7 {
                     Funct7::F0 => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::OR;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::OR;
                     }
 
                     _ => {
@@ -252,8 +243,8 @@ impl RISC_V_CPU {
                 },
                 OP_Funct3::AND => match self.context.decoder.r_funct7 {
                     Funct7::F0 => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::AND;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::AND;
                     }
 
                     _ => {
@@ -267,30 +258,30 @@ impl RISC_V_CPU {
                     OP_32_Funct3::ARITHW => {
                         match self.context.decoder.r_funct7 {
                             Funct7::F0 => {
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::ADDW;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::ADDW;
                             }
                             Funct7::F1 => {
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SUBW;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SUBW;
                             }
                         }
                     }
                     OP_32_Funct3::SLLW => {
                         self.context.decoder.shamt = self.extract_shamt();
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SLLW;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SLLW;
                     }
                     OP_32_Funct3::SRXW => {
                         self.context.decoder.shamt = self.extract_shamt();
                         match self.context.decoder.r_funct7 {
                             Funct7::F0 => {
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SRLW;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SRLW;
                             }
                             Funct7::F1 => {
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SRAW;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SRAW;
                             }
                         }
                     }
@@ -329,32 +320,32 @@ impl RISC_V_CPU {
                 self.context.decoder.need_to_read_memory = true;
                 match OPCODE_LOAD_Funct3::from(self.context.decoder.funct3) {
                     OPCODE_LOAD_Funct3::LB => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::LB
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::LB
                     }
                     OPCODE_LOAD_Funct3::LH => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::LH
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::LH
                     }
                     OPCODE_LOAD_Funct3::LW => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::LW
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::LW
                     }
                     OPCODE_LOAD_Funct3::LD => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::LD
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::LD
                     }
                     OPCODE_LOAD_Funct3::LBU => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::LBU
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::LBU
                     }
                     OPCODE_LOAD_Funct3::LHU => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::LHU
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::LHU
                     }
                     OPCODE_LOAD_Funct3::LWU => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::LWU
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::LWU
                     }
                 }
             }
@@ -362,8 +353,8 @@ impl RISC_V_CPU {
             Opcode::OP_IMM => {
                 match OP_IMM_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_Funct3::ADDI => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::ADDI;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::ADDI;
                     }
                     OP_IMM_Funct3::SLLI => {
                         self.context.decoder.shamt = self.extract_shamt();
@@ -371,8 +362,8 @@ impl RISC_V_CPU {
                         match self.context.decoder.i_funct7 {
                             OP_IMM_Funct7::SXLI => {
                                 // funct3 equals SLLI
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SLLI
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SLLI
                             }
 
                             _ => {
@@ -382,16 +373,16 @@ impl RISC_V_CPU {
                         }
                     }
                     OP_IMM_Funct3::SLTI => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SLTI;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SLTI;
                     }
                     OP_IMM_Funct3::SLTIU => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SLTIU;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SLTIU;
                     }
                     OP_IMM_Funct3::XORI => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::XORI;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::XORI;
                     }
                     OP_IMM_Funct3::SRXI => {
                         self.context.decoder.shamt = self.extract_shamt();
@@ -399,22 +390,22 @@ impl RISC_V_CPU {
                         match self.context.decoder.i_funct7 {
                             OP_IMM_Funct7::SXLI => {
                                 // funct3 equals SRLI
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SRLI;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SRLI;
                             }
                             OP_IMM_Funct7::SRAI => {
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SRAI;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SRAI;
                             }
                         }
                     }
                     OP_IMM_Funct3::ORI => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::ORI;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::ORI;
                     }
                     OP_IMM_Funct3::ANDI => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::ANDI;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::ANDI;
                     }
                 }
             }
@@ -422,16 +413,16 @@ impl RISC_V_CPU {
             Opcode::OP_IMM_32 => {
                 match OP_IMM_32_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_32_Funct3::ADDIW => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::ADDIW
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::ADDIW
                     }
                     OP_IMM_32_Funct3::SLLIW => {
                         self.context.decoder.shamt = self.extract_shamt();
                         match self.context.decoder.i_funct7 {
                             OP_IMM_Funct7::SXLI => {
                                 // funct3 equals SLLIW
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SLLIW
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SLLIW
                             }
 
                             _ => {
@@ -445,13 +436,13 @@ impl RISC_V_CPU {
                         match self.context.decoder.i_funct7 {
                             OP_IMM_Funct7::SXLI => {
                                 // funct3 equals SRXIW
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SRLIW
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SRLIW
                             }
                             OP_IMM_Funct7::SRAI => {
                                 // funct3 equals SRXIW
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SRAIW
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SRAIW
                             }
                         }
                     }
@@ -462,8 +453,8 @@ impl RISC_V_CPU {
                 match JALR_Funct3::from(self.context.decoder.funct3) {
                     JALR_Funct3::JALR => {
                         self.context.decoder.need_to_jump = true;
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::JALR
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::JALR
                     }
                 }
             }
@@ -492,14 +483,14 @@ impl RISC_V_CPU {
                         match From::from(self.context.decoder.immediate) {
                             SYSTEM_Imm_transfer_control_return_from::ECALL => {
                                 //
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::ECALL;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::ECALL;
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::EBREAK => {
                                 //
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::EBREAK;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::EBREAK;
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::URET => {
@@ -507,8 +498,8 @@ impl RISC_V_CPU {
                                     .decoder
                                     .zicsr
                                     .need_to_return_from_trap = true;
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::URET;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::URET;
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::SRET => {
@@ -516,8 +507,8 @@ impl RISC_V_CPU {
                                     .decoder
                                     .zicsr
                                     .need_to_return_from_trap = true;
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::SRET;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::SRET;
                                 todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::MRET => {
@@ -525,8 +516,8 @@ impl RISC_V_CPU {
                                     .decoder
                                     .zicsr
                                     .need_to_return_from_trap = true;
-                                self.context.decoder.executable_instruction =
-                                    ExecutableInstruction::MRET;
+                                self.context.decoder.command_to_execute =
+                                    ExecutableCommand::MRET;
                             }
                         }
                         todo!();
@@ -539,24 +530,24 @@ impl RISC_V_CPU {
                         {
                             self.context.decoder.zicsr.need_to_read_csr = true;
                         }
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::CSRRW;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::CSRRW;
                     }
                     SYSTEM_Funct3::CSRRS => {
                         self.context.decoder.zicsr.need_to_read_csr = true;
                         if self.extract_source_register_1_index() != 0 {
                             self.context.decoder.zicsr.need_to_write_csr = true;
                         }
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::CSRRS;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::CSRRS;
                     }
                     SYSTEM_Funct3::CSRRC => {
                         self.context.decoder.zicsr.need_to_read_csr = true;
                         if self.extract_source_register_1_index() != 0 {
                             self.context.decoder.zicsr.need_to_write_csr = true;
                         }
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::CSRRC;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::CSRRC;
                     }
                     SYSTEM_Funct3::CSRRWI => {
                         self.context.decoder.zicsr.need_to_write_csr = true;
@@ -567,8 +558,8 @@ impl RISC_V_CPU {
                         {
                             self.context.decoder.zicsr.need_to_read_csr = true;
                         }
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::CSRRWI;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::CSRRWI;
                     }
                     SYSTEM_Funct3::CSRRSI => {
                         self.context.decoder.zicsr.need_to_read_csr = true;
@@ -577,8 +568,8 @@ impl RISC_V_CPU {
                             self.context.decoder.zicsr.uimm =
                                 self.extract_source_register_1_index() as XLen;
                         }
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::CSRRSI;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::CSRRSI;
                     }
                     SYSTEM_Funct3::CSRRCI => {
                         self.context.decoder.zicsr.need_to_read_csr = true;
@@ -587,8 +578,8 @@ impl RISC_V_CPU {
                             self.context.decoder.zicsr.uimm =
                                 self.extract_source_register_1_index() as XLen;
                         }
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::CSRRCI;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::CSRRCI;
                     }
                 }
             }
@@ -623,20 +614,20 @@ impl RISC_V_CPU {
             Opcode::STORE => {
                 match STORE_Funct3::from(self.context.decoder.funct3) {
                     STORE_Funct3::SB => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SB;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SB;
                     }
                     STORE_Funct3::SH => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SH;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SH;
                     }
                     STORE_Funct3::SW => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SW;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SW;
                     }
                     STORE_Funct3::SD => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::SD;
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::SD;
                     }
                 }
             }
@@ -672,28 +663,28 @@ impl RISC_V_CPU {
             Opcode::BRANCH => {
                 match BRANCH_Funct3::from(self.context.decoder.funct3) {
                     BRANCH_Funct3::BEQ => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::BEQ
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::BEQ
                     }
                     BRANCH_Funct3::BNE => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::BNE
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::BNE
                     }
                     BRANCH_Funct3::BLT => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::BLT
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::BLT
                     }
                     BRANCH_Funct3::BGE => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::BGE
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::BGE
                     }
                     BRANCH_Funct3::BLTU => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::BLTU
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::BLTU
                     }
                     BRANCH_Funct3::BGEU => {
-                        self.context.decoder.executable_instruction =
-                            ExecutableInstruction::BGEU
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::BGEU
                     }
                 }
             }
@@ -720,12 +711,12 @@ impl RISC_V_CPU {
 
         match self.context.decoder.opcode {
             Opcode::AUIPC => {
-                self.context.decoder.executable_instruction =
-                    ExecutableInstruction::AUIPC;
+                self.context.decoder.command_to_execute =
+                    ExecutableCommand::AUIPC;
             }
             Opcode::LUI => {
-                self.context.decoder.executable_instruction =
-                    ExecutableInstruction::LUI;
+                self.context.decoder.command_to_execute =
+                    ExecutableCommand::LUI;
             }
 
             _ => {
@@ -753,8 +744,8 @@ impl RISC_V_CPU {
 
         match self.context.decoder.opcode {
             Opcode::JAL => {
-                self.context.decoder.executable_instruction =
-                    ExecutableInstruction::JAL;
+                self.context.decoder.command_to_execute =
+                    ExecutableCommand::JAL;
             }
 
             _ => {
@@ -807,125 +798,125 @@ impl RISC_V_CPU {
     }
 
     fn execute(&mut self) {
-        match self.context.decoder.executable_instruction {
+        match self.context.decoder.command_to_execute {
             // RV32I
             // I_3
-            ExecutableInstruction::LB => self.instruction_load_byte(),
-            ExecutableInstruction::LH => self.instruction_load_half(),
-            ExecutableInstruction::LW => self.instruction_load_word(),
-            ExecutableInstruction::LBU => self.instruction_load_byte_unsigned(),
-            ExecutableInstruction::LHU => self.instruction_load_half_unsigned(),
+            ExecutableCommand::LB => self.instruction_load_byte(),
+            ExecutableCommand::LH => self.instruction_load_half(),
+            ExecutableCommand::LW => self.instruction_load_word(),
+            ExecutableCommand::LBU => self.instruction_load_byte_unsigned(),
+            ExecutableCommand::LHU => self.instruction_load_half_unsigned(),
             // I_19
-            ExecutableInstruction::ADDI => self.instruction_addi(),
-            ExecutableInstruction::SLLI => self.instruction_slli(),
-            ExecutableInstruction::SLTI => self.instruction_slti(),
-            ExecutableInstruction::SLTIU => self.instruction_sltiu(),
-            ExecutableInstruction::XORI => self.instruction_xori(),
-            ExecutableInstruction::SRLI => self.instruction_srli(),
-            ExecutableInstruction::SRAI => self.instruction_srai(),
-            ExecutableInstruction::ORI => self.instruction_ori(),
-            ExecutableInstruction::ANDI => self.instruction_andi(),
+            ExecutableCommand::ADDI => self.instruction_addi(),
+            ExecutableCommand::SLLI => self.instruction_slli(),
+            ExecutableCommand::SLTI => self.instruction_slti(),
+            ExecutableCommand::SLTIU => self.instruction_sltiu(),
+            ExecutableCommand::XORI => self.instruction_xori(),
+            ExecutableCommand::SRLI => self.instruction_srli(),
+            ExecutableCommand::SRAI => self.instruction_srai(),
+            ExecutableCommand::ORI => self.instruction_ori(),
+            ExecutableCommand::ANDI => self.instruction_andi(),
             // U_23
-            ExecutableInstruction::AUIPC => self.instruction_auipc(),
+            ExecutableCommand::AUIPC => self.instruction_auipc(),
             // S_35
-            ExecutableInstruction::SB => self.instruction_store_byte(),
-            ExecutableInstruction::SH => self.instruction_store_half_word(),
-            ExecutableInstruction::SW => self.instruction_store_word(),
+            ExecutableCommand::SB => self.instruction_store_byte(),
+            ExecutableCommand::SH => self.instruction_store_half_word(),
+            ExecutableCommand::SW => self.instruction_store_word(),
             // R_51
-            ExecutableInstruction::ADD => self.instruction_add(),
-            ExecutableInstruction::SUB => self.instruction_sub(),
-            ExecutableInstruction::SLL => self.instruction_sll(),
-            ExecutableInstruction::SLT => self.instruction_slt(),
-            ExecutableInstruction::SLTU => self.instruction_sltu(),
-            ExecutableInstruction::XOR => self.instruction_xor(),
-            ExecutableInstruction::SRL => self.instruction_srl(),
-            ExecutableInstruction::SRA => self.instruction_sra(),
-            ExecutableInstruction::OR => self.instruction_or(),
-            ExecutableInstruction::AND => self.instruction_and(),
+            ExecutableCommand::ADD => self.instruction_add(),
+            ExecutableCommand::SUB => self.instruction_sub(),
+            ExecutableCommand::SLL => self.instruction_sll(),
+            ExecutableCommand::SLT => self.instruction_slt(),
+            ExecutableCommand::SLTU => self.instruction_sltu(),
+            ExecutableCommand::XOR => self.instruction_xor(),
+            ExecutableCommand::SRL => self.instruction_srl(),
+            ExecutableCommand::SRA => self.instruction_sra(),
+            ExecutableCommand::OR => self.instruction_or(),
+            ExecutableCommand::AND => self.instruction_and(),
             // U_55
-            ExecutableInstruction::LUI => self.instruction_lui(),
+            ExecutableCommand::LUI => self.instruction_lui(),
             // B_99
-            ExecutableInstruction::BEQ => self.instruction_beq(),
-            ExecutableInstruction::BNE => self.instruction_bne(),
-            ExecutableInstruction::BLT => self.instruction_blt(),
-            ExecutableInstruction::BGE => self.instruction_bge(),
-            ExecutableInstruction::BLTU => self.instruction_bltu(),
-            ExecutableInstruction::BGEU => self.instruction_bgeu(),
+            ExecutableCommand::BEQ => self.instruction_beq(),
+            ExecutableCommand::BNE => self.instruction_bne(),
+            ExecutableCommand::BLT => self.instruction_blt(),
+            ExecutableCommand::BGE => self.instruction_bge(),
+            ExecutableCommand::BLTU => self.instruction_bltu(),
+            ExecutableCommand::BGEU => self.instruction_bgeu(),
             // I_103
-            ExecutableInstruction::JALR => self.instruction_jalr(),
+            ExecutableCommand::JALR => self.instruction_jalr(),
             // J_111
-            ExecutableInstruction::JAL => self.instruction_jal(),
+            ExecutableCommand::JAL => self.instruction_jal(),
 
             // RV64I
             // I_3
-            ExecutableInstruction::LD => self.instruction_load_double_word(),
-            ExecutableInstruction::LWU => self.instruction_load_word_unsigned(),
+            ExecutableCommand::LD => self.instruction_load_double_word(),
+            ExecutableCommand::LWU => self.instruction_load_word_unsigned(),
             // I_27
-            ExecutableInstruction::ADDIW => {
+            ExecutableCommand::ADDIW => {
                 self.instruction_add_immediate_word();
             }
-            ExecutableInstruction::SLLIW => {
+            ExecutableCommand::SLLIW => {
                 self.instruction_shift_left_logical_immediate_word();
             }
-            ExecutableInstruction::SRLIW => {
+            ExecutableCommand::SRLIW => {
                 self.instruction_shift_right_logical_immediate_word();
             }
-            ExecutableInstruction::SRAIW => {
+            ExecutableCommand::SRAIW => {
                 self.instruction_shift_right_arith_immediate_word();
             }
             // S_35
-            ExecutableInstruction::SD => self.instruction_store_double_word(),
+            ExecutableCommand::SD => self.instruction_store_double_word(),
             // R_59
-            ExecutableInstruction::ADDW => self.instruction_add_word(),
-            ExecutableInstruction::SUBW => self.instruction_sub_word(),
-            ExecutableInstruction::SLLW => {
+            ExecutableCommand::ADDW => self.instruction_add_word(),
+            ExecutableCommand::SUBW => self.instruction_sub_word(),
+            ExecutableCommand::SLLW => {
                 self.instruction_shift_left_logical_word();
             }
-            ExecutableInstruction::SRLW => {
+            ExecutableCommand::SRLW => {
                 self.instruction_shift_right_logical_word();
             }
-            ExecutableInstruction::SRAW => {
+            ExecutableCommand::SRAW => {
                 self.instruction_shift_right_arith_word();
             }
 
-            ExecutableInstruction::FENCE => {
+            ExecutableCommand::FENCE => {
                 self.instruction_fence();
             }
 
-            ExecutableInstruction::ECALL => {
+            ExecutableCommand::ECALL => {
                 self.instruction_execution_call();
             }
-            ExecutableInstruction::EBREAK => {
+            ExecutableCommand::EBREAK => {
                 self.instruction_execution_break();
             }
 
-            ExecutableInstruction::URET => {
+            ExecutableCommand::URET => {
                 self.instruction_user_return();
             }
-            ExecutableInstruction::SRET => {
+            ExecutableCommand::SRET => {
                 self.instruction_supervisor_return();
             }
-            ExecutableInstruction::MRET => {
+            ExecutableCommand::MRET => {
                 self.instruction_machine_return();
             }
 
             // Zicsr extension
-            ExecutableInstruction::CSRRW => {
+            ExecutableCommand::CSRRW => {
                 self.instruction_csr_read_write();
             }
-            ExecutableInstruction::CSRRS => {
+            ExecutableCommand::CSRRS => {
                 self.instruction_csr_read_set();
             }
-            ExecutableInstruction::CSRRC => {
+            ExecutableCommand::CSRRC => {
                 self.instruction_csr_read_clear();
             }
-            ExecutableInstruction::CSRRWI => {
+            ExecutableCommand::CSRRWI => {
                 self.instruction_csr_read_write_immediate();
             }
-            ExecutableInstruction::CSRRSI => {
+            ExecutableCommand::CSRRSI => {
                 self.instruction_csr_read_set_immediate();
             }
-            ExecutableInstruction::CSRRCI => {
+            ExecutableCommand::CSRRCI => {
                 self.instruction_csr_read_clear_immediate();
             }
         }
