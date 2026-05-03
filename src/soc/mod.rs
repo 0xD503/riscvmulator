@@ -1,5 +1,5 @@
 mod cpu;
-mod memory;
+pub mod memory;
 mod memory_bus;
 mod peripherals;
 
