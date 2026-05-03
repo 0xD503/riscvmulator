@@ -9,6 +9,22 @@ use crate::constants::arch::{
 };
 use crate::constants::soc::{MEM_RESET_VALUE, RAM_BASE};
 
+#[allow(clippy::upper_case_acronyms)]
+#[allow(non_camel_case_types)]
+#[derive(Default, Clone)]
+pub enum MemoryValueType {
+    BYTE,
+    HALF_WORD,
+    WORD,
+    #[default]
+    DOUBLE_WORD,
+    // QUAD_WORD,
+    UNSIGNED_BYTE,
+    UNSIGNED_HALF_WORD,
+    UNSIGNED_WORD,
+    // UNSIGNED_DOUBLE_WORD,
+}
+
 pub trait MemoryValue: Sized {
     fn from_le_bytes(bytes: &[Byte]) -> Self;
     fn to_le_bytes(&self) -> Vec<Byte>;

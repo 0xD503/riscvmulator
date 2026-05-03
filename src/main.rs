@@ -19,7 +19,7 @@ use soc::cpu::core::gp_registers::constants::GPRegisterName;
 use soc::cpu::core::registers::RegisterFileInterface;
 use soc::cpu::extensions::zicsr::constants::CSRRegisterName;
 use soc::cpu::extensions::zicsr::{CSRFile /*, ZicsrContext*/};
-use soc::memory::MemoryValue;
+use soc::memory::{MemoryValue, MemoryValueType};
 use soc::memory_bus::{Bus, SystemBus};
 // use soc::cpu::core::registers
 
@@ -65,22 +65,6 @@ struct Decoder {
     need_to_branch: bool,
 
     zicsr: ZicsrContext,
-}
-
-#[allow(clippy::upper_case_acronyms)]
-#[allow(non_camel_case_types)]
-#[derive(Default, Clone)]
-enum MemoryValueType {
-    BYTE,
-    HALF_WORD,
-    WORD,
-    #[default]
-    DOUBLE_WORD,
-    // QUAD_WORD,
-    UNSIGNED_BYTE,
-    UNSIGNED_HALF_WORD,
-    UNSIGNED_WORD,
-    // UNSIGNED_DOUBLE_WORD,
 }
 
 #[derive(Default, Clone)]
