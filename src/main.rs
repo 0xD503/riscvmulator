@@ -8,11 +8,12 @@ use std::fmt::{self, Binary, Debug};
 use log::{debug, error, info, trace, warn};
 
 // current project imports
-use crate::soc::memory::{Memory, MemoryValue};
 use config::configure;
 use constants::arch::*;
 use constants::soc::*;
 use logger::init_logger;
+use soc::memory::MemoryValue;
+use soc::memory_bus::{Bus, SystemBus};
 
 use parse_args::parse_args;
 
@@ -1208,45 +1209,6 @@ struct RISC_V_CPU {
     context: Context,
 }
 
-trait Bus<AddrType> {
-    fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
-    // fn read_data(&self, address: XLen, size: usize) -> Vec<Byte>;
-
-    fn write<MemValType: MemoryValue>(
-        &mut self,
-        address: AddrType,
-        value: MemValType,
-    );
-    // fn write_data(&mut self, address: XLen, data: Vec<Byte>);
-}
-
-struct SystemBus<AddrType> {
-    memory: Memory<AddrType>,
-}
-
-impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
-    fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
-        if (RAM_BASE..RAM_END).contains(&address) {
-            self.memory.read(address)
-        } else {
-            error!("an attempt to read from unimplemented address space!");
-            panic!("an attempt to read from unimplemented address space");
-        }
-    }
-    fn write<MemValType: MemoryValue>(
-        &mut self,
-        address: XLen,
-        value: MemValType,
-    ) {
-        if (RAM_BASE..RAM_END).contains(&address) {
-            self.memory.write(address, value);
-        } else {
-            error!("an attempt to write to unimplemented address space!");
-            panic!("an attempt to write to unimplemented address space");
-        }
-    }
-}
-
 struct SoC {
     cpu: RISC_V_CPU,
     bus: SystemBus<BusAddrType>,
@@ -1254,8 +1216,13 @@ struct SoC {
 
 impl SoC {
     fn fetch(&mut self) {
+        trace!(
+            "Fetching instruction at addr: {:#018X?}",
+            self.cpu.context.PC
+        );
+
         self.cpu.context.current_instruction =
-            self.bus.memory.read(self.cpu.context.PC);
+            self.bus.read(self.cpu.context.PC);
 
         trace!(
             "Fetched instruction: {:#018X?}",
@@ -1275,9 +1242,9 @@ impl SoC {
         self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
 
         // fill memory with NOP's
-        self.bus.memory.reset();
+        self.bus.memory_reset();
         for addr in (RAM_BASE..RAM_END).step_by(RISCV_PC_STEP as usize) {
-            self.bus.memory.write(addr, Opcode::OP_IMM as Byte);
+            self.bus.write(addr, Opcode::OP_IMM as Byte);
         }
     }
 
@@ -3084,9 +3051,7 @@ fn main() {
                 },
             },
         },
-        bus: SystemBus {
-            memory: Memory::new(MEM_RESET_VALUE, RAM_SIZE),
-        },
+        bus: SystemBus::new(MEM_RESET_VALUE, RAM_SIZE),
     };
 
     soc.reset();
