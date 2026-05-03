@@ -47,3 +47,12 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
         self.registers[offset].write(value);
     }
 }
+
+// #[derive(Default, Clone)]
+// pub struct ZicsrContext {
+//     need_to_read_csr: bool,
+//     need_to_write_csr: bool,
+//     need_to_return_from_trap: bool,
+//     csr_value: XLen,
+//     uimm: XLen,
+// }
