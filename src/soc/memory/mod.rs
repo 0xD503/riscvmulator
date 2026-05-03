@@ -11,12 +11,11 @@ use crate::constants::soc::{MEM_RESET_VALUE, RAM_BASE};
 
 #[allow(clippy::upper_case_acronyms)]
 #[allow(non_camel_case_types)]
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub enum MemoryValueType {
     BYTE,
     HALF_WORD,
     WORD,
-    #[default]
     DOUBLE_WORD,
     // QUAD_WORD,
     UNSIGNED_BYTE,

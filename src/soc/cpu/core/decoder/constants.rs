@@ -424,3 +424,85 @@ impl From<InstructionType> for JALR_Funct3 {
         }
     }
 }
+
+#[allow(non_camel_case_types)]
+pub enum OpcodeToInstructionFormat {
+    I_3_LOAD = 0b0000011,
+    I_7_LOAD_FP = 0b0000111,
+    I_19_OP_IMM = 0b0010011,
+    U_23_AUIPC = 0b0010111,
+    I_27_OP_IMM_32 = 0b0011011,
+    S_35_STORE = 0b0100011,
+    S_39_STORE_FP = 0b0100111,
+    R_51_OP = 0b0110011,
+    U_55_LUI = 0b0110111,
+    R_59_OP_32 = 0b0111011,
+    R4_67_MADD = 0b1000011,
+    R4_71_MSUB = 0b1000111,
+    R4_75_NMSUB = 0b1001011,
+    R4_79_NMADD = 0b1001111,
+    R_83_OP_FP = 0b1010011,
+    B_99_BRANCH = 0b1100011,
+    I_103_JALR = 0b1100111,
+    J_111_JAL = 0b1101111,
+
+    I_115_SYSTEM = 0b1110011, // (Zicsr_extension)
+}
+
+impl From<Opcode> for OpcodeToInstructionFormat {
+    fn from(opcode: Opcode) -> Self {
+        match opcode {
+            Opcode::LOAD => OpcodeToInstructionFormat::I_3_LOAD,
+            Opcode::STORE => OpcodeToInstructionFormat::S_35_STORE,
+            Opcode::MADD => OpcodeToInstructionFormat::R4_67_MADD,
+            Opcode::BRANCH => OpcodeToInstructionFormat::B_99_BRANCH,
+
+            Opcode::LOAD_FP => OpcodeToInstructionFormat::I_7_LOAD_FP,
+            Opcode::STORE_FP => OpcodeToInstructionFormat::S_39_STORE_FP,
+            Opcode::MSUB => OpcodeToInstructionFormat::R4_71_MSUB,
+            Opcode::JALR => OpcodeToInstructionFormat::I_103_JALR,
+
+            Opcode::NMSUB => OpcodeToInstructionFormat::R4_75_NMSUB,
+
+            Opcode::NMADD => OpcodeToInstructionFormat::R4_79_NMADD,
+            Opcode::JAL => OpcodeToInstructionFormat::J_111_JAL,
+
+            Opcode::OP_IMM => OpcodeToInstructionFormat::I_19_OP_IMM,
+            Opcode::OP => OpcodeToInstructionFormat::R_51_OP,
+            Opcode::OP_FP => OpcodeToInstructionFormat::R_83_OP_FP,
+
+            Opcode::AUIPC => OpcodeToInstructionFormat::U_23_AUIPC,
+            Opcode::LUI => OpcodeToInstructionFormat::U_55_LUI,
+
+            Opcode::OP_IMM_32 => OpcodeToInstructionFormat::I_27_OP_IMM_32,
+            Opcode::OP_32 => OpcodeToInstructionFormat::R_59_OP_32,
+
+            Opcode::SYSTEM => OpcodeToInstructionFormat::I_115_SYSTEM, // (Zicsr_extension)
+
+            Opcode::MISC_MEM | Opcode::AMO | Opcode::OP_V | Opcode::OP_VE => {
+                error!("Opcode not implemented yet: {:#09b}", opcode);
+                todo!("Opcode not implemented yet: {:#09b}", opcode);
+            }
+
+            Opcode::reserved_1
+            | Opcode::reserved_2
+            | Opcode::reserved_3
+            | Opcode::reserved_4
+            | Opcode::reserved_5 => {
+                error!("Opcode reserved for future use: {:#09b}", opcode);
+                unreachable!("Opcode reserved for future use: {:#09b}", opcode);
+            }
+
+            Opcode::custom_0
+            | Opcode::custom_1
+            | Opcode::custom_2
+            | Opcode::custom_3 => {
+                error!("Opcode reserved for custom commands: {:#09b}", opcode);
+                unimplemented!(
+                    "Opcode reserved for custom commands: {:#09b}",
+                    opcode
+                );
+            }
+        }
+    }
+}
