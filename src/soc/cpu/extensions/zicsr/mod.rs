@@ -6,8 +6,9 @@ use crate::soc::cpu::core::registers::{
 };
 
 pub mod constants;
-use crate::soc::cpu::priveleged::machine::{MCause_Code, MStatus_MPP};
+use crate::soc::cpu::priveleged::machine::MCause_Code;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone)]
 pub struct CSR {
     pub(in crate::soc::cpu) value: XLen,

@@ -76,27 +76,29 @@ impl From<XLen> for MStatus_MPP {
 }
 
 #[allow(non_camel_case_types)]
+#[repr(i64)]
 #[derive(Default, Clone)]
 pub enum MCause_Code {
-    INTERRUPT_RESERVED = 0 | SignedMXLen::MIN as isize,
-    INTERRUPT_SUPERVISOR_SW = 1 | SignedMXLen::MIN as isize,
-    INTERRUPT_RESERVED_2 = 2 | SignedMXLen::MIN as isize,
-    INTERRUPT_MACHINE_SW = 3 | SignedMXLen::MIN as isize,
+    #[allow(clippy::identity_op)]
+    INTERRUPT_RESERVED = 0 | SignedMXLen::MIN,
+    INTERRUPT_SUPERVISOR_SW = 1 | SignedMXLen::MIN,
+    INTERRUPT_RESERVED_2 = 2 | SignedMXLen::MIN,
+    INTERRUPT_MACHINE_SW = 3 | SignedMXLen::MIN,
 
-    INTERRUPT_RESERVED_4 = 4 | SignedMXLen::MIN as isize,
-    INTERRUPT_SUPERVISOR_TMR = 5 | SignedMXLen::MIN as isize,
-    INTERRUPT_RESERVED_6 = 6 | SignedMXLen::MIN as isize,
-    INTERRUPT_MACHINE_TMR = 7 | SignedMXLen::MIN as isize,
+    INTERRUPT_RESERVED_4 = 4 | SignedMXLen::MIN,
+    INTERRUPT_SUPERVISOR_TMR = 5 | SignedMXLen::MIN,
+    INTERRUPT_RESERVED_6 = 6 | SignedMXLen::MIN,
+    INTERRUPT_MACHINE_TMR = 7 | SignedMXLen::MIN,
 
-    INTERRUPT_RESERVED_8 = 8 | SignedMXLen::MIN as isize,
-    INTERRUPT_SUPERVISOR_EXTERNAL = 9 | SignedMXLen::MIN as isize,
-    INTERRUPT_RESERVED_10 = 10 | SignedMXLen::MIN as isize,
-    INTERRUPT_MACHINE_EXTERNAL = 11 | SignedMXLen::MIN as isize,
+    INTERRUPT_RESERVED_8 = 8 | SignedMXLen::MIN,
+    INTERRUPT_SUPERVISOR_EXTERNAL = 9 | SignedMXLen::MIN,
+    INTERRUPT_RESERVED_10 = 10 | SignedMXLen::MIN,
+    INTERRUPT_MACHINE_EXTERNAL = 11 | SignedMXLen::MIN,
 
-    INTERRUPT_RESERVED_12 = 12 | SignedMXLen::MIN as isize,
-    INTERRUPT_CNT_OVERFLOW = 13 | SignedMXLen::MIN as isize,
-    INTERRUPT_RESERVED_14 = 14 | SignedMXLen::MIN as isize,
-    INTERRUPT_PLATFORM_DESIGNATED = 15 | SignedMXLen::MIN as isize,
+    INTERRUPT_RESERVED_12 = 12 | SignedMXLen::MIN,
+    INTERRUPT_CNT_OVERFLOW = 13 | SignedMXLen::MIN,
+    INTERRUPT_RESERVED_14 = 14 | SignedMXLen::MIN,
+    INTERRUPT_PLATFORM_DESIGNATED = 15 | SignedMXLen::MIN,
 
     EXCEPTION_INSTR_ADDR_MISALIGNED = 0,
     EXCEPTION_INSTR_ACCESS_FAULT = 1,
