@@ -6,6 +6,7 @@ use crate::soc::cpu::core::registers::{
 };
 
 pub mod constants;
+use crate::soc::cpu::priveleged::machine::{MCause_Code, MStatus_MPP};
 
 #[derive(Copy, Clone)]
 pub struct CSR {
@@ -62,6 +63,10 @@ pub struct ZicsrContext {
     pub(crate) need_to_read_csr: bool,
     pub(crate) need_to_write_csr: bool,
     pub(crate) need_to_return_from_trap: bool,
+    pub(crate) need_to_call_trap: bool,
     pub(crate) csr_value: XLen,
+    pub(crate) trap_cause: MCause_Code,
+    pub(crate) trap_vector: XLen,
+    pub(crate) epc: XLen, // exception program counter
     pub(crate) uimm: XLen,
 }

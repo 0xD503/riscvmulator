@@ -18,6 +18,7 @@ use soc::cpu::core::gp_registers::constants::GPRegisterName;
 use soc::cpu::core::registers::RegisterFileInterface;
 use soc::cpu::extensions::zicsr::constants::CSRRegisterName;
 use soc::cpu::extensions::zicsr::{CSRFile, ZicsrContext};
+use soc::cpu::priveleged::machine::*;
 use soc::memory::{MemoryValue, MemoryValueType};
 use soc::memory_bus::{Bus, SystemBus};
 
@@ -156,6 +157,10 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_back = true;
         self.context.decoder.need_to_jump = false;
         self.context.decoder.need_to_branch = false;
+        self.context.decoder.zicsr.need_to_read_csr = false;
+        self.context.decoder.zicsr.need_to_write_csr = false;
+        self.context.decoder.zicsr.need_to_return_from_trap = false;
+        self.context.decoder.zicsr.need_to_call_trap = false;
         self.context.decoder.funct3 = self.extract_funct3();
         self.context.decoder.r_funct7 = self.extract_r_funct7();
 
@@ -312,6 +317,7 @@ impl RISC_V_CPU {
         self.context.decoder.zicsr.need_to_read_csr = false;
         self.context.decoder.zicsr.need_to_write_csr = false;
         self.context.decoder.zicsr.need_to_return_from_trap = false;
+        self.context.decoder.zicsr.need_to_call_trap = false;
 
         match self.context.decoder.opcode {
             // I_3
@@ -481,10 +487,10 @@ impl RISC_V_CPU {
                         assert_rd_and_rs1_are_zero();
                         match From::from(self.context.decoder.immediate) {
                             SYSTEM_Imm_transfer_control_return_from::ECALL => {
-                                //
+                                self.context.decoder.zicsr.need_to_call_trap =
+                                    true;
                                 self.context.decoder.command_to_execute =
                                     ExecutableCommand::ECALL;
-                                todo!();
                             }
                             SYSTEM_Imm_transfer_control_return_from::EBREAK => {
                                 //
@@ -600,6 +606,10 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_back = false;
         self.context.decoder.need_to_jump = false;
         self.context.decoder.need_to_branch = false;
+        self.context.decoder.zicsr.need_to_read_csr = false;
+        self.context.decoder.zicsr.need_to_write_csr = false;
+        self.context.decoder.zicsr.need_to_return_from_trap = false;
+        self.context.decoder.zicsr.need_to_call_trap = false;
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_4_0();
@@ -648,6 +658,10 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_back = false;
         self.context.decoder.need_to_jump = false;
         self.context.decoder.need_to_branch = true;
+        self.context.decoder.zicsr.need_to_read_csr = false;
+        self.context.decoder.zicsr.need_to_write_csr = false;
+        self.context.decoder.zicsr.need_to_return_from_trap = false;
+        self.context.decoder.zicsr.need_to_call_trap = false;
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_4_1();
@@ -703,6 +717,10 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_back = true;
         self.context.decoder.need_to_jump = false;
         self.context.decoder.need_to_branch = false;
+        self.context.decoder.zicsr.need_to_read_csr = false;
+        self.context.decoder.zicsr.need_to_write_csr = false;
+        self.context.decoder.zicsr.need_to_return_from_trap = false;
+        self.context.decoder.zicsr.need_to_call_trap = false;
 
         // extract immediate
         self.context.decoder.immediate =
@@ -733,6 +751,10 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_back = true;
         self.context.decoder.need_to_jump = true;
         self.context.decoder.need_to_branch = false;
+        self.context.decoder.zicsr.need_to_read_csr = false;
+        self.context.decoder.zicsr.need_to_write_csr = false;
+        self.context.decoder.zicsr.need_to_return_from_trap = false;
+        self.context.decoder.zicsr.need_to_call_trap = false;
 
         // extract immediate
         self.context.decoder.immediate = self.extract_imm_10_1();
@@ -1420,7 +1442,33 @@ impl RISC_V_CPU {
     }
 
     fn instruction_execution_call(&mut self) {
-        //
+        let current_privilege_mode = self.read_mstatus_mpp();
+        match current_privilege_mode {
+            MStatus_MPP::USER_ECALL => {
+                self.context.decoder.zicsr.trap_cause =
+                    MCause_Code::EXCEPTION_ENV_CALL_FROM_U_MODE;
+                todo!();
+            }
+            MStatus_MPP::SUPERVISOR_ECALL => {
+                self.context.decoder.zicsr.trap_cause =
+                    MCause_Code::EXCEPTION_ENV_CALL_FROM_S_MODE;
+                todo!();
+            }
+            MStatus_MPP::MACHINE_ECALL => {
+                self.context.decoder.zicsr.trap_cause =
+                    MCause_Code::EXCEPTION_ENV_CALL_FROM_M_MODE;
+                self.context.decoder.zicsr.trap_vector = self
+                    .context
+                    .control_status_registers
+                    .read(CSRRegisterName::mtvec as usize);
+            }
+
+            _ => {
+                error!("unimplemented!");
+                todo!("unimplemented!");
+            }
+        }
+        self.context.decoder.zicsr.epc = self.context.PC;
         todo!();
     }
 
@@ -1636,6 +1684,40 @@ impl RISC_V_CPU {
         );
     }
 
+    fn trap_to_target_address(&mut self) {
+        trace!("Calling trap handler...");
+
+        self.set_pc_to_target_address(self.context.decoder.zicsr.trap_vector);
+    }
+
+    fn call_trap_handler(&mut self) {
+        match self.context.decoder.zicsr.trap_cause {
+            MCause_Code::EXCEPTION_ENV_CALL_FROM_U_MODE => {
+                todo!();
+            }
+            MCause_Code::EXCEPTION_ENV_CALL_FROM_S_MODE => {
+                todo!();
+            }
+            MCause_Code::EXCEPTION_ENV_CALL_FROM_M_MODE => {
+                self.context.control_status_registers.write(
+                    CSRRegisterName::mcause as usize,
+                    self.context.decoder.zicsr.trap_cause.clone() as XLen,
+                );
+                self.context.control_status_registers.write(
+                    CSRRegisterName::mepc as usize,
+                    self.context.decoder.zicsr.trap_cause.clone() as XLen,
+                );
+            }
+
+            _ => {
+                error!("unimplemented!");
+                todo!("unimplemented!");
+            }
+        }
+
+        self.trap_to_target_address();
+    }
+
     fn write_to_csr(&mut self) {
         let register_offset = self.context.decoder.immediate as usize;
         trace!("Writing to CSR #{register_offset:#?}...");
@@ -1665,6 +1747,10 @@ impl RISC_V_CPU {
         // check if return from trap is needed
         else if self.context.decoder.zicsr.need_to_return_from_trap {
             self.return_to_target_address();
+            return;
+        }
+        if self.context.decoder.zicsr.need_to_call_trap {
+            self.call_trap_handler();
         }
     }
 
@@ -1806,6 +1892,15 @@ impl RISC_V_CPU {
         ((self.context.current_instruction as SignedInstructionType)
             >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL)) as SignedXLen
             & !((1 << BIT_OFFSET_J_20_FINAL) - 1)
+    }
+
+    // privileged mode extractors
+    fn read_mstatus_mpp(&self) -> MStatus_MPP {
+        let mstatus = self
+            .context
+            .control_status_registers
+            .read(CSRRegisterName::mstatus as usize);
+        MStatus_MPP::from((mstatus >> MSTATUS_MPP_OFFSET) & MSTATUS_MPP_MASK)
     }
 }
 
