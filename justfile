@@ -30,3 +30,6 @@ lint:
 
 bench:
   cargo bench
+
+bolt:
+  llvm-bolt target/release/riscvmulator -o target/release/riscvmulator-bolt
