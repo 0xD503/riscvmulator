@@ -16,6 +16,7 @@ RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     picolibc-riscv64-unknown-elf \
     newlib-source \
     #gdb-riscv64-linux-gnu \
+    mold \
     make \
     git \
     less patch \
@@ -60,6 +61,8 @@ ARG LISTEN_PORT=53732
 ## install deps and clean cache to keep the image small
 RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     --no-install-recommends \
+    ## convenience tools
+    emacs vim fzf fd-find tmux ripgrep \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
