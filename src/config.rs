@@ -8,8 +8,13 @@ struct MemoryCfg {
 }
 
 #[derive(Deserialize)]
-struct SocConfig {
-    soc: Option<MemoryCfg>,
+struct SocCfg {
+    memory: Option<MemoryCfg>,
+}
+
+#[derive(Deserialize)]
+struct EmulatorCfg {
+    soc: Option<SocCfg>,
 }
 
 pub fn configure() {
@@ -17,5 +22,5 @@ pub fn configure() {
     let config_path = DEFAULT_CONFIG_PATH;
     let binding = fs::read_to_string(config_path).unwrap();
     let file_content = binding.as_str();
-    let config: SocConfig = toml::from_str(file_content).unwrap();
+    let config: EmulatorCfg = toml::from_str(file_content).unwrap();
 }
