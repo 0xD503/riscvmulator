@@ -1,9 +1,19 @@
 # TODO list
 
+## Tech debt
+-[ ] add UTs
+-[ ] add benchmarks
+-[ ] add docs
+-[ ] add build profiles
+-[ ] profile bottlenecks
+
 ## Fixes
 -[ ] get rid off `try_into()` if possible
 -[ ] conditionally compile production release with no-op logger implementation\
 (or without logger init) and without other libraries (minimize bin size)
+
+## Refactor
+-[ ] use jump table for command exection
 
 ## Features
 -[ ] `RV32I`
