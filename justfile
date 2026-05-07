@@ -64,22 +64,22 @@ run-release-container:
 ## quality
 
 test:
-  {{RUN_IN_CONTAINER}}cargo test
+  {{RUN_IN_CONTAINER}}cargo test --release
 
 bench:
   {{RUN_IN_CONTAINER}}cargo bench
 
 lint:
-  {{RUN_IN_CONTAINER}}cargo clippy -- -D warnings
+  {{RUN_IN_CONTAINER}}cargo clippy --release -- -D warnings
 
 fmt:
   {{RUN_IN_CONTAINER}}cargo fmt
 
 doc:
-  {{RUN_IN_CONTAINER}}cargo doc --no-deps --open
+  {{RUN_IN_CONTAINER}}cargo doc --release --no-deps --open
 
 check:
-  {{RUN_IN_CONTAINER}}cargo check
+  {{RUN_IN_CONTAINER}}cargo check --release
 
 
 ## clean

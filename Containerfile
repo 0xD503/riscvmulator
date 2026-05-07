@@ -23,6 +23,7 @@ RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     git \
     less patch \
     && rm -rf /var/lib/apt/lists/* \
+    && rustup component add clippy rustfmt \
     && cargo install just
 
 ## set WORKDIR
