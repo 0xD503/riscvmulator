@@ -1,7 +1,9 @@
 ## 1. BUILD stage   ------------------------------------------------------------
 
+ARG DISTRO_RELEASE_VER=trixie
+
 ## use fixed `major`/`minor`, but latest `patch` version
-FROM rust:1.95-slim-trixie AS builder
+FROM rust:1.95-slim-${DISTRO_RELEASE_VER} AS builder
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
@@ -13,14 +15,13 @@ RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     --no-install-recommends \
     gcc-riscv64-linux-gnu gcc-riscv64-unknown-elf \
     binutils-riscv64-linux-gnu binutils-riscv64-unknown-elf \
-    picolibc-riscv64-unknown-elf \
-    newlib-source \
+    picolibc-riscv64-unknown-elf newlib-source \
     #gdb-riscv64-linux-gnu \
-    mold \
-    make \
+    mold make \
     git \
     less patch \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && cargo install just
 
 ## set WORKDIR
 WORKDIR ${WD}
@@ -46,7 +47,7 @@ RUN touch src/main.rs && cargo build --${BUILD_TYPE}
 
 ## 2. RUN stage     ------------------------------------------------------------
 
-FROM debian:stable-slim as runner
+FROM debian:${DISTRO_RELEASE_VER}-slim AS runner
 
 ## declare stage vars (doesn't affect runtime)
 ARG USERNAME=appuser
@@ -57,30 +58,32 @@ ARG APP_NAME=riscvmulator
 ARG LOG_LEVEL=info
 ARG LISTEN_PORT=53732
 
-
 ## install deps and clean cache to keep the image small
 RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     --no-install-recommends \
-    ## convenience tools
-    emacs vim fzf fd-find tmux ripgrep \
     ca-certificates \
+    ## convenience tools
+    tmux emacs ripgrep fd-find fzf \
+    ## some options for perverts
+    vim \
     && rm -rf /var/lib/apt/lists/*
+
+WORKDIR ${WD}
 
 RUN useradd -m -s ${USER_SHELL} ${USERNAME}
 USER ${USERNAME}
-
-WORKDIR ${WD}
 
 COPY --from=builder ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
 
 ## set runtime environment variables
 ENV RUST_LOG=${LOG_LEVEL}
-ENV APP_NAME_ENV=${APP_NAME}
+ENV APP_NAME=${APP_NAME}
 
 ## set listening port for container
 EXPOSE ${LISTEN_PORT}
 
-
-## run application and pass default arguments that can be overriden fro CLI
-ENTRYPOINT ["./${APP_NAME_ENV}"]
+### run application and pass default arguments that can be overriden fro CLI
+#ENTRYPOINT ["./${APP_NAME_ENV}"]
+## fixed ENTRYPOINT — ENV vars don't expand in JSON array form
+ENTRYPOINT ["sh", "-c", "./$APP_NAME \"$@\"", "--"]
 CMD [""]
