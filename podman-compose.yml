@@ -1,21 +1,53 @@
+## all podman services (containers)
 services:
+  ## release container
   emulator:
-    build: .
+    ## build instructions
+    build:
+      ## use `COntainerfile` withing current dir
+      context: .
+      ## stop build at `${RELEASE_CONTAINER_NAME}` stage
+      target: ${RELEASE_CONTAINER_NAME}
+      args:
+        WD: ${WD}
+        USER_SHELL: ${USER_SHELL}
+        RELEASE_LOG_LEVEL: ${RELEASE_LOG_LEVEL}
     environment:
-      - RUST_LOG=info
+      - RUST_LOG=${RELEASE_LOG_LEVEL}
     volumes:
-      - ./roms:/app/roms:ro
+      ## local compiled tests into container as read-only partition
+      - ./3rd_party/riscv-tests/isa:${WD}/riscv-tests:ro
 
+  ## development container: Rust + RISC-V toolchain, source mounted live
+  ## Usage:
+  ##   podman-compose run --rm dev              → interactive shell
+  ##   podman-compose run --rm dev cargo build  → one-off command
   dev:
     build:
       context: .
-      target: builder
-    working_dir: /app
+      target: ${DEV_CONTAINER_NAME}
+      args:
+        WD: ${WD}
+    ## set work dir when enter container
+    working_dir: ${WD}
     volumes:
-      - .:/app
+      ## mount project root to `${WD}` directory within container
+      - .:${WD}
+      ## keep cargo cache between container runs to avoid redownload/recompile
       - cargo-cache:/usr/local/cargo/registry
+      ## keep installed cargo binaries between container runs
+      - cargo-bin:/usr/local/cargo/bin
     environment:
-      RUST_LOG=debug
+      - RUST_LOG=${DEBUG_LOG_LEVEL}
+    ## keep container for interactive use (i.e. add `-it` to args automatically)
+    ## enable input (so you can type into the container, i.e., add `-i` arg)
+    stdin_open: true
+    ## allocate terminal (i.e., add `-t` arg)
+    tty: true
+    ## command to run on container run: interactive shell
+    command: ${USER_SHELL}
 
+## declare named volumes to keep them between container runs
 volumes:
   cargo-cache:
+  cargo-bin:

@@ -1,9 +1,11 @@
 ## 1. BUILD stage   ------------------------------------------------------------
 
 ARG DISTRO_RELEASE_VER=trixie
+ARG DEV_CONTAINER_NAME=builder
+RELEASE_CONTAINER_NAME=runner
 
 ## use fixed `major`/`minor`, but latest `patch` version
-FROM rust:1.95-slim-${DISTRO_RELEASE_VER} AS builder
+FROM rust:1.95-slim-${DISTRO_RELEASE_VER} AS ${DEV_CONTAINER_NAME}
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
@@ -47,7 +49,7 @@ RUN touch src/main.rs && cargo build --${BUILD_TYPE}
 
 ## 2. RUN stage     ------------------------------------------------------------
 
-FROM debian:${DISTRO_RELEASE_VER}-slim AS runner
+FROM debian:${DISTRO_RELEASE_VER}-slim AS ${RELEASE_CONTAINER_NAME}
 
 ## declare stage vars (doesn't affect runtime)
 ARG USERNAME=appuser
@@ -55,7 +57,7 @@ ARG USER_SHELL=/bin/bash
 ARG WD=/app
 ARG BUILD_TYPE=release
 ARG APP_NAME=riscvmulator
-ARG LOG_LEVEL=info
+ARG RELEASE_LOG_LEVEL=info
 ARG LISTEN_PORT=53732
 
 ## install deps and clean cache to keep the image small
@@ -63,7 +65,7 @@ RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     --no-install-recommends \
     ca-certificates \
     ## convenience tools
-    tmux emacs ripgrep fd-find fzf \
+    tmux emacs ripgrep fd-find fzf htop \
     ## some options for perverts
     vim \
     && rm -rf /var/lib/apt/lists/*
@@ -73,10 +75,10 @@ WORKDIR ${WD}
 RUN useradd -m -s ${USER_SHELL} ${USERNAME}
 USER ${USERNAME}
 
-COPY --from=builder ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
+COPY --from=${DEV_CONTAINER_NAME} ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
 
 ## set runtime environment variables
-ENV RUST_LOG=${LOG_LEVEL}
+ENV RUST_LOG=${RELEASE_LOG_LEVEL}
 ENV APP_NAME=${APP_NAME}
 
 ## set listening port for container
