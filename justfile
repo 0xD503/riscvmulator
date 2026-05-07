@@ -1,8 +1,8 @@
 ## load `.env` file
 set dotenv-load
 
-## set timestamps for each command
-set timestamp := true
+### set timestamps for each command
+#set timestamp := true
 
 
 ## detect if we're already inside a container
@@ -96,7 +96,7 @@ container-build:
 
 ## remove container images
 container-clean:
-  {{CONTAINER_ENGINE}}-compose down --rmi all
+  {{CONTAINER_ENGINE}} kill --all
 
 
 ## optimization
