@@ -2,7 +2,7 @@
 
 ARG DISTRO_RELEASE_VER=trixie
 ARG DEV_CONTAINER_NAME=builder
-RELEASE_CONTAINER_NAME=runner
+ARG RELEASE_CONTAINER_NAME=runner
 
 ## use fixed `major`/`minor`, but latest `patch` version
 FROM rust:1.95-slim-${DISTRO_RELEASE_VER} AS ${DEV_CONTAINER_NAME}
@@ -22,6 +22,10 @@ RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     mold make \
     git \
     less patch \
+    ## convenience tools
+    tmux emacs-nox ripgrep fd-find fzf htop lldb \
+    ## some options for perverts
+    vim gdb \
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt \
     && cargo install just
@@ -53,9 +57,10 @@ RUN touch src/main.rs && cargo build --${BUILD_TYPE}
 FROM debian:${DISTRO_RELEASE_VER}-slim AS ${RELEASE_CONTAINER_NAME}
 
 ## declare stage vars (doesn't affect runtime)
-ARG USERNAME=appuser
-ARG USER_SHELL=/bin/bash
 ARG WD=/app
+ARG USER_SHELL=/bin/bash
+ARG USERNAME=appuser
+ARG DEV_CONTAINER_NAME=builder
 ARG BUILD_TYPE=release
 ARG APP_NAME=riscvmulator
 ARG RELEASE_LOG_LEVEL=info
@@ -65,10 +70,6 @@ ARG LISTEN_PORT=53732
 RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     --no-install-recommends \
     ca-certificates \
-    ## convenience tools
-    tmux emacs ripgrep fd-find fzf htop \
-    ## some options for perverts
-    vim \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${WD}

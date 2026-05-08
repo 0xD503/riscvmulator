@@ -11,7 +11,14 @@
 - `podman`/`podman-compose` or `docker`/`docker-compose`
 - `just` task runner
 
-### Build, run, test
+### Clone, init, build, test, run
+
+#### Clone and init
+
+```Shell
+git clone --recurse-submodules https://github.com/0xD503/riscvmulator.git
+git submodule update --init --recursive
+```
 
 #### Build release version
 

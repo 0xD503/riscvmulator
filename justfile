@@ -8,10 +8,13 @@ set dotenv-load
 ## detect if we're already inside a container
 ## if so, run commands directly; if not, run them via {{CONTAINER_ENGINE}}-compose
 ## Podman automatically sets `$container` variable to `"podman"`
+DEV_SERVICE_NAME := env_var_or_default("DEV_SERVICE_NAME", "dev")
 IS_IN_CONTAINER := env_var_or_default("container", "")
 CONTAINER_ENGINE := env_var_or_default("CONTAINER_ENGINE", "podman")
-COMPOSE := CONTAINER_ENGINE + "-compose run --rm dev"
-RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" } else { COMPOSE + " " }
+COMPOSE := CONTAINER_ENGINE + "-compose run --rm"
+RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" } else { COMPOSE + " " + DEV_SERVICE_NAME + " " }
+RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { "RUST_LOG=debug" } else { COMPOSE + " -e RUST_LOG=debug " + DEV_SERVICE_NAME + " " }
+RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { "RUST_LOG=trace" } else { COMPOSE + " -e RUST_LOG=trace " + DEV_SERVICE_NAME + " " }
 
 
 ## development
@@ -29,19 +32,19 @@ build-dev:
   {{RUN_IN_CONTAINER}}cargo build --release
 
 run-dev:
-  RUST_LOG=debug {{RUN_IN_CONTAINER}}cargo run --release
+  {{RUN_IN_CONTAINER_DEBUG}}cargo run --release
 
 run-dev-trace:
-  RUST_LOG=trace {{RUN_IN_CONTAINER}}cargo run --release
+  {{RUN_IN_CONTAINER_TRACE}}cargo run --release
 
 build-deb:
   {{RUN_IN_CONTAINER}}cargo build
 
 run-deb:
-  RUST_LOG=debug {{RUN_IN_CONTAINER}}cargo run
+  {{RUN_IN_CONTAINER_DEBUG}}cargo run
 
 run-deb-trace:
-  RUST_LOG=trace {{RUN_IN_CONTAINER}}cargo run
+  {{RUN_IN_CONTAINER_TRACE}}cargo run
 
 
 ## release
@@ -53,7 +56,7 @@ run:
   {{RUN_IN_CONTAINER}}cargo run --release
 
 run-release-container:
-  #!${USER_SHELL}
+  #!/bin/env sh
   if [ -n "$container" ]; then
     echo "Already inside a container, do nothing..."
   else
@@ -70,7 +73,7 @@ bench:
   {{RUN_IN_CONTAINER}}cargo bench
 
 lint:
-  {{RUN_IN_CONTAINER}}cargo clippy --release -- -D warnings
+  {{RUN_IN_CONTAINER}}cargo clippy -- -D warnings
 
 fmt:
   {{RUN_IN_CONTAINER}}cargo fmt
@@ -94,7 +97,7 @@ clean:
 container-build:
   {{CONTAINER_ENGINE}}-compose build
 
-## remove container images
+## remove containers
 container-clean:
   {{CONTAINER_ENGINE}} kill --all
 
