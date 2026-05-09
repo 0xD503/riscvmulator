@@ -1,6 +1,5 @@
-use std::{env, fs};
+use std::fs;
 
-use log::debug;
 use serde::Deserialize;
 
 #[derive(Deserialize, Default, Debug)]
@@ -10,6 +9,7 @@ struct MemoryCfg {
 
 #[derive(Deserialize, Default, Debug)]
 struct SocCfg {
+    cores_num: Option<u32>,
     memory: Option<MemoryCfg>,
 }
 
@@ -37,5 +37,5 @@ pub fn configure() {
         .unwrap_or_default()
         .size_bytes
         .unwrap_or_default();
-    // debug!("{mem_size:?}");
+    // dbg!("{mem_size:?}");
 }

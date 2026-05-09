@@ -8,7 +8,7 @@
 
 ### Prerequisites
 
-- `podman`/`podman-compose` or `docker`/`docker-compose`
+- `podman`/`podman-compose`
 - `just` task runner
 
 ### Clone, init, build, test, run

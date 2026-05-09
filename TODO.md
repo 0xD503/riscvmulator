@@ -14,6 +14,7 @@
 
 ## Refactor
 -[ ] use jump table for command exection
+-[ ] add reset method to `Register`
 
 ## Features
 -[ ] `RV32I`

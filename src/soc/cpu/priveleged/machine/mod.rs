@@ -1,3 +1,6 @@
+// TODO: disallow dead code
+#![allow(dead_code)]
+
 use log::error;
 
 use crate::constants::arch::XLen;

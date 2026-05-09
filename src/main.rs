@@ -10,6 +10,7 @@ use log::{debug, error, info, trace, warn};
 use config::configure;
 use constants::arch::*;
 use constants::soc::*;
+use elf_loader::read_elf;
 use logger::init_logger;
 use soc::cpu::core::decoder::constants::*;
 use soc::cpu::core::executor::constants::ExecutableCommand;
@@ -1904,6 +1905,13 @@ impl RISC_V_CPU {
     }
 }
 
+fn load_elf() {
+    let elf_data =
+        read_elf("3rd_party/riscv-tests/isa/rv64ui-p-addi".into()).unwrap();
+    dbg!("{}", elf_data.e_entry);
+    dbg!("ELF segments so far: {:?}", elf_data.p_hdrs);
+}
+
 fn init() {
     init_logger();
     parse_args();
@@ -1941,6 +1949,8 @@ fn main() {
     };
 
     soc.reset();
+
+    load_elf();
 
     // TODO: HALT condition
     loop {
