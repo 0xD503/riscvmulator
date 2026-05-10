@@ -170,6 +170,8 @@ impl RISC_V_CPU {
     }
 
     fn decode_r_format(&mut self) {
+        trace!("Decoding R-type instruction");
+
         self.context.decoder.source_register_1 =
             self.extract_source_register_1();
         self.context.decoder.source_register_2 =
@@ -324,6 +326,8 @@ impl RISC_V_CPU {
     }
 
     fn decode_i_format(&mut self) {
+        trace!("Decoding I-type instruction");
+
         self.context.decoder.source_register_1 =
             self.extract_source_register_1();
         self.context.decoder.destination_register_offset =
@@ -680,6 +684,8 @@ impl RISC_V_CPU {
     }
 
     fn decode_s_format(&mut self) {
+        trace!("Decoding S-type instruction");
+
         self.context.decoder.source_register_1 =
             self.extract_source_register_1();
         self.context.decoder.source_register_2 =
@@ -732,6 +738,8 @@ impl RISC_V_CPU {
     }
 
     fn decode_b_format(&mut self) {
+        trace!("Decoding B-type instruction");
+
         self.context.decoder.source_register_1 =
             self.extract_source_register_1();
         self.context.decoder.source_register_2 =
@@ -793,6 +801,8 @@ impl RISC_V_CPU {
     }
 
     fn decode_u_format(&mut self) {
+        trace!("Decoding U-type instruction");
+
         self.context.decoder.destination_register_offset =
             self.extract_destination_register_index();
         self.context.decoder.need_to_read_memory = false;
@@ -827,6 +837,8 @@ impl RISC_V_CPU {
     }
 
     fn decode_j_format(&mut self) {
+        trace!("Decoding J-type instruction");
+
         self.context.decoder.destination_register_offset =
             self.extract_destination_register_index();
         self.context.decoder.need_to_read_memory = false;
@@ -860,6 +872,8 @@ impl RISC_V_CPU {
     }
 
     fn decode_r4_format(&mut self) {
+        trace!("Decoding R4-type instruction");
+
         //
         match self.context.decoder.opcode {
             //
@@ -1318,7 +1332,11 @@ impl RISC_V_CPU {
     }
 
     fn instruction_bne(&mut self) {
-        trace!("Executing BNE...");
+        trace!(
+            "Executing BNE: {:#018X}, {:#018X}...",
+            self.context.decoder.source_register_1,
+            self.context.decoder.source_register_2
+        );
 
         if self.context.decoder.source_register_1
             != self.context.decoder.source_register_2
@@ -1529,7 +1547,8 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             >> self.context.decoder.shamt;
-        self.context.execution.result = result32 as SignedXLen as XLen;
+        self.context.execution.result =
+            result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_arith_word(&mut self) {

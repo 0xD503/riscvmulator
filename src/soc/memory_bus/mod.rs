@@ -62,9 +62,8 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
                     info!("TEST PASSED");
                     std::process::exit(0);
                 } else {
-                    error!("{}", value.to_u64());
                     error!("TEST FAILED");
-                    std::process::exit(1);
+                    std::process::exit(value.to_u64() as i32);
                 }
             }
         }
