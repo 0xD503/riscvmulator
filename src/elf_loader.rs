@@ -1,7 +1,5 @@
 use crate::Bus;
-use crate::BusAddrType;
 use crate::SoC;
-use crate::SystemBus;
 use crate::constants::arch::XLen;
 use elf::ElfBytes;
 use elf::abi::PT_LOAD;

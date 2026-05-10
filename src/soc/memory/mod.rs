@@ -30,6 +30,8 @@ pub trait MemoryValue: Sized {
 
     fn sign_extend(&self) -> XLen;
     fn zero_extend(&self) -> XLen;
+
+    fn to_u64(&self) -> u64;
 }
 
 impl MemoryValue for Byte {
@@ -47,6 +49,10 @@ impl MemoryValue for Byte {
 
     fn zero_extend(&self) -> XLen {
         *self as XLen
+    }
+
+    fn to_u64(&self) -> u64 {
+        *self as u64
     }
 }
 
@@ -66,6 +72,10 @@ impl MemoryValue for HalfWord {
     fn zero_extend(&self) -> XLen {
         *self as XLen
     }
+
+    fn to_u64(&self) -> u64 {
+        *self as u64
+    }
 }
 impl MemoryValue for Word {
     fn from_le_bytes(bytes: &[Byte]) -> Self {
@@ -82,6 +92,10 @@ impl MemoryValue for Word {
 
     fn zero_extend(&self) -> XLen {
         *self as XLen
+    }
+
+    fn to_u64(&self) -> u64 {
+        *self as u64
     }
 }
 
@@ -100,6 +114,10 @@ impl MemoryValue for DoubleWord {
 
     fn zero_extend(&self) -> XLen {
         *self as XLen
+    }
+
+    fn to_u64(&self) -> u64 {
+        *self as u64
     }
 }
 
@@ -120,6 +138,10 @@ impl MemoryValue for DoubleWord {
 //     // NOTICE: truncates value
 //     fn zero_extend(&self) -> XLen {
 //         *self as XLen
+//     }
+//
+//     fn to_u64(&self) -> u64 {
+//         *self as u64
 //     }
 // }
 

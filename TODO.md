@@ -12,6 +12,17 @@
 -[ ] conditionally compile production release with no-op logger implementation\
 (or without logger init) and without other libraries (minimize bin size)
 
+## Broken tests
+-[ ] SRLW
+-[ ] SRAW
+-[ ] SRAIW
+-[ ] SRAI
+-[ ] SLLW
+-[ ] MA_DATA
+-[ ] LUI
+-[ ] LD_ST
+-[ ] FENCE_I
+
 ## Refactor
 -[ ] use jump table for command exection
 -[ ] add reset method to `Register`

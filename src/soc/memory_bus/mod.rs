@@ -1,5 +1,6 @@
-use log::error;
+use log::{error, info};
 
+use crate::HTIF_TO_HOST;
 use crate::constants::arch::{Byte, XLen};
 use crate::constants::soc::{RAM_BASE, RAM_END};
 use crate::soc::memory::{Memory, MemoryValue};
@@ -20,13 +21,19 @@ pub trait Bus<AddrType> {
 
 pub struct SystemBus<AddrType> {
     memory: Memory<AddrType>,
+    initialized: bool,
 }
 
 impl<AddrType> SystemBus<AddrType> {
     pub fn new(fill_value: Byte, size: usize) -> Self {
         Self {
             memory: Memory::new(fill_value, size),
+            initialized: false,
         }
+    }
+
+    pub fn finalize_reset(&mut self) {
+        self.initialized = true;
     }
 }
 
@@ -48,6 +55,19 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
         address: XLen,
         value: MemValType,
     ) {
+        // TODO: test scaffolding, isolate later
+        if address == HTIF_TO_HOST {
+            if self.initialized {
+                if value.to_u64() == 1 {
+                    info!("TEST PASSED");
+                    std::process::exit(0);
+                } else {
+                    error!("{}", value.to_u64());
+                    error!("TEST FAILED");
+                    std::process::exit(1);
+                }
+            }
+        }
         if (RAM_BASE..RAM_END).contains(&address) {
             self.memory.write(address, value);
         } else {

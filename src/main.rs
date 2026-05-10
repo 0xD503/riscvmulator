@@ -394,13 +394,13 @@ impl RISC_V_CPU {
                             self.extract_fence_si();
 
                         self.context.decoder.fence.predecessor_mem_write =
-                            self.extract_fence_sw();
+                            self.extract_fence_pw();
                         self.context.decoder.fence.predecessor_mem_read =
-                            self.extract_fence_sr();
+                            self.extract_fence_pr();
                         self.context.decoder.fence.predecessor_device_output =
-                            self.extract_fence_so();
+                            self.extract_fence_po();
                         self.context.decoder.fence.predecessor_device_input =
-                            self.extract_fence_si();
+                            self.extract_fence_pi();
 
                         self.context.decoder.fence.mode =
                             self.extract_fence_fm();
@@ -2180,7 +2180,9 @@ fn main() {
 
     soc.reset();
 
-    load_elf("3rd_party/riscv-tests/isa/rv64ui-p-addi".into(), &mut soc);
+    load_elf("3rd_party/riscv-tests/isa/rv64ui-p-srlw".into(), &mut soc);
+
+    soc.bus.finalize_reset();
 
     // TODO: HALT condition
     loop {
