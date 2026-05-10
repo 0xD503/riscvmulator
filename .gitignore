@@ -3,3 +3,6 @@
 ## Emacs temporary files
 .\#*
 \#*\#
+
+## artifacts
+*.log

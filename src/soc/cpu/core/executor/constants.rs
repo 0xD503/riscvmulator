@@ -1,4 +1,5 @@
 #[allow(clippy::upper_case_acronyms)]
+#[allow(non_camel_case_types)]
 #[derive(Default, Clone, Debug)]
 pub enum ExecutableCommand {
     #[default]
@@ -65,7 +66,8 @@ pub enum ExecutableCommand {
     ECALL,  // make service request to the execution environment
     EBREAK, // return control to debugging environment
 
-    FENCE, // order I/O and memory accesses
+    FENCE,   // order I/O and memory accesses
+    FENCE_I, // Zifencei: order I/O and memory accesses
 
     URET, // return from user exception
     SRET, // return from supervisor exception

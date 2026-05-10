@@ -53,14 +53,21 @@ pub const MASK_DESTINATION_REGISTER: InstructionType = 0x1F;
 
 pub const BIT_OFFSET_FUNCT3: usize = 12;
 pub const MASK_FUNCT3: InstructionType = 0x07;
-pub const BIT_OFFSET_I_FUNCT7: usize = 25;
-pub const MASK_I_FUNCT7: InstructionType = 0x7F;
+// pub const BIT_OFFSET_I_FUNCT7: usize = 25;
+// pub const MASK_I_FUNCT7: InstructionType = 0x7F;
+// pub const BIT_OFFSET_SHTYPE: usize = 25;
+// pub const MASK_SHTYPE: InstructionType = 0x7F;
+pub const BIT_OFFSET_SHTYPE: usize =
+    if XLen::BITS == u64::BITS { 26 } else { 25 };
+pub const MASK_SHTYPE: InstructionType =
+    if XLen::BITS == u64::BITS { 0x3F } else { 0x7F };
 pub const BIT_OFFSET_R_FUNCT7: usize = 25;
 pub const MASK_R_FUNCT7: InstructionType = 0x7F;
 
 pub const BIT_OFFSET_SHAMT: usize = 20;
 //const MASK_SHAMT: InstructionType = 0x1F;
 pub const MASK_SHAMT: InstructionType = XLen::BITS - 1;
+// pub const MASK_SHAMT_RV32: InstructionType = XLen::BITS - 1;
 
 pub const BIT_OFFSET_IMM_11_0: usize = 20;
 pub const BIT_OFFSET_IMM_11_0_FINAL: usize = 0;
@@ -86,6 +93,25 @@ pub const MASK_IMM_10_1: InstructionType = 0x3FF << BIT_OFFSET_IMM_10_1_FINAL;
 pub const BIT_OFFSET_IMM_19_12: usize = 12;
 pub const BIT_OFFSET_IMM_19_12_FINAL: usize = 12;
 pub const MASK_IMM_19_12: InstructionType = 0xFF << BIT_OFFSET_IMM_19_12_FINAL;
+
+pub const BIT_OFFSET_I_FENCE_SW: usize = 20;
+pub const MASK_I_FENCE_SW: InstructionType = 1 << BIT_OFFSET_I_FENCE_SW;
+pub const BIT_OFFSET_I_FENCE_SR: usize = 21;
+pub const MASK_I_FENCE_SR: InstructionType = 1 << BIT_OFFSET_I_FENCE_SR;
+pub const BIT_OFFSET_I_FENCE_SO: usize = 22;
+pub const MASK_I_FENCE_SO: InstructionType = 1 << BIT_OFFSET_I_FENCE_SO;
+pub const BIT_OFFSET_I_FENCE_SI: usize = 23;
+pub const MASK_I_FENCE_SI: InstructionType = 1 << BIT_OFFSET_I_FENCE_SI;
+pub const BIT_OFFSET_I_FENCE_PW: usize = 24;
+pub const MASK_I_FENCE_PW: InstructionType = 1 << BIT_OFFSET_I_FENCE_PW;
+pub const BIT_OFFSET_I_FENCE_PR: usize = 25;
+pub const MASK_I_FENCE_PR: InstructionType = 1 << BIT_OFFSET_I_FENCE_PR;
+pub const BIT_OFFSET_I_FENCE_PO: usize = 26;
+pub const MASK_I_FENCE_PO: InstructionType = 1 << BIT_OFFSET_I_FENCE_PO;
+pub const BIT_OFFSET_I_FENCE_PI: usize = 27;
+pub const MASK_I_FENCE_PI: InstructionType = 1 << BIT_OFFSET_I_FENCE_PI;
+pub const BIT_OFFSET_I_FENCE_FM: usize = 28;
+pub const MASK_I_FENCE_FM: InstructionType = 0x0F << BIT_OFFSET_I_FENCE_FM;
 
 pub const BIT_OFFSET_B_11: usize = 7;
 pub const BIT_OFFSET_B_11_FINAL: usize = 11;

@@ -58,17 +58,17 @@ pub enum MISA_MXL {
 #[allow(non_camel_case_types)]
 #[derive(Default, Clone)]
 pub enum MStatus_MPP {
+    USER = 0,
+    SUPERVISOR = 1,
+    HYPERVISOR = 2,
     #[default]
-    USER_ECALL = 0,
-    SUPERVISOR_ECALL = 1,
-    HYPERVISOR_ECALL = 2,
-    MACHINE_ECALL = 3,
+    MACHINE = 3,
 }
 
 impl From<XLen> for MStatus_MPP {
     fn from(value: XLen) -> Self {
         match value {
-            0b00 => MStatus_MPP::USER_ECALL,
+            0b00 => MStatus_MPP::USER,
 
             _ => {
                 error!("unreachable!");

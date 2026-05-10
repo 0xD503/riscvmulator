@@ -38,13 +38,13 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
     }
 
     fn read(&self, offset: usize) -> XLen {
-        trace!("Reading CSR x{offset:#?}...");
+        trace!("Reading CSR #{offset:#?}...");
 
         self.registers[offset].read()
     }
 
     fn write(&mut self, offset: usize, value: XLen) {
-        trace!("Writing CSR x{offset:#?}...");
+        trace!("Writing CSR #{offset:#?}...");
 
         self.registers[offset].write(value);
     }

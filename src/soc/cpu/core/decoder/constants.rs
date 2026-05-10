@@ -137,8 +137,8 @@ impl From<InstructionType> for OPCODE_LOAD_Funct3 {
     }
 }
 
-#[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
+#[allow(non_camel_case_types)]
 pub enum OP_IMM_Funct3 {
     ADDI = 0b000,  // add immediate
     SLLI = 0b001,  // shift left logical immediate
@@ -148,6 +148,47 @@ pub enum OP_IMM_Funct3 {
     SRXI = 0b101,  // shift right X immediate
     ORI = 0b110,   // OR with immediate
     ANDI = 0b111,  // AND with immediate
+}
+
+impl From<InstructionType> for OP_IMM_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => OP_IMM_Funct3::ADDI,
+            0b001 => OP_IMM_Funct3::SLLI,
+            0b010 => OP_IMM_Funct3::SLTI,
+            0b011 => OP_IMM_Funct3::SLTIU,
+            0b100 => OP_IMM_Funct3::XORI,
+            0b101 => OP_IMM_Funct3::SRXI,
+            0b110 => OP_IMM_Funct3::ORI,
+            0b111 => OP_IMM_Funct3::ANDI,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+#[allow(clippy::upper_case_acronyms)]
+#[allow(non_camel_case_types)]
+pub enum MISC_MEM_Funct3 {
+    FENCE = 0b000,
+    FENCE_I = 0b001,
+}
+
+impl From<InstructionType> for MISC_MEM_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => MISC_MEM_Funct3::FENCE,
+            0b001 => MISC_MEM_Funct3::FENCE_I,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
 }
 
 #[allow(non_camel_case_types)]
@@ -164,6 +205,29 @@ impl From<InstructionType> for OP_IMM_Funct7 {
         match value {
             0b0000000 => OP_IMM_Funct7::SXLI,
             0b0100000 => OP_IMM_Funct7::SRAI,
+
+            _ => {
+                error!("Unknown funct7: {value:#09b}");
+                unreachable!("Unknown funct7: {value:#09b}");
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Default, Clone)]
+pub enum OP_IMM_ShiftType {
+    #[default]
+    SXLI = 0b0000000,
+    SRAI = 0b0100000,
+}
+
+impl From<InstructionType> for OP_IMM_ShiftType {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b0000000 => OP_IMM_ShiftType::SXLI,
+            0b0100000 => OP_IMM_ShiftType::SRAI,
 
             _ => {
                 error!("Unknown funct7: {value:#09b}");
@@ -243,26 +307,6 @@ impl From<InstructionType> for OP_IMM_32_Funct3 {
 #[allow(non_camel_case_types)]
 pub enum JALR_Funct3 {
     JALR = 0b000, //
-}
-
-impl From<InstructionType> for OP_IMM_Funct3 {
-    fn from(value: InstructionType) -> Self {
-        match value {
-            0b000 => OP_IMM_Funct3::ADDI,
-            0b001 => OP_IMM_Funct3::SLLI,
-            0b010 => OP_IMM_Funct3::SLTI,
-            0b011 => OP_IMM_Funct3::SLTIU,
-            0b100 => OP_IMM_Funct3::XORI,
-            0b101 => OP_IMM_Funct3::SRXI,
-            0b110 => OP_IMM_Funct3::ORI,
-            0b111 => OP_IMM_Funct3::ANDI,
-
-            _ => {
-                error!("Unknown funct3: {value:#05b}");
-                unreachable!("Unknown funct3: {value:#05b}");
-            }
-        }
-    }
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -425,10 +469,32 @@ impl From<InstructionType> for JALR_Funct3 {
     }
 }
 
+#[derive(Default, Clone)]
+pub enum FenceMode {
+    #[default]
+    NORMAL = 0b0000,
+    TSO = 0b1000,
+}
+
+impl From<InstructionType> for FenceMode {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b0000 => FenceMode::NORMAL,
+            0b1000 => FenceMode::TSO,
+
+            _ => {
+                error!("Unknown FENCE mode: {value:#06b}");
+                unreachable!("Unknown FENCE mode: {value:#06b}");
+            }
+        }
+    }
+}
+
 #[allow(non_camel_case_types)]
 pub enum OpcodeToInstructionFormat {
     I_3_LOAD = 0b0000011,
     I_7_LOAD_FP = 0b0000111,
+    I_15_MISC_MEM = 0b0001111,
     I_19_OP_IMM = 0b0010011,
     U_23_AUIPC = 0b0010111,
     I_27_OP_IMM_32 = 0b0011011,
@@ -479,7 +545,9 @@ impl From<Opcode> for OpcodeToInstructionFormat {
 
             Opcode::SYSTEM => OpcodeToInstructionFormat::I_115_SYSTEM, // (Zicsr_extension)
 
-            Opcode::MISC_MEM | Opcode::AMO | Opcode::OP_V | Opcode::OP_VE => {
+            Opcode::MISC_MEM => OpcodeToInstructionFormat::I_15_MISC_MEM,
+
+            Opcode::AMO | Opcode::OP_V | Opcode::OP_VE => {
                 error!("Opcode not implemented yet: {:#09b}", opcode);
                 todo!("Opcode not implemented yet: {:#09b}", opcode);
             }

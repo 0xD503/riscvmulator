@@ -10,7 +10,7 @@ use log::{debug, error, info, trace, warn};
 use config::configure;
 use constants::arch::*;
 use constants::soc::*;
-use elf_loader::read_elf;
+use elf_loader::load_elf;
 use logger::init_logger;
 use soc::cpu::core::decoder::constants::*;
 use soc::cpu::core::executor::constants::ExecutableCommand;
@@ -34,6 +34,22 @@ mod parse_args;
 mod soc;
 mod utils;
 
+#[allow(non_camel_case_types)]
+#[derive(Default, Clone)]
+struct FENCE_Context {
+    successor_mem_write: bool,
+    successor_mem_read: bool,
+    successor_device_output: bool,
+    successor_device_input: bool,
+
+    predecessor_mem_write: bool,
+    predecessor_mem_read: bool,
+    predecessor_device_output: bool,
+    predecessor_device_input: bool,
+
+    mode: FenceMode,
+}
+
 #[derive(Default, Clone)]
 struct Decoder {
     opcode: Opcode,
@@ -46,6 +62,7 @@ struct Decoder {
     r_funct7: Funct7,
 
     shamt: InstructionType,
+    shift_type: OP_IMM_ShiftType,
 
     immediate: UnsignedImmediate,
     command_to_execute: ExecutableCommand,
@@ -54,6 +71,8 @@ struct Decoder {
     need_to_write_back: bool,
     need_to_jump: bool,
     need_to_branch: bool,
+
+    fence: FENCE_Context,
 
     zicsr: ZicsrContext,
 }
@@ -141,11 +160,15 @@ impl SoC {
         self.cpu.write_back();
 
         // step PC
-        self.cpu.context.PC += RISCV_PC_STEP;
+        self.cpu.advance_pc();
     }
 }
 
 impl RISC_V_CPU {
+    fn set_pc(&mut self, value: XLen) {
+        self.context.PC = value;
+    }
+
     fn decode_r_format(&mut self) {
         self.context.decoder.source_register_1 =
             self.extract_source_register_1();
@@ -305,8 +328,6 @@ impl RISC_V_CPU {
             self.extract_source_register_1();
         self.context.decoder.destination_register_offset =
             self.extract_destination_register_index();
-        self.context.decoder.immediate =
-            self.extract_imm_11_0() as UnsignedImmediate;
 
         self.context.decoder.funct3 = self.extract_funct3();
 
@@ -323,6 +344,8 @@ impl RISC_V_CPU {
         match self.context.decoder.opcode {
             // I_3
             Opcode::LOAD => {
+                self.context.decoder.immediate =
+                    self.extract_imm_11_0() as UnsignedImmediate;
                 self.context.decoder.need_to_read_memory = true;
                 match OPCODE_LOAD_Funct3::from(self.context.decoder.funct3) {
                     OPCODE_LOAD_Funct3::LB => {
@@ -355,8 +378,61 @@ impl RISC_V_CPU {
                     }
                 }
             }
+            // I_15
+            Opcode::MISC_MEM => {
+                match MISC_MEM_Funct3::from(self.context.decoder.funct3) {
+                    MISC_MEM_Funct3::FENCE => {
+                        self.context.decoder.need_to_write_back = false;
+
+                        self.context.decoder.fence.successor_mem_write =
+                            self.extract_fence_sw();
+                        self.context.decoder.fence.successor_mem_read =
+                            self.extract_fence_sr();
+                        self.context.decoder.fence.successor_device_output =
+                            self.extract_fence_so();
+                        self.context.decoder.fence.successor_device_input =
+                            self.extract_fence_si();
+
+                        self.context.decoder.fence.predecessor_mem_write =
+                            self.extract_fence_sw();
+                        self.context.decoder.fence.predecessor_mem_read =
+                            self.extract_fence_sr();
+                        self.context.decoder.fence.predecessor_device_output =
+                            self.extract_fence_so();
+                        self.context.decoder.fence.predecessor_device_input =
+                            self.extract_fence_si();
+
+                        self.context.decoder.fence.mode =
+                            self.extract_fence_fm();
+
+                        match self.context.decoder.fence.mode {
+                            FenceMode::NORMAL => {
+                                //
+                            }
+                            FenceMode::TSO => {
+                                //
+                            }
+                        }
+
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::FENCE;
+                    }
+
+                    MISC_MEM_Funct3::FENCE_I => {
+                        self.context.decoder.need_to_write_back = false;
+
+                        //
+
+                        self.context.decoder.command_to_execute =
+                            ExecutableCommand::FENCE_I;
+                        todo!();
+                    }
+                }
+            }
             // I_19
             Opcode::OP_IMM => {
+                self.context.decoder.immediate =
+                    self.extract_imm_11_0() as UnsignedImmediate;
                 match OP_IMM_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_Funct3::ADDI => {
                         self.context.decoder.command_to_execute =
@@ -364,9 +440,10 @@ impl RISC_V_CPU {
                     }
                     OP_IMM_Funct3::SLLI => {
                         self.context.decoder.shamt = self.extract_shamt();
-                        self.context.decoder.i_funct7 = self.extract_i_funct7();
-                        match self.context.decoder.i_funct7 {
-                            OP_IMM_Funct7::SXLI => {
+                        self.context.decoder.shift_type =
+                            self.extract_shift_type();
+                        match self.context.decoder.shift_type {
+                            OP_IMM_ShiftType::SXLI => {
                                 // funct3 equals SLLI
                                 self.context.decoder.command_to_execute =
                                     ExecutableCommand::SLLI
@@ -392,14 +469,15 @@ impl RISC_V_CPU {
                     }
                     OP_IMM_Funct3::SRXI => {
                         self.context.decoder.shamt = self.extract_shamt();
-                        self.context.decoder.i_funct7 = self.extract_i_funct7();
-                        match self.context.decoder.i_funct7 {
-                            OP_IMM_Funct7::SXLI => {
+                        self.context.decoder.shift_type =
+                            self.extract_shift_type();
+                        match self.context.decoder.shift_type {
+                            OP_IMM_ShiftType::SXLI => {
                                 // funct3 equals SRLI
                                 self.context.decoder.command_to_execute =
                                     ExecutableCommand::SRLI;
                             }
-                            OP_IMM_Funct7::SRAI => {
+                            OP_IMM_ShiftType::SRAI => {
                                 self.context.decoder.command_to_execute =
                                     ExecutableCommand::SRAI;
                             }
@@ -417,6 +495,8 @@ impl RISC_V_CPU {
             }
             // I_27
             Opcode::OP_IMM_32 => {
+                self.context.decoder.immediate =
+                    self.extract_imm_11_0() as UnsignedImmediate;
                 match OP_IMM_32_Funct3::from(self.context.decoder.funct3) {
                     OP_IMM_32_Funct3::ADDIW => {
                         self.context.decoder.command_to_execute =
@@ -456,6 +536,8 @@ impl RISC_V_CPU {
             }
             // I_103
             Opcode::JALR => {
+                self.context.decoder.immediate =
+                    self.extract_imm_11_0() as UnsignedImmediate;
                 match JALR_Funct3::from(self.context.decoder.funct3) {
                     JALR_Funct3::JALR => {
                         self.context.decoder.need_to_jump = true;
@@ -467,6 +549,7 @@ impl RISC_V_CPU {
 
             // I_115 (Zicsr_extension)
             Opcode::SYSTEM => {
+                self.context.decoder.immediate = self.extract_csr_address();
                 match SYSTEM_Funct3::from(self.context.decoder.funct3) {
                     SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM => {
                         self.context.decoder.need_to_write_back = false;
@@ -526,7 +609,6 @@ impl RISC_V_CPU {
                                     ExecutableCommand::MRET;
                             }
                         }
-                        todo!();
                     }
                     // CSR instructions are atomic
                     SYSTEM_Funct3::CSRRW => {
@@ -658,7 +740,7 @@ impl RISC_V_CPU {
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = false;
         self.context.decoder.need_to_jump = false;
-        self.context.decoder.need_to_branch = true;
+        self.context.decoder.need_to_branch = false; // set to true only branch is needed (during exectuion stage)
         self.context.decoder.zicsr.need_to_read_csr = false;
         self.context.decoder.zicsr.need_to_write_csr = false;
         self.context.decoder.zicsr.need_to_return_from_trap = false;
@@ -803,6 +885,7 @@ impl RISC_V_CPU {
             | OpcodeToInstructionFormat::I_27_OP_IMM_32
             | OpcodeToInstructionFormat::I_103_JALR
             | OpcodeToInstructionFormat::I_115_SYSTEM // (Zicsr_extension)
+            | OpcodeToInstructionFormat::I_15_MISC_MEM // FENCE, Zifencei
             => self.decode_i_format(),
             OpcodeToInstructionFormat::S_35_STORE
             | OpcodeToInstructionFormat::S_39_STORE_FP => {
@@ -903,6 +986,10 @@ impl RISC_V_CPU {
 
             ExecutableCommand::FENCE => {
                 self.instruction_fence();
+            }
+
+            ExecutableCommand::FENCE_I => {
+                self.instruction_fence_i();
             }
 
             ExecutableCommand::ECALL => {
@@ -1222,7 +1309,9 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
+            self.context.decoder.need_to_branch = true;
         }
+        // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
@@ -1237,7 +1326,11 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
+            self.context.decoder.need_to_branch = true;
+        } else {
+            trace!("Skip BNE...");
         }
+        // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
@@ -1252,7 +1345,9 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
+            self.context.decoder.need_to_branch = true;
         }
+        // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
@@ -1267,7 +1362,9 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
+            self.context.decoder.need_to_branch = true;
         }
+        // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
@@ -1282,7 +1379,9 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
+            self.context.decoder.need_to_branch = true;
         }
+        // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
@@ -1297,7 +1396,9 @@ impl RISC_V_CPU {
             self.context.execution.branch_target_address = self.context.PC
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
+            self.context.decoder.need_to_branch = true;
         }
+        // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
@@ -1312,6 +1413,7 @@ impl RISC_V_CPU {
                     as SignedXLen as XLen))
                 & !(XLen::MAX & 0x01);
         self.context.execution.result = self.context.PC + RISCV_PC_STEP;
+        // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
@@ -1324,6 +1426,7 @@ impl RISC_V_CPU {
             + (self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen);
         self.context.execution.result = self.context.PC + RISCV_PC_STEP;
+        // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
@@ -1438,24 +1541,39 @@ impl RISC_V_CPU {
     }
 
     fn instruction_fence(&mut self) {
+        trace!("Executing FENCE...");
+
         //
+        error!("TODO: unimplemented instruction");
+    }
+
+    fn instruction_fence_i(&mut self) {
+        trace!("Executing FENCE_I...");
+
+        //
+        error!("TODO: unimplemented instruction");
         todo!();
     }
 
     fn instruction_execution_call(&mut self) {
+        trace!("Executing ECALL...");
+
         let current_privilege_mode = self.read_mstatus_mpp();
         match current_privilege_mode {
-            MStatus_MPP::USER_ECALL => {
+            MStatus_MPP::USER => {
                 self.context.decoder.zicsr.trap_cause =
                     MCause_Code::EXCEPTION_ENV_CALL_FROM_U_MODE;
-                todo!();
+                self.context.decoder.zicsr.trap_vector = self
+                    .context
+                    .control_status_registers
+                    .read(CSRRegisterName::mtvec as usize);
             }
-            MStatus_MPP::SUPERVISOR_ECALL => {
+            MStatus_MPP::SUPERVISOR => {
                 self.context.decoder.zicsr.trap_cause =
                     MCause_Code::EXCEPTION_ENV_CALL_FROM_S_MODE;
                 todo!();
             }
-            MStatus_MPP::MACHINE_ECALL => {
+            MStatus_MPP::MACHINE => {
                 self.context.decoder.zicsr.trap_cause =
                     MCause_Code::EXCEPTION_ENV_CALL_FROM_M_MODE;
                 self.context.decoder.zicsr.trap_vector = self
@@ -1470,30 +1588,36 @@ impl RISC_V_CPU {
             }
         }
         self.context.decoder.zicsr.epc = self.context.PC;
-        todo!();
     }
 
     fn instruction_execution_break(&mut self) {
+        trace!("Executing EBREAK...");
+
         //
         todo!();
     }
 
     fn instruction_user_return(&mut self) {
+        trace!("Executing URET...");
+
         //
         todo!();
     }
 
     fn instruction_supervisor_return(&mut self) {
+        trace!("Executing SRET...");
+
         //
         todo!();
     }
 
     fn instruction_machine_return(&mut self) {
+        trace!("Executing MRET...");
+
         self.context.execution.return_target_address = self
             .context
             .control_status_registers
             .read(CSRRegisterName::mepc as usize);
-        todo!();
     }
 
     fn read_csr_to_result(&mut self) {
@@ -1516,6 +1640,8 @@ impl RISC_V_CPU {
     }
 
     fn instruction_csr_read_write(&mut self) {
+        trace!("Executing CSRRW...");
+
         if self.context.decoder.zicsr.need_to_read_csr {
             self.read_csr_to_result();
         }
@@ -1523,6 +1649,8 @@ impl RISC_V_CPU {
     }
 
     fn instruction_csr_read_set(&mut self) {
+        trace!("Executing CSRRS...");
+
         self.read_csr_to_result();
         if self.context.decoder.zicsr.need_to_write_csr {
             self.prepare_set_bits_for_csr(
@@ -1532,6 +1660,8 @@ impl RISC_V_CPU {
     }
 
     fn instruction_csr_read_clear(&mut self) {
+        trace!("Executing CSRRC...");
+
         self.read_csr_to_result();
         if self.context.decoder.zicsr.need_to_write_csr {
             self.prepare_clear_bits_for_csr(
@@ -1541,6 +1671,8 @@ impl RISC_V_CPU {
     }
 
     fn instruction_csr_read_write_immediate(&mut self) {
+        trace!("Executing CSRRWI...");
+
         if self.context.decoder.zicsr.need_to_read_csr {
             self.read_csr_to_result();
         }
@@ -1548,6 +1680,8 @@ impl RISC_V_CPU {
     }
 
     fn instruction_csr_read_set_immediate(&mut self) {
+        trace!("Executing CSRRSI...");
+
         self.read_csr_to_result();
         if self.context.decoder.zicsr.need_to_write_csr {
             self.prepare_set_bits_for_csr(self.context.decoder.zicsr.uimm);
@@ -1555,6 +1689,8 @@ impl RISC_V_CPU {
     }
 
     fn instruction_csr_read_clear_immediate(&mut self) {
+        trace!("Executing CSRRCI...");
+
         self.read_csr_to_result();
         if self.context.decoder.zicsr.need_to_write_csr {
             self.prepare_clear_bits_for_csr(self.context.decoder.zicsr.uimm);
@@ -1647,7 +1783,11 @@ impl RISC_V_CPU {
 
     fn write_back_to_reg(&mut self) {
         let register_offset = self.context.decoder.destination_register_offset;
-        trace!("Writing back to register x{register_offset:#?}...");
+        trace!(
+            "Writing back to register x{register_offset:#?},\
+            value: {:#018X?}...",
+            self.context.execution.result
+        );
 
         self.context
             .gp_register_file
@@ -1662,7 +1802,10 @@ impl RISC_V_CPU {
     }
 
     fn return_to_target_address(&mut self) {
-        trace!("Returning to target address from trap...");
+        trace!(
+            "Returning from trap to target address: {:#018X?}...",
+            self.context.execution.return_target_address
+        );
 
         self.set_pc_to_target_address(
             self.context.execution.return_target_address,
@@ -1670,7 +1813,10 @@ impl RISC_V_CPU {
     }
 
     fn branch_to_target_address(&mut self) {
-        trace!("Updating PC to BTA...");
+        trace!(
+            "Updating PC to BTA: {:#018X?}...",
+            self.context.execution.branch_target_address
+        );
 
         self.set_pc_to_target_address(
             self.context.execution.branch_target_address,
@@ -1678,7 +1824,10 @@ impl RISC_V_CPU {
     }
 
     fn jump_to_target_address(&mut self) {
-        trace!("Updating PC to JTA...");
+        trace!(
+            "Updating PC to JTA: {:#018X?}...",
+            self.context.execution.jump_target_address
+        );
 
         self.set_pc_to_target_address(
             self.context.execution.jump_target_address,
@@ -1686,7 +1835,10 @@ impl RISC_V_CPU {
     }
 
     fn trap_to_target_address(&mut self) {
-        trace!("Calling trap handler...");
+        trace!(
+            "Calling trap handler at addr: {:#018X?}...",
+            self.context.decoder.zicsr.trap_vector
+        );
 
         self.set_pc_to_target_address(self.context.decoder.zicsr.trap_vector);
     }
@@ -1694,7 +1846,15 @@ impl RISC_V_CPU {
     fn call_trap_handler(&mut self) {
         match self.context.decoder.zicsr.trap_cause {
             MCause_Code::EXCEPTION_ENV_CALL_FROM_U_MODE => {
-                todo!();
+                self.context.control_status_registers.write(
+                    CSRRegisterName::mcause as usize,
+                    self.context.decoder.zicsr.trap_cause.clone() as XLen,
+                );
+                self.context.control_status_registers.write(
+                    CSRRegisterName::mepc as usize,
+                    self.context.decoder.zicsr.epc as XLen,
+                );
+                error!("Probably implemented incorrectly");
             }
             MCause_Code::EXCEPTION_ENV_CALL_FROM_S_MODE => {
                 todo!();
@@ -1706,7 +1866,7 @@ impl RISC_V_CPU {
                 );
                 self.context.control_status_registers.write(
                     CSRRegisterName::mepc as usize,
-                    self.context.decoder.zicsr.trap_cause.clone() as XLen,
+                    self.context.decoder.zicsr.epc as XLen,
                 );
             }
 
@@ -1755,6 +1915,28 @@ impl RISC_V_CPU {
         }
     }
 
+    fn is_need_to_advance_pc(&self) -> bool {
+        if !self.context.decoder.need_to_jump
+            && !self.context.decoder.need_to_branch
+            && !self.context.decoder.zicsr.need_to_return_from_trap
+            && !self.context.decoder.zicsr.need_to_call_trap
+        {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn advance_pc(&mut self) {
+        if self.is_need_to_advance_pc() {
+            trace!("Advancing PC...");
+
+            self.context.PC += RISCV_PC_STEP;
+        } else {
+            trace!("Skip advancing PC...");
+        }
+    }
+
     fn extract_opcode(&self) -> Opcode {
         Opcode::from(
             ((self.context.current_instruction >> BIT_OFFSET_OPCODE)
@@ -1793,10 +1975,17 @@ impl RISC_V_CPU {
         (self.context.current_instruction >> BIT_OFFSET_FUNCT3) & MASK_FUNCT3
     }
 
-    fn extract_i_funct7(&self) -> OP_IMM_Funct7 {
+    // fn extract_i_funct7(&self) -> OP_IMM_Funct7 {
+    //     From::from(
+    //         (self.context.current_instruction >> BIT_OFFSET_I_FUNCT7)
+    //             & MASK_I_FUNCT7,
+    //     )
+    // }
+
+    fn extract_shift_type(&self) -> OP_IMM_ShiftType {
         From::from(
-            (self.context.current_instruction >> BIT_OFFSET_I_FUNCT7)
-                & MASK_I_FUNCT7,
+            (self.context.current_instruction >> BIT_OFFSET_SHTYPE)
+                & MASK_SHTYPE,
         )
     }
 
@@ -1806,6 +1995,10 @@ impl RISC_V_CPU {
                 & MASK_R_FUNCT7,
         )
     }
+
+    // fn extract_shamt_rv32(&self) -> InstructionType {
+    //     (self.context.current_instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT_RV32
+    // }
 
     fn extract_shamt(&self) -> InstructionType {
         (self.context.current_instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT
@@ -1817,6 +2010,50 @@ impl RISC_V_CPU {
         (self.context.current_instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL))
             as SignedXLen
+    }
+
+    fn extract_fence_sw(&self) -> bool {
+        (self.context.current_instruction & MASK_I_FENCE_SW) != 0
+    }
+
+    fn extract_fence_sr(&self) -> bool {
+        (self.context.current_instruction & MASK_I_FENCE_SR) != 0
+    }
+
+    fn extract_fence_so(&self) -> bool {
+        (self.context.current_instruction & MASK_I_FENCE_SO) != 0
+    }
+
+    fn extract_fence_si(&self) -> bool {
+        (self.context.current_instruction & MASK_I_FENCE_SI) != 0
+    }
+
+    fn extract_fence_pw(&self) -> bool {
+        (self.context.current_instruction & MASK_I_FENCE_PW) != 0
+    }
+
+    fn extract_fence_pr(&self) -> bool {
+        (self.context.current_instruction & MASK_I_FENCE_PR) != 0
+    }
+
+    fn extract_fence_po(&self) -> bool {
+        (self.context.current_instruction & MASK_I_FENCE_PO) != 0
+    }
+
+    fn extract_fence_pi(&self) -> bool {
+        (self.context.current_instruction & MASK_I_FENCE_PI) != 0
+    }
+
+    fn extract_fence_fm(&self) -> FenceMode {
+        FenceMode::from(
+            (self.context.current_instruction & MASK_I_FENCE_FM)
+                >> BIT_OFFSET_I_FENCE_FM,
+        )
+    }
+
+    fn extract_csr_address(&self) -> UnsignedImmediate {
+        self.context.current_instruction
+            >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL)
     }
 
     fn extract_imm_11_5(&self) -> SignedXLen {
@@ -1905,13 +2142,6 @@ impl RISC_V_CPU {
     }
 }
 
-fn load_elf() {
-    let elf_data =
-        read_elf("3rd_party/riscv-tests/isa/rv64ui-p-addi".into()).unwrap();
-    dbg!("{}", elf_data.e_entry);
-    dbg!("ELF segments so far: {:?}", elf_data.p_hdrs);
-}
-
 fn init() {
     init_logger();
     parse_args();
@@ -1950,7 +2180,7 @@ fn main() {
 
     soc.reset();
 
-    load_elf();
+    load_elf("3rd_party/riscv-tests/isa/rv64ui-p-addi".into(), &mut soc);
 
     // TODO: HALT condition
     loop {

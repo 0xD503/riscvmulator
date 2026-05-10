@@ -17,6 +17,9 @@
 -[ ] add reset method to `Register`
 
 ## Features
+-[ ] generate exception if address is misaligned
+
+## Main features
 -[ ] `RV32I`
 -[ ] `RV64I`
 -[ ] `M` extension (mul/div)
