@@ -37,6 +37,10 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
         }
     }
 
+    fn length() -> usize {
+        REGS_NUM
+    }
+
     fn read(&self, offset: usize) -> XLen {
         trace!("Reading CSR #{offset:#?}...");
 

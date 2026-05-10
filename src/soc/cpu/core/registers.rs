@@ -10,4 +10,6 @@ pub trait RegisterFileInterface {
 
     fn read(&self, offset: usize) -> XLen;
     fn write(&mut self, offset: usize, value: XLen);
+
+    fn length() -> usize;
 }

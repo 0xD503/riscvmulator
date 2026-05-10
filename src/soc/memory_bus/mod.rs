@@ -32,7 +32,7 @@ impl<AddrType> SystemBus<AddrType> {
         }
     }
 
-    pub fn finalize_reset(&mut self) {
+    pub fn ready_for_testing(&mut self) {
         self.initialized = true;
     }
 }

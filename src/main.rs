@@ -2182,7 +2182,7 @@ fn main() {
 
     load_elf("3rd_party/riscv-tests/isa/rv64ui-p-srlw".into(), &mut soc);
 
-    soc.bus.finalize_reset();
+    soc.bus.ready_for_testing();
 
     // TODO: HALT condition
     loop {

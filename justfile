@@ -13,8 +13,8 @@ IS_IN_CONTAINER := env_var_or_default("container", "")
 CONTAINER_ENGINE := env_var_or_default("CONTAINER_ENGINE", "podman")
 COMPOSE := CONTAINER_ENGINE + "-compose run --rm"
 RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" } else { COMPOSE + " " + DEV_SERVICE_NAME + " " }
-RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { "RUST_LOG=debug" } else { COMPOSE + " -e RUST_LOG=debug " + DEV_SERVICE_NAME + " " }
-RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { "RUST_LOG=trace" } else { COMPOSE + " -e RUST_LOG=trace " + DEV_SERVICE_NAME + " " }
+RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { "RUST_LOG=debug" } else { COMPOSE + " -e RUST_LOG=debug -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
+RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { "RUST_LOG=trace" } else { COMPOSE + " -e RUST_LOG=trace -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
 
 
 ## development
@@ -67,10 +67,10 @@ run-release-container:
 ## quality
 
 test:
-  {{RUN_IN_CONTAINER}}cargo test --release
+  {{RUN_IN_CONTAINER_DEBUG}}cargo test --release
 
 bench:
-  {{RUN_IN_CONTAINER}}cargo bench
+  {{RUN_IN_CONTAINER_DEBUG}}cargo bench
 
 lint:
   {{RUN_IN_CONTAINER}}cargo clippy -- -D warnings
