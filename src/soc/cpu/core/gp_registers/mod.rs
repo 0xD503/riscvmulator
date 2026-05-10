@@ -21,6 +21,14 @@ pub struct RegisterFile<const REGS_NUM: usize> {
     registers: [Register; REGS_NUM],
 }
 
+impl<const REGS_NUM: usize> Default for RegisterFile<REGS_NUM> {
+    fn default() -> Self {
+        Self {
+            registers: [Default::default(); REGS_NUM],
+        }
+    }
+}
+
 impl RegisterInterface for Register {
     fn read(&self) -> XLen {
         self.value

@@ -1,7 +1,7 @@
 use log::{error, info};
 
-use crate::HTIF_TO_HOST;
 use crate::constants::arch::{Byte, XLen};
+use crate::constants::soc::HTIF_TO_HOST;
 use crate::constants::soc::{RAM_BASE, RAM_END};
 use crate::soc::memory::{Memory, MemoryValue};
 
@@ -19,6 +19,7 @@ pub trait Bus<AddrType> {
     fn memory_reset(&mut self);
 }
 
+#[derive(Default)]
 pub struct SystemBus<AddrType> {
     memory: Memory<AddrType>,
     initialized: bool,

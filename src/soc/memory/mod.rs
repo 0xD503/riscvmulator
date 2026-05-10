@@ -11,8 +11,9 @@ use crate::constants::soc::{MEM_RESET_VALUE, RAM_BASE};
 
 #[allow(clippy::upper_case_acronyms)]
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub enum MemoryValueType {
+    #[default]
     BYTE,
     HALF_WORD,
     WORD,
@@ -145,6 +146,7 @@ impl MemoryValue for DoubleWord {
 //     }
 // }
 
+#[derive(Default)]
 pub struct Memory<AddrType> {
     byte_array: Vec<Byte>,
 
