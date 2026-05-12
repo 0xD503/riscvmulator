@@ -238,7 +238,7 @@ impl RISC_V_CPU {
                 },
                 OP_Funct3::SLL => match self.context.decoder.r_funct7 {
                     Funct7::F0 => {
-                        self.context.decoder.shamt = self.extract_shamt();
+                        self.context.decoder.shamt = self.extract_r_shamt();
                         self.context.decoder.command_to_execute =
                             ExecutableCommand::SLL;
                     }
@@ -282,7 +282,7 @@ impl RISC_V_CPU {
                     }
                 },
                 OP_Funct3::SRX => {
-                    self.context.decoder.shamt = self.extract_shamt();
+                    self.context.decoder.shamt = self.extract_r_shamt();
                     match self.context.decoder.r_funct7 {
                         Funct7::F0 => {
                             self.context.decoder.command_to_execute =
@@ -332,12 +332,15 @@ impl RISC_V_CPU {
                         }
                     }
                     OP_32_Funct3::SLLW => {
-                        self.context.decoder.shamt = self.extract_shamt();
+                        self.context.decoder.shamt =
+                            self.extract_r_shamt_rv64w();
                         self.context.decoder.command_to_execute =
                             ExecutableCommand::SLLW;
                     }
                     OP_32_Funct3::SRXW => {
-                        self.context.decoder.shamt = self.extract_shamt();
+                        self.context.decoder.shamt =
+                            self.extract_r_shamt_rv64w();
+                        debug!("New shamt: {}", self.context.decoder.shamt);
                         match self.context.decoder.r_funct7 {
                             Funct7::F0 => {
                                 self.context.decoder.command_to_execute =
@@ -477,7 +480,7 @@ impl RISC_V_CPU {
                             ExecutableCommand::ADDI;
                     }
                     OP_IMM_Funct3::SLLI => {
-                        self.context.decoder.shamt = self.extract_shamt();
+                        self.context.decoder.shamt = self.extract_i_shamt();
                         self.context.decoder.shift_type =
                             self.extract_shift_type();
                         match self.context.decoder.shift_type {
@@ -506,7 +509,7 @@ impl RISC_V_CPU {
                             ExecutableCommand::XORI;
                     }
                     OP_IMM_Funct3::SRXI => {
-                        self.context.decoder.shamt = self.extract_shamt();
+                        self.context.decoder.shamt = self.extract_i_shamt();
                         self.context.decoder.shift_type =
                             self.extract_shift_type();
                         match self.context.decoder.shift_type {
@@ -541,7 +544,9 @@ impl RISC_V_CPU {
                             ExecutableCommand::ADDIW
                     }
                     OP_IMM_32_Funct3::SLLIW => {
-                        self.context.decoder.shamt = self.extract_shamt();
+                        self.context.decoder.shamt =
+                            self.extract_i_shamt_rv64w();
+                        self.context.decoder.i_funct7 = self.extract_i_funct7();
                         match self.context.decoder.i_funct7 {
                             OP_IMM_Funct7::SXLI => {
                                 // funct3 equals SLLIW
@@ -556,7 +561,9 @@ impl RISC_V_CPU {
                         }
                     }
                     OP_IMM_32_Funct3::SRXIW => {
-                        self.context.decoder.shamt = self.extract_shamt();
+                        self.context.decoder.shamt =
+                            self.extract_i_shamt_rv64w();
+                        self.context.decoder.i_funct7 = self.extract_i_funct7();
                         match self.context.decoder.i_funct7 {
                             OP_IMM_Funct7::SXLI => {
                                 // funct3 equals SRXIW
@@ -839,6 +846,9 @@ impl RISC_V_CPU {
 
         self.context.decoder.destination_register_offset =
             self.extract_destination_register_index();
+        self.context.decoder.immediate =
+            self.extract_imm_31_12() as UnsignedImmediate;
+
         self.context.decoder.need_to_read_memory = false;
         self.context.decoder.need_to_write_memory = false;
         self.context.decoder.need_to_write_back = true;
@@ -848,10 +858,6 @@ impl RISC_V_CPU {
         self.context.decoder.zicsr.need_to_write_csr = false;
         self.context.decoder.zicsr.need_to_return_from_trap = false;
         self.context.decoder.zicsr.need_to_call_trap = false;
-
-        // extract immediate
-        self.context.decoder.immediate =
-            self.extract_imm_31_12() as UnsignedImmediate;
 
         match self.context.decoder.opcode {
             Opcode::AUIPC => {
@@ -1533,7 +1539,11 @@ impl RISC_V_CPU {
     }
 
     fn instruction_shift_right_arith_immediate_word(&mut self) {
-        trace!("Executing SRAIW...");
+        trace!(
+            "Executing SRAIW: {:#018X} >> {}...",
+            self.context.decoder.source_register_1 as SignedXLen32,
+            self.context.decoder.immediate
+        );
 
         let result32 = (self.context.decoder.source_register_1 as SignedXLen32)
             >> self.context.decoder.immediate;
@@ -1573,7 +1583,8 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             << self.context.decoder.shamt;
-        self.context.execution.result = result32 as SignedXLen as XLen;
+        self.context.execution.result =
+            result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_right_logical_word(&mut self) {
@@ -1586,7 +1597,11 @@ impl RISC_V_CPU {
     }
 
     fn instruction_shift_right_arith_word(&mut self) {
-        trace!("Executing SRAW...");
+        trace!(
+            "Executing SRAW: {:#018} >> {:?}...",
+            self.context.decoder.source_register_1 as SignedXLen32,
+            self.context.decoder.shamt
+        );
 
         let result32 = (self.context.decoder.source_register_1 as SignedXLen32)
             >> self.context.decoder.shamt;
@@ -2028,12 +2043,12 @@ impl RISC_V_CPU {
         (self.context.current_instruction >> BIT_OFFSET_FUNCT3) & MASK_FUNCT3
     }
 
-    // fn extract_i_funct7(&self) -> OP_IMM_Funct7 {
-    //     From::from(
-    //         (self.context.current_instruction >> BIT_OFFSET_I_FUNCT7)
-    //             & MASK_I_FUNCT7,
-    //     )
-    // }
+    fn extract_i_funct7(&self) -> OP_IMM_Funct7 {
+        From::from(
+            (self.context.current_instruction >> BIT_OFFSET_R_FUNCT7_RV64W)
+                & MASK_R_FUNCT7_RV64W,
+        )
+    }
 
     fn extract_shift_type(&self) -> OP_IMM_ShiftType {
         From::from(
@@ -2049,12 +2064,23 @@ impl RISC_V_CPU {
         )
     }
 
-    // fn extract_shamt_rv32(&self) -> InstructionType {
-    //     (self.context.current_instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT_RV32
-    // }
+    fn extract_r_shamt(&self) -> InstructionType {
+        (self.context.decoder.source_register_2 & (MASK_SHAMT as XLen))
+            as InstructionType
+    }
 
-    fn extract_shamt(&self) -> InstructionType {
+    fn extract_r_shamt_rv64w(&self) -> InstructionType {
+        (self.context.decoder.source_register_2 & (MASK_SHAMT_RV64W as XLen))
+            as InstructionType
+    }
+
+    fn extract_i_shamt(&self) -> InstructionType {
         (self.context.current_instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT
+    }
+
+    fn extract_i_shamt_rv64w(&self) -> InstructionType {
+        (self.context.current_instruction >> BIT_OFFSET_SHAMT)
+            & MASK_SHAMT_RV64W
     }
 
     fn extract_imm_11_0(&self) -> SignedXLen {

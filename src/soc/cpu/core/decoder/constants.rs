@@ -196,15 +196,15 @@ impl From<InstructionType> for MISC_MEM_Funct3 {
 #[derive(Default, Clone)]
 pub enum OP_IMM_Funct7 {
     #[default]
-    SXLI = 0b0000000,
-    SRAI = 0b0100000,
+    SXLI = 0b000_0000,
+    SRAI = MASK_I_FUNCT_7_SHIFT_RAI as isize,
 }
 
 impl From<InstructionType> for OP_IMM_Funct7 {
     fn from(value: InstructionType) -> Self {
         match value {
-            0b0000000 => OP_IMM_Funct7::SXLI,
-            0b0100000 => OP_IMM_Funct7::SRAI,
+            0b000_0000 => OP_IMM_Funct7::SXLI,
+            MASK_I_FUNCT_7_SHIFT_RAI => OP_IMM_Funct7::SRAI,
 
             _ => {
                 error!("Unknown funct7: {value:#09b}");

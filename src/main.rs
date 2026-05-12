@@ -10,7 +10,10 @@ fn main() {
 
     soc.reset();
 
-    load_elf("3rd_party/riscv-tests/isa/rv64ui-p-lui".into(), &mut soc);
+    load_elf(
+        "3rd_party/riscv-tests/isa/rv64ui-p-ma_data".into(),
+        &mut soc,
+    );
 
     soc.ready_for_testing();
 

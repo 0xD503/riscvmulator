@@ -67,13 +67,24 @@ pub const MASK_SHIFT_RIGHT_TYPE: InstructionType = if XLen::BITS == u64::BITS {
 } else {
     0b10_0000
 };
+
+pub const MASK_I_FUNCT_7_SHIFT_RAI: InstructionType = if XLen::BITS == u64::BITS
+{
+    0b01_0000
+} else {
+    0b010_0000
+};
+
 pub const BIT_OFFSET_R_FUNCT7: usize = 25;
 pub const MASK_R_FUNCT7: InstructionType = 0x7F;
+
+pub const BIT_OFFSET_R_FUNCT7_RV64W: usize = 26;
+pub const MASK_R_FUNCT7_RV64W: InstructionType = 0x3F;
 
 pub const BIT_OFFSET_SHAMT: usize = 20;
 //const MASK_SHAMT: InstructionType = 0x1F;
 pub const MASK_SHAMT: InstructionType = XLen::BITS - 1;
-// pub const MASK_SHAMT_RV32: InstructionType = XLen::BITS - 1;
+pub const MASK_SHAMT_RV64W: InstructionType = XLen32::BITS - 1;
 
 pub const BIT_OFFSET_IMM_11_0: usize = 20;
 pub const BIT_OFFSET_IMM_11_0_FINAL: usize = 0;
