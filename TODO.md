@@ -13,13 +13,13 @@
 (or without logger init) and without other libraries (minimize bin size)
 
 ## Broken tests
+-[ ] LUI
 -[ ] SRLW
 -[ ] SRAW
 -[ ] SRAIW
 -[ ] SRAI
 -[ ] SLLW
 -[ ] MA_DATA
--[ ] LUI
 -[ ] LD_ST
 -[ ] FENCE_I
 

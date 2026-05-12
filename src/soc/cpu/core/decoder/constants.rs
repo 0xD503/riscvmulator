@@ -219,15 +219,15 @@ impl From<InstructionType> for OP_IMM_Funct7 {
 #[derive(Default, Clone)]
 pub enum OP_IMM_ShiftType {
     #[default]
-    SXLI = 0b0000000,
-    SRAI = 0b0100000,
+    SXLI = 0b000_0000,
+    SRAI = MASK_SHIFT_RIGHT_TYPE as isize,
 }
 
 impl From<InstructionType> for OP_IMM_ShiftType {
     fn from(value: InstructionType) -> Self {
         match value {
-            0b0000000 => OP_IMM_ShiftType::SXLI,
-            0b0100000 => OP_IMM_ShiftType::SRAI,
+            0b000_0000 => OP_IMM_ShiftType::SXLI,
+            MASK_SHIFT_RIGHT_TYPE => OP_IMM_ShiftType::SRAI,
 
             _ => {
                 error!("Unknown funct7: {value:#09b}");

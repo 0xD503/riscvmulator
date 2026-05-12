@@ -62,6 +62,11 @@ pub const BIT_OFFSET_SHTYPE: usize =
     if XLen::BITS == u64::BITS { 26 } else { 25 };
 pub const MASK_SHTYPE: InstructionType =
     if XLen::BITS == u64::BITS { 0x3F } else { 0x7F };
+pub const MASK_SHIFT_RIGHT_TYPE: InstructionType = if XLen::BITS == u64::BITS {
+    0b1_0000
+} else {
+    0b10_0000
+};
 pub const BIT_OFFSET_R_FUNCT7: usize = 25;
 pub const MASK_R_FUNCT7: InstructionType = 0x7F;
 
