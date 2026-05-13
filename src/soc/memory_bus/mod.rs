@@ -1,9 +1,11 @@
 use log::{error, info};
 
 use crate::constants::arch::{Byte, XLen};
-use crate::constants::soc::HTIF_TO_HOST;
 use crate::constants::soc::{RAM_BASE, RAM_END};
 use crate::soc::memory::{Memory, MemoryValue};
+
+// pub const HTIF_TO_HOST: XLen = 0x80001000;
+// // pub const HTIF_FROM_HOST: XLen = 0x80001004;
 
 pub trait Bus<AddrType> {
     fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
@@ -23,6 +25,9 @@ pub trait Bus<AddrType> {
 pub struct SystemBus<AddrType> {
     memory: Memory<AddrType>,
     initialized: bool,
+
+    // testing facilities
+    htif_to_host: XLen,
 }
 
 impl<AddrType> SystemBus<AddrType> {
@@ -30,11 +35,17 @@ impl<AddrType> SystemBus<AddrType> {
         Self {
             memory: Memory::new(fill_value, size),
             initialized: false,
+            htif_to_host: 0x80001000,
         }
     }
 
+    // testing facilities
     pub fn ready_for_testing(&mut self) {
         self.initialized = true;
+    }
+
+    pub fn set_htif(&mut self, addr: XLen) {
+        self.htif_to_host = addr;
     }
 }
 
@@ -57,7 +68,7 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
         value: MemValType,
     ) {
         // TODO: test scaffolding, isolate later
-        if address == HTIF_TO_HOST {
+        if address == self.htif_to_host {
             if self.initialized {
                 if value.to_u64() == 1 {
                     info!("TEST PASSED");

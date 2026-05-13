@@ -1,11 +1,15 @@
 # TODO list
 
+## Following action
+- implement `Zifencei` instruction
+
 ## Tech debt
 -[ ] add UTs
 -[ ] add benchmarks
 -[ ] add docs
 -[ ] add build profiles
 -[ ] profile bottlenecks
+-[ ] conditional compilation for test facilities/scaffolding
 
 ## Fixes
 -[ ] get rid off `try_into()` if possible
@@ -13,8 +17,6 @@
 (or without logger init) and without other libraries (minimize bin size)
 
 ## Broken tests
--[ ] MA_DATA
--[ ] LD_ST
 -[ ] FENCE_I
 
 ## Refactor
@@ -31,6 +33,7 @@
 -[ ] `A` extension (atomics)
 -[ ] `F` extension (floating point)
 -[ ] `D` extension ()
+-[ ] `Zifencei` extension (`FENCE_I` instruction)
 -[ ] `Zicsr` extension (control and status registers (CSRs))
 -[ ] basic privilleged ISA
 -[ ] `G` extensions (general purpose `IMAFD` + privilleged extensions)

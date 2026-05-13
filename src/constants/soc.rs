@@ -9,6 +9,3 @@ pub const RAM_BASE: XLen = 0x80000000;
 pub const RAM_SIZE: usize = 65536; // placeholder value, to be configured later
 pub const RAM_END: XLen = RAM_BASE + RAM_SIZE as XLen;
 // const MEM_SPACE_SIZE: usize = XLen::MAX as usize;
-
-pub const HTIF_TO_HOST: XLen = 0x80001000;
-// pub const HTIF_FROM_HOST: XLen = 0x80001004;

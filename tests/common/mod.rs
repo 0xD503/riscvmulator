@@ -9,6 +9,7 @@ pub fn run_test(test_path: &'static str) {
 
     load_elf(test_path.into(), &mut soc);
 
+    // TODO: conditional compilation for test facilities
     soc.ready_for_testing();
 
     // TODO: HALT condition

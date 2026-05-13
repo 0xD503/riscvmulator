@@ -193,8 +193,15 @@ impl SoC {
         self.cpu.advance_pc();
     }
 
+    // testing facilities
+    // TODO: conditional compilation for test facilities
     pub fn ready_for_testing(&mut self) {
         self.bus.ready_for_testing();
+    }
+
+    // TODO: conditional compilation for test facilities
+    pub fn set_htif(&mut self, addr: BusAddrType) {
+        self.bus.set_htif(addr);
     }
 }
 

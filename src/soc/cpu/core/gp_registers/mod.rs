@@ -1,9 +1,6 @@
 use log::trace;
 
-use crate::constants::arch::{
-    RISCV_NUM_OF_REGISTERS, RISCV_NUM_OF_REGISTERS_EMBEDDED,
-    RISCV_X0_ZERO_REGISTER_VALUE, XLen,
-};
+use crate::constants::arch::{RISCV_X0_ZERO_REGISTER_VALUE, XLen};
 use crate::soc::cpu::core::registers::{
     RegisterFileInterface, RegisterInterface,
 };
@@ -94,6 +91,9 @@ impl<'a, const REGS_NUM: usize> IntoIterator
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::arch::{
+        RISCV_NUM_OF_REGISTERS, RISCV_NUM_OF_REGISTERS_EMBEDDED,
+    };
 
     #[test]
     fn register() {
