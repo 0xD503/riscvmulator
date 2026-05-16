@@ -2254,3 +2254,8 @@ pub fn init() {
     parse_args();
     configure();
 }
+
+pub fn init_test() {
+    // init_logger();
+    configure();
+}

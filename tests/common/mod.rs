@@ -1,7 +1,7 @@
-use riscvmulator::{SoC, elf_loader::load_elf, init};
+use riscvmulator::{SoC, elf_loader::load_elf, init_test};
 
 pub fn run_test(test_path: &'static str) {
-    init();
+    init_test();
 
     let mut soc: SoC = SoC::new();
 
