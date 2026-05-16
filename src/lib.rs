@@ -58,6 +58,7 @@ struct Decoder {
 
     funct3: InstructionType,
     i_funct7: OP_IMM_Funct7,
+    i_funct12: I_Funct12,
     r_funct7: Funct7,
 
     shamt: InstructionType,
@@ -456,9 +457,11 @@ impl RISC_V_CPU {
                         match self.context.decoder.fence.mode {
                             FenceMode::NORMAL => {
                                 //
+                                error!("FENCE.NORMAL is unimplemented");
                             }
                             FenceMode::TSO => {
                                 //
+                                error!("FENCE.TSO is unimplemented");
                             }
                         }
 
@@ -469,11 +472,24 @@ impl RISC_V_CPU {
                     MISC_MEM_Funct3::FENCE_I => {
                         self.context.decoder.need_to_write_back = false;
 
-                        //
+                        let check_if_fence_i = || -> bool {
+                            if self.context.decoder.source_register_1 == 0
+                                && self.extract_destination_register() == 0
+                                && self.context.decoder.i_funct12
+                                    == I_Funct12::F0
+                            {
+                                true
+                            } else {
+                                false
+                            }
+                        };
 
-                        self.context.decoder.command_to_execute =
-                            ExecutableCommand::FENCE_I;
-                        todo!();
+                        if check_if_fence_i() {
+                            self.context.decoder.command_to_execute =
+                                ExecutableCommand::FENCE_I;
+                        }
+
+                        unreachable!();
                     }
                 }
             }
@@ -1627,7 +1643,6 @@ impl RISC_V_CPU {
 
         //
         error!("TODO: unimplemented instruction");
-        todo!();
     }
 
     fn instruction_execution_call(&mut self) {
@@ -2044,6 +2059,12 @@ impl RISC_V_CPU {
     fn extract_destination_register_index(&self) -> usize {
         ((self.context.current_instruction >> BIT_OFFSET_DESTINATION_REGISTER)
             & MASK_DESTINATION_REGISTER) as usize
+    }
+
+    fn extract_destination_register(&self) -> XLen {
+        self.context
+            .gp_register_file
+            .read(self.extract_destination_register_index())
     }
 
     fn extract_funct3(&self) -> InstructionType {

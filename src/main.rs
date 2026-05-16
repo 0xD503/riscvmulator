@@ -10,7 +10,7 @@ fn main() {
 
     soc.reset();
 
-    load_elf("3rd_party/riscv-tests/isa/rv64ui-p-addw".into(), &mut soc);
+    load_elf("3rd_party/riscv-tests/isa/rv64ui-p-fence_i".into(), &mut soc);
 
     soc.ready_for_testing();
 

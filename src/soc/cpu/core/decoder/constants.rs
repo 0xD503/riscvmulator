@@ -260,6 +260,26 @@ impl From<InstructionType> for Funct7 {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(Default, Clone, PartialEq)]
+pub enum I_Funct12 {
+    #[default]
+    F0 = 0b0000_0000_0000,
+}
+
+impl From<InstructionType> for I_Funct12 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b0000_0000_0000 => I_Funct12::F0,
+
+            _ => {
+                error!("Unknown funct12: {value:#014b}");
+                unreachable!("Unknown funct12: {value:#014b}");
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum OP_Funct3 {
     ARITH = 0b000, //
