@@ -2,14 +2,20 @@ use clap::Parser;
 
 use crate::utils;
 
-pub fn parse_args() {
-    // TODO: add `--license` argument to print license
-    // let args: Vec<String> = env::args().collect();
+pub struct CLI_Args {
+    pub input_file: String,
+}
+
+pub fn parse_args() -> CLI_Args {
     let args = Args::parse();
 
     if args.license {
         utils::print_license_text();
         std::process::exit(0);
+    }
+
+    CLI_Args {
+        input_file: args.input_file,
     }
 }
 
@@ -18,4 +24,5 @@ pub fn parse_args() {
 struct Args {
     #[arg(long, required = false, action = clap::ArgAction::SetTrue)]
     license: bool,
+    input_file: String,
 }

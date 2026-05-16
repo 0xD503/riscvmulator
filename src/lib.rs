@@ -9,7 +9,7 @@ mod utils;
 
 use config::configure;
 use logger::init_logger;
-use parse_args::parse_args;
+use parse_args::{CLI_Args, parse_args};
 
 // addr: {address:#018X?}
 
@@ -2249,10 +2249,12 @@ impl RISC_V_CPU {
     }
 }
 
-pub fn init() {
+pub fn init() -> CLI_Args {
     init_logger();
-    parse_args();
+    let args = parse_args();
     configure();
+
+    args
 }
 
 pub fn init_test() {

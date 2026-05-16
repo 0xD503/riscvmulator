@@ -4,6 +4,11 @@
 
 [Specification](https://riscv.org/specifications/ratified/)
 
+## Project state
+
+Currently project implements base RV64I functionality. Project passes `rv64ui-p`
+compliance tests.
+
 ## Building and running
 
 ### Prerequisites
@@ -30,4 +35,10 @@ just build
 
 ```Shell
 just test
+```
+
+#### Run ELF binaries with emulator
+
+```Shell
+target/release/riscvmulator <ELF>
 ```
