@@ -1,5 +1,9 @@
 # RISC-V emulator
 
+## Development stage
+
+Project is under development; not production-ready.
+
 ## Specifications
 
 [Specification](https://riscv.org/specifications/ratified/)
