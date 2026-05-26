@@ -14,6 +14,12 @@ pub struct CSR {
     pub(in crate::soc::cpu) value: XLen,
 }
 
+impl CSR {
+    fn reset(&mut self) {
+        self.value = Default::default();
+    }
+}
+
 #[derive(Clone)]
 pub struct CSRFile<const REGS_NUM: usize> {
     pub(in crate::soc::cpu) registers: [CSR; REGS_NUM],
@@ -59,6 +65,12 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
         trace!("Writing CSR #{offset:#?}...");
 
         self.registers[offset].write(value);
+    }
+
+    fn reset(&mut self) {
+        for mut register in self.registers {
+            register.reset();
+        }
     }
 }
 

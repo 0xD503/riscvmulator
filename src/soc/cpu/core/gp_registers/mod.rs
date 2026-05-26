@@ -1,4 +1,5 @@
 use log::trace;
+use toml::value;
 
 use crate::constants::arch::{RISCV_X0_ZERO_REGISTER_VALUE, XLen};
 use crate::soc::cpu::core::registers::{
@@ -8,9 +9,19 @@ use constants::GPRegisterName;
 
 pub mod constants;
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct Register {
     value: XLen,
+}
+
+impl Register {
+    pub fn new(val: XLen) -> Self {
+        Register { value: val }
+    }
+
+    pub fn reset(&mut self) {
+        self.value = Default::default();
+    }
 }
 
 #[derive(Clone)]
@@ -64,6 +75,12 @@ impl<const REGS_NUM: usize> RegisterFileInterface for RegisterFile<REGS_NUM> {
             trace!(
                 "An attempt to write value {value} to register `x0_zero` was silently discarded"
             );
+        }
+    }
+
+    fn reset(&mut self) {
+        for mut register in self.registers {
+            register.reset();
         }
     }
 }

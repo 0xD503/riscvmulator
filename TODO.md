@@ -83,13 +83,13 @@ These decisions affect every phase below; resolve them upfront.
 
 ### Phase 0 — Bug fixes (prerequisite, do first)
 
-- [ ] `FENCE_I`: decode path falls into `unreachable!()` — stub as no-op
-- [ ] `MStatus_MPP::From<XLen>`: only handles `0b00` (USER); add 1=SUPERVISOR,
+- [x] `FENCE_I`: decode path falls into `unreachable!()` — stub as no-op
+- [x] `MStatus_MPP::From<XLen>`: only handles `0b00` (USER); add 1=SUPERVISOR,
       2=HYPERVISOR, 3=MACHINE
 - [ ] `SoC::reset()`: does not reset `decoder` or `execution` context fields
 - [ ] `elf_loader`: `.ok().unwrap().unwrap()` on symbol table panics on stripped
       ELF — convert to `Result`
-- [ ] `is_need_to_advance_pc()`: `if cond { true } else { false }` → just `cond`
+- [x] `is_need_to_advance_pc()`: `if cond { true } else { false }` → just `cond`
 
 ---
 
@@ -98,6 +98,7 @@ These decisions affect every phase below; resolve them upfront.
 Pure mechanical refactor; no behavior change. Run tests after each file move.
 
 Target layout (module skeletons already exist, just empty):
+
 - `lib.rs` — `SoC` struct + `step()` only
 - `soc/cpu/core/decoder/mod.rs` — `Decoder`, `FENCE_Context`, `decode_*_format()`,
   `decode()`

@@ -69,6 +69,9 @@ impl From<XLen> for MStatus_MPP {
     fn from(value: XLen) -> Self {
         match value {
             0b00 => MStatus_MPP::USER,
+            0b01 => MStatus_MPP::SUPERVISOR,
+            0b10 => MStatus_MPP::HYPERVISOR,
+            0b11 => MStatus_MPP::MACHINE,
 
             _ => {
                 error!("unreachable!");

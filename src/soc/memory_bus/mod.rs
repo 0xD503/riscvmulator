@@ -39,6 +39,12 @@ impl<AddrType> SystemBus<AddrType> {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.memory.reset();
+        self.initialized = false;
+        self.htif_to_host = 0x80001000;
+    }
+
     // testing facilities
     pub fn ready_for_testing(&mut self) {
         self.initialized = true;

@@ -3,7 +3,7 @@ git submodule update --init --recursive
 export RISCV=$PWD/build
 export RISCV_PREFIX=riscv64-unknown-elf-
 
-cd 3rd-party/riscv-tests
+cd 3rd_party/riscv-tests
 
 autoconf
 ./configure --prefix=$RISCV/target --with-xlen=64

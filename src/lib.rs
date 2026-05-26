@@ -24,14 +24,16 @@ use constants::arch::*;
 use constants::soc::*;
 use soc::cpu::core::decoder::constants::*;
 use soc::cpu::core::executor::constants::ExecutableCommand;
-use soc::cpu::core::gp_registers::RegisterFile;
 use soc::cpu::core::gp_registers::constants::GPRegisterName;
+use soc::cpu::core::gp_registers::{Register, RegisterFile};
 use soc::cpu::core::registers::RegisterFileInterface;
 use soc::cpu::extensions::zicsr::constants::CSRRegisterName;
 use soc::cpu::extensions::zicsr::{CSRFile, ZicsrContext};
 use soc::cpu::priveleged::machine::*;
 use soc::memory::{MemoryValue, MemoryValueType};
 use soc::memory_bus::{Bus, SystemBus};
+
+use crate::soc::cpu::core::registers::RegisterInterface;
 
 #[allow(non_camel_case_types)]
 #[derive(Default, Clone)]
@@ -77,6 +79,12 @@ struct Decoder {
     zicsr: ZicsrContext,
 }
 
+impl Decoder {
+    fn reset(&mut self) {
+        // ..Default::default();
+    }
+}
+
 #[derive(Default, Clone)]
 struct ExecutionContext {
     result: XLen,
@@ -92,15 +100,29 @@ struct ExecutionContext {
     memory_value_type: MemoryValueType,
 }
 
+impl ExecutionContext {
+    fn reset(&mut self) {
+        // ..Default::default();
+    }
+}
+
 #[allow(non_snake_case)]
 #[derive(Default, Clone)]
 pub struct Context {
     gp_register_file: RegisterFile<RISCV_NUM_OF_REGISTERS>,
-    PC: XLen,
+    PC: Register,
     control_status_registers: CSRFile<RISCV_NUM_OF_CSR>,
     current_instruction: InstructionType,
     decoder: Decoder,
     execution: ExecutionContext,
+}
+
+impl Context {
+    fn reset(&mut self) {
+        self.decoder.reset();
+        self.execution.reset();
+        // ..Default::default();
+    }
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -108,6 +130,12 @@ pub struct Context {
 #[derive(Default, Clone)]
 pub struct RISC_V_CPU {
     context: Context,
+}
+
+impl RISC_V_CPU {
+    fn reset(&mut self) {
+        self.context.reset();
+    }
 }
 
 #[derive(Default)]
@@ -122,7 +150,7 @@ impl SoC {
         Self {
             cpu: RISC_V_CPU {
                 context: Context {
-                    PC: PC_RESET_VALUE,
+                    PC: Register::new(PC_RESET_VALUE),
                     gp_register_file: RegisterFile::new(),
                     control_status_registers: CSRFile::new(),
                     current_instruction: INITIAL_INSTRUCTION,
@@ -155,7 +183,7 @@ impl SoC {
         );
 
         self.cpu.context.current_instruction =
-            self.bus.read(self.cpu.context.PC);
+            self.bus.read(self.cpu.context.PC.read());
 
         trace!(
             "Fetched instruction: {:#018X?}",
@@ -164,7 +192,10 @@ impl SoC {
     }
 
     pub fn reset(&mut self) {
-        self.cpu.context.PC = PC_RESET_VALUE;
+        self.cpu.reset();
+        self.bus.reset();
+
+        self.cpu.context.PC.reset(); // = PC_RESET_VALUE;
         // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
         for i in 1..RISCV_NUM_OF_REGISTERS {
             self.cpu
@@ -182,7 +213,7 @@ impl SoC {
     }
 
     pub fn step(&mut self) {
-        trace!("Current PC: {:#018X}", self.cpu.context.PC);
+        trace!("Current PC: {:#018X}", self.cpu.context.PC.read());
 
         self.fetch();
         self.cpu.decode();
@@ -208,7 +239,7 @@ impl SoC {
 
 impl RISC_V_CPU {
     fn set_pc(&mut self, value: XLen) {
-        self.context.PC = value;
+        self.context.PC.write(value);
     }
 
     fn decode_r_format(&mut self) {
@@ -473,23 +504,18 @@ impl RISC_V_CPU {
                         self.context.decoder.need_to_write_back = false;
 
                         let check_if_fence_i = || -> bool {
-                            if self.context.decoder.source_register_1 == 0
+                            self.context.decoder.source_register_1 == 0
                                 && self.extract_destination_register() == 0
                                 && self.context.decoder.i_funct12
                                     == I_Funct12::F0
-                            {
-                                true
-                            } else {
-                                false
-                            }
                         };
 
                         if check_if_fence_i() {
                             self.context.decoder.command_to_execute =
                                 ExecutableCommand::FENCE_I;
+                        } else {
+                            unreachable!();
                         }
-
-                        unreachable!();
                     }
                 }
             }
@@ -1245,7 +1271,7 @@ impl RISC_V_CPU {
     fn instruction_auipc(&mut self) {
         trace!("Executing AUIPC...");
 
-        self.context.execution.result = self.context.PC
+        self.context.execution.result = self.context.PC.read()
             + self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen;
     }
@@ -1383,9 +1409,10 @@ impl RISC_V_CPU {
         if self.context.decoder.source_register_1
             == self.context.decoder.source_register_2
         {
-            self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedImmediate
-                    as SignedXLen as XLen);
+            self.context.execution.branch_target_address =
+                self.context.PC.read()
+                    + (self.context.decoder.immediate as SignedImmediate
+                        as SignedXLen as XLen);
             self.context.decoder.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -1404,9 +1431,10 @@ impl RISC_V_CPU {
         if self.context.decoder.source_register_1
             != self.context.decoder.source_register_2
         {
-            self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedImmediate
-                    as SignedXLen as XLen);
+            self.context.execution.branch_target_address =
+                self.context.PC.read()
+                    + (self.context.decoder.immediate as SignedImmediate
+                        as SignedXLen as XLen);
             self.context.decoder.need_to_branch = true;
         } else {
             trace!("Skip BNE...");
@@ -1423,9 +1451,10 @@ impl RISC_V_CPU {
         if (self.context.decoder.source_register_1 as SignedXLen)
             < (self.context.decoder.source_register_2 as SignedXLen)
         {
-            self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedImmediate
-                    as SignedXLen as XLen);
+            self.context.execution.branch_target_address =
+                self.context.PC.read()
+                    + (self.context.decoder.immediate as SignedImmediate
+                        as SignedXLen as XLen);
             self.context.decoder.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -1440,9 +1469,10 @@ impl RISC_V_CPU {
         if (self.context.decoder.source_register_1 as SignedXLen)
             >= (self.context.decoder.source_register_2 as SignedXLen)
         {
-            self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedImmediate
-                    as SignedXLen as XLen);
+            self.context.execution.branch_target_address =
+                self.context.PC.read()
+                    + (self.context.decoder.immediate as SignedImmediate
+                        as SignedXLen as XLen);
             self.context.decoder.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -1457,9 +1487,10 @@ impl RISC_V_CPU {
         if (self.context.decoder.source_register_1 as UnsignedXLen)
             < (self.context.decoder.source_register_2 as UnsignedXLen)
         {
-            self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedImmediate
-                    as SignedXLen as XLen);
+            self.context.execution.branch_target_address =
+                self.context.PC.read()
+                    + (self.context.decoder.immediate as SignedImmediate
+                        as SignedXLen as XLen);
             self.context.decoder.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -1474,9 +1505,10 @@ impl RISC_V_CPU {
         if (self.context.decoder.source_register_1 as UnsignedXLen)
             >= (self.context.decoder.source_register_2 as UnsignedXLen)
         {
-            self.context.execution.branch_target_address = self.context.PC
-                + (self.context.decoder.immediate as SignedImmediate
-                    as SignedXLen as XLen);
+            self.context.execution.branch_target_address =
+                self.context.PC.read()
+                    + (self.context.decoder.immediate as SignedImmediate
+                        as SignedXLen as XLen);
             self.context.decoder.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -1493,7 +1525,7 @@ impl RISC_V_CPU {
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen))
                 & !(XLen::MAX & 0x01);
-        self.context.execution.result = self.context.PC + RISCV_PC_STEP;
+        self.context.execution.result = self.context.PC.read() + RISCV_PC_STEP;
         // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -1503,10 +1535,10 @@ impl RISC_V_CPU {
     fn instruction_jal(&mut self) {
         trace!("Executing JAL...");
 
-        self.context.execution.jump_target_address = self.context.PC
+        self.context.execution.jump_target_address = self.context.PC.read()
             + (self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen);
-        self.context.execution.result = self.context.PC + RISCV_PC_STEP;
+        self.context.execution.result = self.context.PC.read() + RISCV_PC_STEP;
         // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -1677,7 +1709,7 @@ impl RISC_V_CPU {
                 todo!("unimplemented!");
             }
         }
-        self.context.decoder.zicsr.epc = self.context.PC;
+        self.context.decoder.zicsr.epc = self.context.PC.read();
     }
 
     fn instruction_execution_break(&mut self) {
@@ -1888,7 +1920,7 @@ impl RISC_V_CPU {
         error!(
             "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
         );
-        self.context.PC = target_addr;
+        self.context.PC.write(target_addr);
     }
 
     fn return_to_target_address(&mut self) {
@@ -2006,22 +2038,19 @@ impl RISC_V_CPU {
     }
 
     fn is_need_to_advance_pc(&self) -> bool {
-        if !self.context.decoder.need_to_jump
+        !self.context.decoder.need_to_jump
             && !self.context.decoder.need_to_branch
             && !self.context.decoder.zicsr.need_to_return_from_trap
             && !self.context.decoder.zicsr.need_to_call_trap
-        {
-            true
-        } else {
-            false
-        }
     }
 
     fn advance_pc(&mut self) {
         if self.is_need_to_advance_pc() {
             trace!("Advancing PC...");
 
-            self.context.PC += RISCV_PC_STEP;
+            self.context
+                .PC
+                .write(self.context.PC.read() + RISCV_PC_STEP);
         } else {
             trace!("Skip advancing PC...");
         }
