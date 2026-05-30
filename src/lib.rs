@@ -25,6 +25,7 @@ use constants::soc::*;
 use soc::cpu::core::decoder::constants::*;
 use soc::cpu::core::decoder::decoder::Decoder;
 use soc::cpu::core::executor::constants::ExecutableCommand;
+use soc::cpu::core::executor::executor::ExecutionContext;
 use soc::cpu::core::gp_registers::constants::GPRegisterName;
 use soc::cpu::core::gp_registers::{Register, RegisterFile};
 use soc::cpu::core::registers::RegisterFileInterface;
@@ -40,21 +41,6 @@ impl Decoder {
     fn reset(&mut self) {
         *self = Default::default();
     }
-}
-
-#[derive(Default, Clone)]
-struct ExecutionContext {
-    result: XLen,
-    branch_target_address: XLen,
-    jump_target_address: XLen,
-    return_target_address: XLen,
-    memory_address: XLen,
-    value_to_store_u8: Byte,
-    value_to_store_u16: HalfWord,
-    value_to_store_u32: Word,
-    value_to_store_u64: DoubleWord,
-    // value_to_store_u128: u128,
-    memory_value_type: MemoryValueType,
 }
 
 impl ExecutionContext {
