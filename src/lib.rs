@@ -22,6 +22,7 @@ use log::{debug, error, info, trace, warn};
 // current project imports
 use constants::arch::*;
 use constants::soc::*;
+use soc::cpu::core::core::Context;
 use soc::cpu::core::decoder::constants::*;
 use soc::cpu::core::decoder::decoder::Decoder;
 use soc::cpu::core::executor::constants::ExecutableCommand;
@@ -47,17 +48,6 @@ impl ExecutionContext {
     fn reset(&mut self) {
         *self = Default::default();
     }
-}
-
-#[allow(non_snake_case)]
-#[derive(Clone)]
-pub struct Context {
-    gp_register_file: RegisterFile<RISCV_NUM_OF_REGISTERS>,
-    PC: Register,
-    control_status_registers: CSRFile<RISCV_NUM_OF_CSR>,
-    current_instruction: InstructionType,
-    decoder: Decoder,
-    execution: ExecutionContext,
 }
 
 impl Context {
