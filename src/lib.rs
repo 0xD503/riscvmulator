@@ -23,6 +23,7 @@ use log::{debug, error, info, trace, warn};
 use constants::arch::*;
 use constants::soc::*;
 use soc::cpu::core::decoder::constants::*;
+use soc::cpu::core::decoder::decoder::Decoder;
 use soc::cpu::core::executor::constants::ExecutableCommand;
 use soc::cpu::core::gp_registers::constants::GPRegisterName;
 use soc::cpu::core::gp_registers::{Register, RegisterFile};
@@ -34,50 +35,6 @@ use soc::memory::{MemoryValue, MemoryValueType};
 use soc::memory_bus::{Bus, SystemBus};
 
 use crate::soc::cpu::core::registers::RegisterInterface;
-
-#[allow(non_camel_case_types)]
-#[derive(Default, Clone)]
-struct FENCE_Context {
-    successor_mem_write: bool,
-    successor_mem_read: bool,
-    successor_device_output: bool,
-    successor_device_input: bool,
-
-    predecessor_mem_write: bool,
-    predecessor_mem_read: bool,
-    predecessor_device_output: bool,
-    predecessor_device_input: bool,
-
-    mode: FenceMode,
-}
-
-#[derive(Default, Clone)]
-struct Decoder {
-    opcode: Opcode,
-    source_register_1: XLen,
-    source_register_2: XLen,
-    destination_register_offset: usize,
-
-    funct3: InstructionType,
-    i_funct7: OP_IMM_Funct7,
-    i_funct12: I_Funct12,
-    r_funct7: Funct7,
-
-    shamt: InstructionType,
-    shift_type: OP_IMM_ShiftType,
-
-    immediate: UnsignedImmediate,
-    command_to_execute: ExecutableCommand,
-    need_to_read_memory: bool,
-    need_to_write_memory: bool,
-    need_to_write_back: bool,
-    need_to_jump: bool,
-    need_to_branch: bool,
-
-    fence: FENCE_Context,
-
-    zicsr: ZicsrContext,
-}
 
 impl Decoder {
     fn reset(&mut self) {

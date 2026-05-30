@@ -22,6 +22,7 @@ RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     mold make \
     git \
     less patch \
+    python3 \
     ## convenience tools
     tmux emacs-nox ripgrep fd-find fzf htop lldb \
     ## some options for perverts

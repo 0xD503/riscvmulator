@@ -20,6 +20,8 @@
 - [ ] get rid off `try_into()` if possible
 - [ ] conditionally compile production release with no-op logger implementation
       (or without logger init) and without other libraries (minimize bin size)
+- [ ] comments should be 80-cut as well as code
+- [ ] un'`pub` everything that shouldn't be `pub`
 
 ## Refactor
 
