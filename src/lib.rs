@@ -30,46 +30,14 @@ use soc::cpu::core::executor::executor::ExecutionContext;
 use soc::cpu::core::gp_registers::constants::GPRegisterName;
 use soc::cpu::core::gp_registers::{Register, RegisterFile};
 use soc::cpu::core::registers::RegisterFileInterface;
+use soc::cpu::cpu::RISC_V_CPU;
+use soc::cpu::extensions::zicsr::CSRFile;
 use soc::cpu::extensions::zicsr::constants::CSRRegisterName;
-use soc::cpu::extensions::zicsr::{CSRFile, ZicsrContext};
 use soc::cpu::priveleged::machine::*;
 use soc::memory::{MemoryValue, MemoryValueType};
 use soc::memory_bus::{Bus, SystemBus};
 
 use crate::soc::cpu::core::registers::RegisterInterface;
-
-impl Decoder {
-    fn reset(&mut self) {
-        *self = Default::default();
-    }
-}
-
-impl ExecutionContext {
-    fn reset(&mut self) {
-        *self = Default::default();
-    }
-}
-
-impl Context {
-    fn reset(&mut self) {
-        self.decoder.reset();
-        self.execution.reset();
-        // ..Default::default();
-    }
-}
-
-#[allow(clippy::upper_case_acronyms)]
-#[allow(non_camel_case_types)]
-#[derive(Clone)]
-pub struct RISC_V_CPU {
-    context: Context,
-}
-
-impl RISC_V_CPU {
-    fn reset(&mut self) {
-        self.context.reset();
-    }
-}
 
 pub struct SoC {
     cpu: RISC_V_CPU,

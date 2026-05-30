@@ -15,3 +15,9 @@ pub struct ExecutionContext {
     // value_to_store_u128: u128,
     pub(crate) memory_value_type: MemoryValueType,
 }
+
+impl ExecutionContext {
+    pub fn reset(&mut self) {
+        *self = Default::default();
+    }
+}

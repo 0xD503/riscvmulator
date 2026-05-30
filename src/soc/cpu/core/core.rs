@@ -16,3 +16,10 @@ pub struct Context {
     pub(crate) decoder: Decoder,
     pub(crate) execution: ExecutionContext,
 }
+
+impl Context {
+    pub fn reset(&mut self) {
+        self.decoder.reset();
+        self.execution.reset();
+    }
+}

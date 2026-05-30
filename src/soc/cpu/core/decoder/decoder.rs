@@ -33,6 +33,12 @@ pub struct Decoder {
     pub(crate) zicsr: ZicsrContext,
 }
 
+impl Decoder {
+    pub fn reset(&mut self) {
+        *self = Default::default();
+    }
+}
+
 #[allow(non_camel_case_types)]
 #[derive(Default, Clone)]
 pub struct FENCE_Context {
