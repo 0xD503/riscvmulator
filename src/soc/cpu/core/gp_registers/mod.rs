@@ -1,3 +1,6 @@
+pub mod constants;
+pub mod gp_registers;
+
 use log::trace;
 use toml::value;
 
@@ -6,8 +9,6 @@ use crate::soc::cpu::core::registers::{
     RegisterFileInterface, RegisterInterface,
 };
 use constants::GPRegisterName;
-
-pub mod constants;
 
 #[derive(Default, Copy, Clone, Debug)]
 pub struct Register {

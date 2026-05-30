@@ -487,11 +487,11 @@ impl RISC_V_CPU {
                         match self.context.decoder.fence.mode {
                             FenceMode::NORMAL => {
                                 //
-                                error!("FENCE.NORMAL is unimplemented");
+                                error!("TODO: FENCE.NORMAL is unimplemented");
                             }
                             FenceMode::TSO => {
                                 //
-                                error!("FENCE.TSO is unimplemented");
+                                error!("TODO: FENCE.TSO is unimplemented");
                             }
                         }
 
@@ -1975,7 +1975,7 @@ impl RISC_V_CPU {
                     CSRRegisterName::mepc as usize,
                     self.context.decoder.zicsr.epc as XLen,
                 );
-                error!("Probably implemented incorrectly");
+                error!("TODO: Probably implemented incorrectly");
             }
             MCause_Code::EXCEPTION_ENV_CALL_FROM_S_MODE => {
                 todo!();
