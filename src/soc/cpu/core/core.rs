@@ -1,6 +1,6 @@
 use super::super::extensions::zicsr::CSRFile;
 use super::decoder::decoder::Decoder;
-use super::executor::executor::ExecutionContext;
+use super::executor::executor::Executor;
 use super::gp_registers::{Register, RegisterFile};
 use crate::constants::arch::{
     InstructionType, RISCV_NUM_OF_CSR, RISCV_NUM_OF_REGISTERS,
@@ -14,7 +14,7 @@ pub struct Context {
     pub(crate) control_status_registers: CSRFile<RISCV_NUM_OF_CSR>,
     pub(crate) current_instruction: InstructionType,
     pub(crate) decoder: Decoder,
-    pub(crate) execution: ExecutionContext,
+    pub(crate) execution: Executor,
 }
 
 impl Context {

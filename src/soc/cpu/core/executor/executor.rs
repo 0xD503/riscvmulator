@@ -2,7 +2,7 @@ use crate::constants::arch::{Byte, DoubleWord, HalfWord, Word, XLen};
 use crate::soc::memory::MemoryValueType;
 
 #[derive(Default, Clone)]
-pub struct ExecutionContext {
+pub struct Executor {
     pub(crate) result: XLen,
     pub(crate) branch_target_address: XLen,
     pub(crate) jump_target_address: XLen,
@@ -16,7 +16,7 @@ pub struct ExecutionContext {
     pub(crate) memory_value_type: MemoryValueType,
 }
 
-impl ExecutionContext {
+impl Executor {
     pub fn reset(&mut self) {
         *self = Default::default();
     }

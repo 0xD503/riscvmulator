@@ -26,7 +26,7 @@ use soc::cpu::core::core::Context;
 use soc::cpu::core::decoder::constants::*;
 use soc::cpu::core::decoder::decoder::Decoder;
 use soc::cpu::core::executor::constants::ExecutableCommand;
-use soc::cpu::core::executor::executor::ExecutionContext;
+use soc::cpu::core::executor::executor::Executor;
 use soc::cpu::core::gp_registers::{Register, RegisterFile};
 use soc::cpu::core::registers::RegisterFileInterface;
 use soc::cpu::cpu::RISC_V_CPU;

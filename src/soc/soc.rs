@@ -1,6 +1,6 @@
 use super::cpu::core::core::Context;
 use super::cpu::core::decoder::{constants::Opcode, decoder::Decoder};
-use super::cpu::core::executor::executor::ExecutionContext;
+use super::cpu::core::executor::executor::Executor;
 use super::cpu::core::gp_registers::{Register, RegisterFile};
 use super::cpu::core::registers::{RegisterFileInterface, RegisterInterface};
 use super::cpu::cpu::RISC_V_CPU;
@@ -37,7 +37,7 @@ impl SoC {
                     decoder: Decoder {
                         ..Default::default()
                     },
-                    execution: ExecutionContext {
+                    execution: Executor {
                         result: XLen::MIN,
                         branch_target_address: PC_RESET_VALUE,
                         jump_target_address: PC_RESET_VALUE,
