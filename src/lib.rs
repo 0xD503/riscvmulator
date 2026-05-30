@@ -81,7 +81,7 @@ struct Decoder {
 
 impl Decoder {
     fn reset(&mut self) {
-        // ..Default::default();
+        *self = Default::default();
     }
 }
 
@@ -102,12 +102,12 @@ struct ExecutionContext {
 
 impl ExecutionContext {
     fn reset(&mut self) {
-        // ..Default::default();
+        *self = Default::default();
     }
 }
 
 #[allow(non_snake_case)]
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Context {
     gp_register_file: RegisterFile<RISCV_NUM_OF_REGISTERS>,
     PC: Register,
@@ -127,7 +127,7 @@ impl Context {
 
 #[allow(clippy::upper_case_acronyms)]
 #[allow(non_camel_case_types)]
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct RISC_V_CPU {
     context: Context,
 }
@@ -138,7 +138,6 @@ impl RISC_V_CPU {
     }
 }
 
-#[derive(Default)]
 pub struct SoC {
     cpu: RISC_V_CPU,
     // memory and memory mapped IO

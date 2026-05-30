@@ -6,6 +6,7 @@ use elf::abi::PT_LOAD;
 use elf::endian::AnyEndian;
 use elf::segment::ProgramHeader;
 // use elf::
+use log::error;
 use std::fs;
 use std::path::PathBuf;
 
@@ -26,15 +27,21 @@ pub fn load_elf(file_path: PathBuf, soc: &mut SoC) -> Option<ElfData> {
         .filter(|phdr| phdr.p_type == PT_LOAD)
         .collect();
     // TODO: conditional compilation for test facilities
-    // HTIF_TO_HOST may vary depending on the test, so read its address from
-    // symbol table
-    let syms = file.symbol_table().ok().unwrap().unwrap();
-    let (symtab, strtab) = syms;
-    for sym in symtab {
-        let sym_name = strtab.get(sym.st_name as usize).ok()?;
-        if sym_name == "tohost" {
-            // dbg!("GREPME tohost found");
-            soc.set_htif(sym.st_value);
+    let syms = file
+        .symbol_table()
+        .map_err(|err| {
+            error!("failed to read symbol table: {err}");
+            err
+        })
+        .ok()
+        .flatten();
+    if let Some((symtab, strtab)) = syms {
+        for sym in symtab {
+            let sym_name = strtab.get(sym.st_name as usize).ok()?;
+            if sym_name == "tohost" {
+                // dbg!("GREPME tohost found");
+                soc.set_htif(sym.st_value);
+            }
         }
     }
     // dbg!("GREPMESEC {:?}", syms);
