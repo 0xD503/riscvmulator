@@ -1,5 +1,5 @@
-use crate::MemoryValueType;
 use crate::constants::arch::{Byte, DoubleWord, HalfWord, Word, XLen};
+use crate::soc::memory::MemoryValueType;
 
 #[derive(Default, Clone)]
 pub struct ExecutionContext {

@@ -1,7 +1,11 @@
-// use crate::
+// mod constants;
+// mod soc;
 
 use riscvmulator::elf_loader::load_elf;
-use riscvmulator::{SoC, init};
+// use riscvmulator::{init, soc::soc::SoC};
+use riscvmulator::{init, soc::soc::SoC};
+// use riscvmulator::init;
+// use riscvmulator::soc::soc::SoC;
 
 fn main() {
     let args = init();

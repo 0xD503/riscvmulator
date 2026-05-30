@@ -2,6 +2,7 @@ use clap::Parser;
 
 use crate::utils;
 
+#[allow(non_camel_case_types)]
 pub struct CLI_Args {
     pub input_file: String,
 }
