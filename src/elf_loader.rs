@@ -1,7 +1,7 @@
-use crate::Bus;
 use crate::constants::arch::XLen;
+use crate::soc::memory_bus::Bus;
 // use crate::soc::soc::SoC;
-use crate::SoC;
+use crate::soc::soc::SoC;
 use elf::ElfBytes;
 use elf::abi::PT_LOAD;
 use elf::endian::AnyEndian;

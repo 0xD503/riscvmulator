@@ -25,6 +25,7 @@
 - [ ] `.editorconfig`???
 - [ ] add unit tests
 - [ ] add benchmarks (compare with Spike)
+- [ ] separate code into crates
 
 ## Refactor
 
