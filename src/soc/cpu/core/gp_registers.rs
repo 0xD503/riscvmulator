@@ -1,13 +1,13 @@
 pub mod constants;
-pub mod gp_registers;
 
 use log::trace;
+
+use self::constants::GPRegisterName;
 
 use crate::constants::arch::{RISCV_X0_ZERO_REGISTER_VALUE, XLen};
 use crate::soc::cpu::core::registers::{
     RegisterFileInterface, RegisterInterface,
 };
-use constants::GPRegisterName;
 
 #[derive(Default, Copy, Clone, Debug)]
 pub struct Register {

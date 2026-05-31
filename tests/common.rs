@@ -1,4 +1,4 @@
-use riscvmulator::soc::soc::SoC;
+use riscvmulator::soc::SoC;
 use riscvmulator::{elf_loader::load_elf, init_test};
 
 pub fn run_test(test_path: &'static str) {

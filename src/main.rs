@@ -3,7 +3,7 @@
 
 use riscvmulator::elf_loader::load_elf;
 // use riscvmulator::{init, soc::soc::SoC};
-use riscvmulator::{init, soc::soc::SoC};
+use riscvmulator::{init, soc::SoC};
 // use riscvmulator::init;
 // use riscvmulator::soc::soc::SoC;
 

@@ -1,13 +1,15 @@
-use super::super::executor::constants::ExecutableCommand;
+pub mod constants;
+
+use self::constants::ExecutableCommand;
 
 use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, RISCV_PC_STEP, SignedImmediate, SignedXLen,
     SignedXLen32, UnsignedXLen, Word, XLen, XLen32,
 };
+use crate::soc::cpu::RISC_V_CPU;
 use crate::soc::cpu::core::registers::{
     RegisterFileInterface, RegisterInterface,
 };
-use crate::soc::cpu::cpu::RISC_V_CPU;
 use crate::soc::cpu::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::cpu::priveleged::machine::{
     MCause_Code, MSTATUS_MPP_MASK, MSTATUS_MPP_OFFSET, MStatus_MPP,

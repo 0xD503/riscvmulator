@@ -1,5 +1,5 @@
 use crate::constants::arch::{BusAddrType, Byte, DoubleWord, HalfWord, Word};
-use crate::soc::cpu::cpu::RISC_V_CPU;
+use crate::soc::cpu::RISC_V_CPU;
 use crate::soc::memory::{MemoryValue, MemoryValueType};
 use crate::soc::memory_bus::{Bus, SystemBus};
 

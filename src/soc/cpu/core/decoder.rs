@@ -1,15 +1,18 @@
-use super::super::executor::constants::ExecutableCommand;
-use super::constants::{
+pub mod constants;
+
+use self::constants::{
     BRANCH_Funct3, FenceMode, Funct7, I_Funct12, JALR_Funct3, MISC_MEM_Funct3,
     OP_32_Funct3, OP_Funct3, OP_IMM_32_Funct3, OP_IMM_Funct3, OP_IMM_Funct7,
     OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode, OpcodeToInstructionFormat,
     STORE_Funct3, SYSTEM_Funct3, SYSTEM_Imm_transfer_control_return_from,
 };
 
+use super::executor::constants::ExecutableCommand;
+
 use crate::constants::arch::*;
+use crate::soc::cpu::RISC_V_CPU;
 use crate::soc::cpu::core::gp_registers::constants::GPRegisterName;
 use crate::soc::cpu::core::registers::RegisterFileInterface;
-use crate::soc::cpu::cpu::RISC_V_CPU;
 use crate::soc::cpu::extensions::zicsr::ZicsrContext;
 
 use log::{debug, error, trace};

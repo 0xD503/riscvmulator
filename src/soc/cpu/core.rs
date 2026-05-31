@@ -1,7 +1,17 @@
-use super::super::extensions::zicsr::CSRFile;
-use super::decoder::decoder::Decoder;
-use super::executor::executor::Executor;
-use super::gp_registers::{Register, RegisterFile};
+pub mod decoder;
+pub mod executor;
+pub mod gp_registers;
+pub mod memory_operator;
+pub mod pc_advancer;
+pub mod registers;
+pub mod writeback_unit;
+
+use self::decoder::Decoder;
+use self::executor::Executor;
+use self::gp_registers::{Register, RegisterFile};
+
+use super::extensions::zicsr::CSRFile;
+
 use crate::constants::arch::{
     InstructionType, RISCV_NUM_OF_CSR, RISCV_NUM_OF_REGISTERS,
 };

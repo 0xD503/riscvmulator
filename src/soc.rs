@@ -1,12 +1,16 @@
-use super::cpu::core::core::Context;
-use super::cpu::core::decoder::{constants::Opcode, decoder::Decoder};
-use super::cpu::core::executor::executor::Executor;
-use super::cpu::core::gp_registers::{Register, RegisterFile};
-use super::cpu::core::registers::{RegisterFileInterface, RegisterInterface};
-use super::cpu::cpu::RISC_V_CPU;
-use super::cpu::extensions::zicsr::CSRFile;
-use super::memory::MemoryValueType;
-use super::memory_bus::{Bus, SystemBus};
+pub mod cpu;
+pub mod memory;
+pub mod memory_bus;
+
+use self::cpu::RISC_V_CPU;
+use self::cpu::core::Context;
+use self::cpu::core::decoder::{Decoder, constants::Opcode};
+use self::cpu::core::executor::Executor;
+use self::cpu::core::gp_registers::{Register, RegisterFile};
+use self::cpu::core::registers::{RegisterFileInterface, RegisterInterface};
+use self::cpu::extensions::zicsr::CSRFile;
+use self::memory::MemoryValueType;
+use self::memory_bus::{Bus, SystemBus};
 use crate::constants::arch::Byte;
 use crate::constants::arch::{
     BusAddrType, RISCV_NUM_OF_REGISTERS, RISCV_PC_STEP,

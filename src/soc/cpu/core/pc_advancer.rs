@@ -1,6 +1,6 @@
 use crate::constants::arch::RISCV_PC_STEP;
+use crate::soc::cpu::RISC_V_CPU;
 use crate::soc::cpu::core::registers::RegisterInterface;
-use crate::soc::cpu::cpu::RISC_V_CPU;
 
 use log::trace;
 

@@ -1,8 +1,8 @@
 // use super::
 
 use crate::constants::arch::XLen;
+use crate::soc::cpu::RISC_V_CPU;
 use crate::soc::cpu::core::registers::RegisterFileInterface;
-use crate::soc::cpu::cpu::RISC_V_CPU;
 use crate::soc::cpu::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::cpu::priveleged::machine::MCause_Code;
 

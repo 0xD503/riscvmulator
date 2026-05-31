@@ -1,7 +1,11 @@
-use super::core::core::Context;
+pub mod core;
+pub mod extensions;
+pub mod priveleged;
+
+use self::core::Context;
+use self::core::registers::RegisterInterface;
 
 use crate::constants::arch::XLen;
-use crate::soc::cpu::core::registers::RegisterInterface;
 
 #[allow(clippy::upper_case_acronyms)]
 #[allow(non_camel_case_types)]
