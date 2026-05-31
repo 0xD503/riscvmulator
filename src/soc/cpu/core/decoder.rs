@@ -15,7 +15,7 @@ use crate::soc::cpu::core::gp_registers::{
     RegisterFile, constants::GPRegisterName,
 };
 use crate::soc::cpu::core::registers::RegisterFileInterface;
-use crate::soc::cpu::extensions::zicsr::ZicsrContext;
+use crate::soc::cpu::extensions::zicsr::DecoderZicsrContext;
 
 use log::{debug, error, trace};
 
@@ -40,11 +40,10 @@ pub struct Decoder {
     pub(crate) need_to_write_memory: bool,
     pub(crate) need_to_write_back: bool,
     pub(crate) need_to_jump: bool,
-    pub(crate) need_to_branch: bool,
 
     pub(crate) fence: FENCE_Context,
 
-    pub(crate) zicsr: ZicsrContext,
+    pub(crate) zicsr: DecoderZicsrContext,
 }
 
 impl Decoder {
@@ -87,7 +86,6 @@ impl Decoder {
         self.need_to_write_memory = false;
         self.need_to_write_back = true;
         self.need_to_jump = false;
-        self.need_to_branch = false;
         self.zicsr.need_to_read_csr = false;
         self.zicsr.need_to_write_csr = false;
         self.zicsr.need_to_return_from_trap = false;
@@ -230,7 +228,6 @@ impl Decoder {
         self.need_to_write_memory = false;
         self.need_to_write_back = true;
         self.need_to_jump = false;
-        self.need_to_branch = false;
         self.zicsr.need_to_read_csr = false;
         self.zicsr.need_to_write_csr = false;
         self.zicsr.need_to_return_from_trap = false;
@@ -573,7 +570,6 @@ impl Decoder {
         self.need_to_write_memory = true;
         self.need_to_write_back = false;
         self.need_to_jump = false;
-        self.need_to_branch = false;
         self.zicsr.need_to_read_csr = false;
         self.zicsr.need_to_write_csr = false;
         self.zicsr.need_to_return_from_trap = false;
@@ -625,7 +621,6 @@ impl Decoder {
         self.need_to_write_memory = false;
         self.need_to_write_back = false;
         self.need_to_jump = false;
-        self.need_to_branch = false; // set to true only branch is needed (during exectuion stage)
         self.zicsr.need_to_read_csr = false;
         self.zicsr.need_to_write_csr = false;
         self.zicsr.need_to_return_from_trap = false;
@@ -680,7 +675,6 @@ impl Decoder {
         self.need_to_write_memory = false;
         self.need_to_write_back = true;
         self.need_to_jump = false;
-        self.need_to_branch = false;
         self.zicsr.need_to_read_csr = false;
         self.zicsr.need_to_write_csr = false;
         self.zicsr.need_to_return_from_trap = false;
@@ -710,7 +704,6 @@ impl Decoder {
         self.need_to_write_memory = false;
         self.need_to_write_back = true;
         self.need_to_jump = true;
-        self.need_to_branch = false;
         self.zicsr.need_to_read_csr = false;
         self.zicsr.need_to_write_csr = false;
         self.zicsr.need_to_return_from_trap = false;

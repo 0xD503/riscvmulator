@@ -29,7 +29,11 @@ impl RISC_V_CPU {
             .decode(&self.context.fetch_unit, &self.context.gp_register_file);
     }
 
-    // pub(in crate::soc) fn execute(&mut self) {
-    //     self.context.executor.execute();
-    // }
+    pub(in crate::soc) fn execute(&mut self) {
+        self.context.executor.execute(
+            &self.context.decoder,
+            &self.context.control_status_registers,
+            &self.context.PC,
+        );
+    }
 }

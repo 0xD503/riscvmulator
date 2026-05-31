@@ -66,22 +66,22 @@ impl RISC_V_CPU {
     fn trap_to_target_address(&mut self) {
         trace!(
             "Calling trap handler at addr: {:#018X?}...",
-            self.context.decoder.zicsr.trap_vector
+            self.context.executor.zicsr.trap_vector
         );
 
-        self.set_pc_to_target_address(self.context.decoder.zicsr.trap_vector);
+        self.set_pc_to_target_address(self.context.executor.zicsr.trap_vector);
     }
 
     fn call_trap_handler(&mut self) {
-        match self.context.decoder.zicsr.trap_cause {
+        match self.context.executor.zicsr.trap_cause {
             MCause_Code::EXCEPTION_ENV_CALL_FROM_U_MODE => {
                 self.context.control_status_registers.write(
                     CSRRegisterName::mcause as usize,
-                    self.context.decoder.zicsr.trap_cause.clone() as XLen,
+                    self.context.executor.zicsr.trap_cause.clone() as XLen,
                 );
                 self.context.control_status_registers.write(
                     CSRRegisterName::mepc as usize,
-                    self.context.decoder.zicsr.epc as XLen,
+                    self.context.executor.zicsr.epc as XLen,
                 );
                 error!("TODO: Probably implemented incorrectly");
             }
@@ -91,11 +91,11 @@ impl RISC_V_CPU {
             MCause_Code::EXCEPTION_ENV_CALL_FROM_M_MODE => {
                 self.context.control_status_registers.write(
                     CSRRegisterName::mcause as usize,
-                    self.context.decoder.zicsr.trap_cause.clone() as XLen,
+                    self.context.executor.zicsr.trap_cause.clone() as XLen,
                 );
                 self.context.control_status_registers.write(
                     CSRRegisterName::mepc as usize,
-                    self.context.decoder.zicsr.epc as XLen,
+                    self.context.executor.zicsr.epc as XLen,
                 );
             }
 
@@ -114,7 +114,7 @@ impl RISC_V_CPU {
 
         self.context
             .control_status_registers
-            .write(register_offset, self.context.decoder.zicsr.csr_value);
+            .write(register_offset, self.context.executor.zicsr.csr_value);
     }
 
     pub fn write_back(&mut self) {
@@ -126,7 +126,7 @@ impl RISC_V_CPU {
                 self.jump_to_target_address();
                 return;
             }
-        } else if self.context.decoder.need_to_branch {
+        } else if self.context.executor.need_to_branch {
             self.branch_to_target_address();
             return;
         }

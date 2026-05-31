@@ -8,7 +8,7 @@ impl RISC_V_CPU {
     // advancing PC
     fn is_need_to_advance_pc(&self) -> bool {
         !self.context.decoder.need_to_jump
-            && !self.context.decoder.need_to_branch
+            && !self.context.executor.need_to_branch
             && !self.context.decoder.zicsr.need_to_return_from_trap
             && !self.context.decoder.zicsr.need_to_call_trap
     }

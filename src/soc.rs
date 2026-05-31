@@ -22,6 +22,7 @@ use crate::constants::soc::{
     INITIAL_INSTRUCTION, MEM_RESET_VALUE, PC_RESET_VALUE, RAM_BASE, RAM_END,
     RAM_SIZE,
 };
+use crate::soc::cpu::extensions::zicsr::ExecutorZicsrContext;
 
 use log::trace;
 
@@ -54,11 +55,17 @@ impl SoC {
                         value_to_store_u32: Default::default(),
                         value_to_store_u64: Default::default(),
                         memory_value_type: MemoryValueType::DOUBLE_WORD,
+                        need_to_branch: false,
+                        zicsr: ExecutorZicsrContext {
+                            csr_value: Default::default(),
+                            trap_cause: Default::default(),
+                            trap_vector: Default::default(),
+                            epc: Default::default(),
+                        },
                     },
                 },
             },
             bus: SystemBus::new(MEM_RESET_VALUE, RAM_SIZE),
-            // ..Default::default()
         }
     }
 
