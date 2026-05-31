@@ -833,13 +833,15 @@ impl RISC_V_CPU {
 
     fn extract_opcode(&self) -> Opcode {
         Opcode::from(
-            ((self.context.current_instruction >> BIT_OFFSET_OPCODE)
+            ((self.context.fetch_unit.current_instruction()
+                >> BIT_OFFSET_OPCODE)
                 & MASK_OPCODE) as u8,
         )
     }
 
     fn extract_source_register_1_index(&self) -> usize {
-        ((self.context.current_instruction >> BIT_OFFSET_SOURCE_REGISTER_1)
+        ((self.context.fetch_unit.current_instruction()
+            >> BIT_OFFSET_SOURCE_REGISTER_1)
             & MASK_SOURCE_REGISTER_1) as usize
     }
 
@@ -850,7 +852,8 @@ impl RISC_V_CPU {
     }
 
     fn extract_source_register_2_index(&self) -> usize {
-        ((self.context.current_instruction >> BIT_OFFSET_SOURCE_REGISTER_2)
+        ((self.context.fetch_unit.current_instruction()
+            >> BIT_OFFSET_SOURCE_REGISTER_2)
             & MASK_SOURCE_REGISTER_2) as usize
     }
 
@@ -861,7 +864,8 @@ impl RISC_V_CPU {
     }
 
     fn extract_destination_register_index(&self) -> usize {
-        ((self.context.current_instruction >> BIT_OFFSET_DESTINATION_REGISTER)
+        ((self.context.fetch_unit.current_instruction()
+            >> BIT_OFFSET_DESTINATION_REGISTER)
             & MASK_DESTINATION_REGISTER) as usize
     }
 
@@ -872,26 +876,30 @@ impl RISC_V_CPU {
     }
 
     fn extract_funct3(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_FUNCT3) & MASK_FUNCT3
+        (self.context.fetch_unit.current_instruction() >> BIT_OFFSET_FUNCT3)
+            & MASK_FUNCT3
     }
 
     fn extract_i_funct7(&self) -> OP_IMM_Funct7 {
         From::from(
-            (self.context.current_instruction >> BIT_OFFSET_R_FUNCT7_RV64W)
+            (self.context.fetch_unit.current_instruction()
+                >> BIT_OFFSET_R_FUNCT7_RV64W)
                 & MASK_R_FUNCT7_RV64W,
         )
     }
 
     fn extract_shift_type(&self) -> OP_IMM_ShiftType {
         From::from(
-            (self.context.current_instruction >> BIT_OFFSET_SHTYPE)
+            (self.context.fetch_unit.current_instruction()
+                >> BIT_OFFSET_SHTYPE)
                 & MASK_SHTYPE,
         )
     }
 
     fn extract_r_funct7(&self) -> Funct7 {
         From::from(
-            (self.context.current_instruction >> BIT_OFFSET_R_FUNCT7)
+            (self.context.fetch_unit.current_instruction()
+                >> BIT_OFFSET_R_FUNCT7)
                 & MASK_R_FUNCT7,
         )
     }
@@ -907,77 +915,78 @@ impl RISC_V_CPU {
     }
 
     fn extract_i_shamt(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT
+        (self.context.fetch_unit.current_instruction() >> BIT_OFFSET_SHAMT)
+            & MASK_SHAMT
     }
 
     fn extract_i_shamt_rv64w(&self) -> InstructionType {
-        (self.context.current_instruction >> BIT_OFFSET_SHAMT)
+        (self.context.fetch_unit.current_instruction() >> BIT_OFFSET_SHAMT)
             & MASK_SHAMT_RV64W
     }
 
     fn extract_imm_11_0(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
-        (self.context.current_instruction as SignedInstructionType
+        (self.context.fetch_unit.current_instruction() as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL))
             as SignedXLen
     }
 
     fn extract_fence_sw(&self) -> bool {
-        (self.context.current_instruction & MASK_I_FENCE_SW) != 0
+        (self.context.fetch_unit.current_instruction() & MASK_I_FENCE_SW) != 0
     }
 
     fn extract_fence_sr(&self) -> bool {
-        (self.context.current_instruction & MASK_I_FENCE_SR) != 0
+        (self.context.fetch_unit.current_instruction() & MASK_I_FENCE_SR) != 0
     }
 
     fn extract_fence_so(&self) -> bool {
-        (self.context.current_instruction & MASK_I_FENCE_SO) != 0
+        (self.context.fetch_unit.current_instruction() & MASK_I_FENCE_SO) != 0
     }
 
     fn extract_fence_si(&self) -> bool {
-        (self.context.current_instruction & MASK_I_FENCE_SI) != 0
+        (self.context.fetch_unit.current_instruction() & MASK_I_FENCE_SI) != 0
     }
 
     fn extract_fence_pw(&self) -> bool {
-        (self.context.current_instruction & MASK_I_FENCE_PW) != 0
+        (self.context.fetch_unit.current_instruction() & MASK_I_FENCE_PW) != 0
     }
 
     fn extract_fence_pr(&self) -> bool {
-        (self.context.current_instruction & MASK_I_FENCE_PR) != 0
+        (self.context.fetch_unit.current_instruction() & MASK_I_FENCE_PR) != 0
     }
 
     fn extract_fence_po(&self) -> bool {
-        (self.context.current_instruction & MASK_I_FENCE_PO) != 0
+        (self.context.fetch_unit.current_instruction() & MASK_I_FENCE_PO) != 0
     }
 
     fn extract_fence_pi(&self) -> bool {
-        (self.context.current_instruction & MASK_I_FENCE_PI) != 0
+        (self.context.fetch_unit.current_instruction() & MASK_I_FENCE_PI) != 0
     }
 
     fn extract_fence_fm(&self) -> FenceMode {
         FenceMode::from(
-            (self.context.current_instruction & MASK_I_FENCE_FM)
+            (self.context.fetch_unit.current_instruction() & MASK_I_FENCE_FM)
                 >> BIT_OFFSET_I_FENCE_FM,
         )
     }
 
     fn extract_csr_address(&self) -> UnsignedImmediate {
-        self.context.current_instruction
+        self.context.fetch_unit.current_instruction()
             >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL)
     }
 
     fn extract_imm_11_5(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
-        (self.context.current_instruction as SignedInstructionType
+        (self.context.fetch_unit.current_instruction() as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_5 - BIT_OFFSET_IMM_11_5_FINAL))
             as SignedXLen
             & !((1 << BIT_OFFSET_IMM_11_5_FINAL) - 1)
     }
 
     fn extract_imm_4_0(&self) -> UnsignedImmediate {
-        (self.context.current_instruction
+        (self.context.fetch_unit.current_instruction()
             >> (BIT_OFFSET_IMM_4_0 - BIT_OFFSET_IMM_4_0_FINAL))
             & MASK_IMM_4_0
     }
@@ -985,38 +994,38 @@ impl RISC_V_CPU {
     fn extract_imm_31_12(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
-        (self.context.current_instruction as SignedInstructionType
+        (self.context.fetch_unit.current_instruction() as SignedInstructionType
             >> (BIT_OFFSET_IMM_31_12 - BIT_OFFSET_IMM_31_12_FINAL))
             as SignedXLen
             & !((1 << BIT_OFFSET_IMM_31_12_FINAL) - 1)
     }
 
     fn extract_imm_10_5(&self) -> UnsignedImmediate {
-        (self.context.current_instruction
+        (self.context.fetch_unit.current_instruction()
             >> (BIT_OFFSET_IMM_10_5 - BIT_OFFSET_IMM_10_5_FINAL))
             & MASK_IMM_10_5
     }
 
     fn extract_imm_4_1(&self) -> UnsignedImmediate {
-        (self.context.current_instruction
+        (self.context.fetch_unit.current_instruction()
             >> (BIT_OFFSET_IMM_4_1 - BIT_OFFSET_IMM_4_1_FINAL))
             & MASK_IMM_4_1
     }
 
     fn extract_imm_10_1(&self) -> UnsignedImmediate {
-        (self.context.current_instruction
+        (self.context.fetch_unit.current_instruction()
             >> (BIT_OFFSET_IMM_10_1 - BIT_OFFSET_IMM_10_1_FINAL))
             & MASK_IMM_10_1
     }
 
     fn extract_imm_19_12(&self) -> UnsignedImmediate {
-        (self.context.current_instruction
+        (self.context.fetch_unit.current_instruction()
             >> (BIT_OFFSET_IMM_19_12 - BIT_OFFSET_IMM_19_12_FINAL))
             & MASK_IMM_19_12
     }
 
     fn extract_b_11(&self) -> UnsignedImmediate {
-        (self.context.current_instruction
+        (self.context.fetch_unit.current_instruction()
             << (BIT_OFFSET_B_11_FINAL - BIT_OFFSET_B_11))
             & MASK_B_11
     }
@@ -1024,13 +1033,13 @@ impl RISC_V_CPU {
     fn extract_b_12(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
-        (self.context.current_instruction as SignedInstructionType
+        (self.context.fetch_unit.current_instruction() as SignedInstructionType
             >> (BIT_OFFSET_B_12 - BIT_OFFSET_B_12_FINAL)) as SignedXLen
             & !((1 << BIT_OFFSET_B_12_FINAL) - 1)
     }
 
     fn extract_j_11(&self) -> UnsignedImmediate {
-        (self.context.current_instruction
+        (self.context.fetch_unit.current_instruction()
             >> (BIT_OFFSET_J_11 - BIT_OFFSET_J_11_FINAL))
             & MASK_J_11
     }
@@ -1038,7 +1047,8 @@ impl RISC_V_CPU {
     fn extract_j_20(&self) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
-        ((self.context.current_instruction as SignedInstructionType)
+        ((self.context.fetch_unit.current_instruction()
+            as SignedInstructionType)
             >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL)) as SignedXLen
             & !((1 << BIT_OFFSET_J_20_FINAL) - 1)
     }

@@ -24,3 +24,7 @@ elf = { version = "0.8.0" }
 # [toolchain]
 # ## use fixed `major`/`minor`, but latest `patch` version
 # #channel = "1.999"
+
+[profile.release]
+lto = true
+codegen-units = 1

@@ -6,11 +6,13 @@ use self::cpu::RISC_V_CPU;
 use self::cpu::core::Context;
 use self::cpu::core::decoder::{Decoder, constants::Opcode};
 use self::cpu::core::executor::Executor;
+use self::cpu::core::fetch_unit::FetchUnit;
 use self::cpu::core::gp_registers::{Register, RegisterFile};
 use self::cpu::core::registers::{RegisterFileInterface, RegisterInterface};
 use self::cpu::extensions::zicsr::CSRFile;
 use self::memory::MemoryValueType;
 use self::memory_bus::{Bus, SystemBus};
+
 use crate::constants::arch::Byte;
 use crate::constants::arch::{
     BusAddrType, RISCV_NUM_OF_REGISTERS, RISCV_PC_STEP,
@@ -37,7 +39,7 @@ impl SoC {
                     PC: Register::new(PC_RESET_VALUE),
                     gp_register_file: RegisterFile::new(),
                     control_status_registers: CSRFile::new(),
-                    current_instruction: INITIAL_INSTRUCTION,
+                    fetch_unit: FetchUnit::new(INITIAL_INSTRUCTION),
                     decoder: Decoder {
                         ..Default::default()
                     },
@@ -66,12 +68,14 @@ impl SoC {
             self.cpu.context.PC
         );
 
-        self.cpu.context.current_instruction =
-            self.bus.read(self.cpu.context.PC.read());
+        self.cpu
+            .context
+            .fetch_unit
+            .set_current_instruction(self.bus.read(self.cpu.context.PC.read()));
 
         trace!(
             "Fetched instruction: {:#018X?}",
-            self.cpu.context.current_instruction
+            self.cpu.context.fetch_unit.current_instruction()
         );
     }
 
@@ -87,7 +91,10 @@ impl SoC {
                 .gp_register_file
                 .write(i, RISCV_X0_ZERO_REGISTER_VALUE);
         }
-        self.cpu.context.current_instruction = INITIAL_INSTRUCTION;
+        self.cpu
+            .context
+            .fetch_unit
+            .set_current_instruction(INITIAL_INSTRUCTION);
 
         // fill memory with NOP's
         self.bus.memory_reset();
