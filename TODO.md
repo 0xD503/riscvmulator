@@ -23,6 +23,7 @@
 - [ ] comments should be 80-cut as well as code
 - [ ] un'`pub` everything that shouldn't be `pub`
 - [ ] `.editorconfig`???
+- [ ] add unit tests
 
 ## Refactor
 
