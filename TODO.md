@@ -24,6 +24,7 @@
 - [ ] un'`pub` everything that shouldn't be `pub`
 - [ ] `.editorconfig`???
 - [ ] add unit tests
+- [ ] add benchmarks (compare with Spike)
 
 ## Refactor
 

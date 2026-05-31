@@ -10,10 +10,14 @@ FROM rust:1.95-slim-${DISTRO_RELEASE_VER} AS ${DEV_CONTAINER_NAME}
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
 ARG BUILD_TYPE=release
+ARG DEV_UID=1000
+ARG DEV_GID=1000
+ARG DEV_USERNAME=appdev
+ARG DEV_GROUPNAME=appdev
 
 
 ## install RISC-V toolchain, build deps and clean cache to keep the image small
-RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
+RUN apt-get update && apt-get install --assume-yes \
     --no-install-recommends \
     gcc-riscv64-linux-gnu gcc-riscv64-unknown-elf \
     binutils-riscv64-linux-gnu binutils-riscv64-unknown-elf \
@@ -30,6 +34,9 @@ RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt \
     && cargo install just
+
+RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
+    && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME}
 
 ## set WORKDIR
 WORKDIR ${WD}
@@ -52,6 +59,9 @@ RUN rm -rf src
 COPY . .
 RUN touch src/main.rs && cargo build --${BUILD_TYPE}
 
+## switch to dev user
+USER ${DEV_USERNAME}
+
 
 ## 2. RUN stage     ------------------------------------------------------------
 
@@ -68,7 +78,7 @@ ARG RELEASE_LOG_LEVEL=info
 ARG LISTEN_PORT=53732
 
 ## install deps and clean cache to keep the image small
-RUN apt update && apt upgrade --assume-yes && apt install --assume-yes \
+RUN apt-get update && apt-get install --assume-yes \
     --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*

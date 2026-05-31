@@ -47,6 +47,8 @@ services:
     tty: true
     ## command to run on container run: interactive shell
     command: ${USER_SHELL}
+    ## map host identity to container user so bind-mount files stay user's
+    userns_mode: "keep-id"
 
 ## declare named volumes to keep them between container runs
 volumes:
