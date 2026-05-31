@@ -22,4 +22,10 @@ impl RISC_V_CPU {
     pub(crate) fn set_pc(&mut self, value: XLen) {
         self.context.PC.write(value);
     }
+
+    pub(in crate::soc) fn decode(&mut self) {
+        self.context
+            .decoder
+            .decode(&self.context.fetch_unit, &self.context.gp_register_file);
+    }
 }
