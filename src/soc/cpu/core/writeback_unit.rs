@@ -15,12 +15,12 @@ impl RISC_V_CPU {
         trace!(
             "Writing back to register x{register_offset:#?},\
                 value: {:#018X?}...",
-            self.context.execution.result
+            self.context.executor.result
         );
 
         self.context
             .gp_register_file
-            .write(register_offset, self.context.execution.result);
+            .write(register_offset, self.context.executor.result);
     }
 
     fn set_pc_to_target_address(&mut self, target_addr: XLen) {
@@ -33,33 +33,33 @@ impl RISC_V_CPU {
     fn return_to_target_address(&mut self) {
         trace!(
             "Returning from trap to target address: {:#018X?}...",
-            self.context.execution.return_target_address
+            self.context.executor.return_target_address
         );
 
         self.set_pc_to_target_address(
-            self.context.execution.return_target_address,
+            self.context.executor.return_target_address,
         );
     }
 
     fn branch_to_target_address(&mut self) {
         trace!(
             "Updating PC to BTA: {:#018X?}...",
-            self.context.execution.branch_target_address
+            self.context.executor.branch_target_address
         );
 
         self.set_pc_to_target_address(
-            self.context.execution.branch_target_address,
+            self.context.executor.branch_target_address,
         );
     }
 
     fn jump_to_target_address(&mut self) {
         trace!(
             "Updating PC to JTA: {:#018X?}...",
-            self.context.execution.jump_target_address
+            self.context.executor.jump_target_address
         );
 
         self.set_pc_to_target_address(
-            self.context.execution.jump_target_address,
+            self.context.executor.jump_target_address,
         );
     }
 

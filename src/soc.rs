@@ -43,7 +43,7 @@ impl SoC {
                     decoder: Decoder {
                         ..Default::default()
                     },
-                    execution: Executor {
+                    executor: Executor {
                         result: XLen::MIN,
                         branch_target_address: PC_RESET_VALUE,
                         jump_target_address: PC_RESET_VALUE,

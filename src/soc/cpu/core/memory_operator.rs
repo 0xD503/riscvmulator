@@ -11,8 +11,8 @@ impl RISC_V_CPU {
         &mut self,
         bus: &mut SystemBus<BusAddrType>,
     ) {
-        self.context.execution.result = bus
-            .read::<ValType>(self.context.execution.memory_address)
+        self.context.executor.result = bus
+            .read::<ValType>(self.context.executor.memory_address)
             .sign_extend();
     }
 
@@ -20,8 +20,8 @@ impl RISC_V_CPU {
         &mut self,
         bus: &mut SystemBus<BusAddrType>,
     ) {
-        self.context.execution.result = bus
-            .read::<ValType>(self.context.execution.memory_address)
+        self.context.executor.result = bus
+            .read::<ValType>(self.context.executor.memory_address)
             .zero_extend();
     }
 
@@ -29,7 +29,7 @@ impl RISC_V_CPU {
         if self.context.decoder.need_to_read_memory {
             trace!("Executing memory read...");
 
-            match self.context.execution.memory_value_type {
+            match self.context.executor.memory_value_type {
                 MemoryValueType::DOUBLE_WORD => {
                     self.read_memory_signed::<DoubleWord>(bus);
                 }
@@ -55,29 +55,29 @@ impl RISC_V_CPU {
         } else if self.context.decoder.need_to_write_memory {
             trace!("Executing memory write...");
 
-            match self.context.execution.memory_value_type {
+            match self.context.executor.memory_value_type {
                 MemoryValueType::DOUBLE_WORD => {
                     bus.write(
-                        self.context.execution.memory_address,
-                        self.context.execution.value_to_store_u64,
+                        self.context.executor.memory_address,
+                        self.context.executor.value_to_store_u64,
                     );
                 }
                 MemoryValueType::WORD => {
                     bus.write(
-                        self.context.execution.memory_address,
-                        self.context.execution.value_to_store_u32,
+                        self.context.executor.memory_address,
+                        self.context.executor.value_to_store_u32,
                     );
                 }
                 MemoryValueType::HALF_WORD => {
                     bus.write(
-                        self.context.execution.memory_address,
-                        self.context.execution.value_to_store_u16,
+                        self.context.executor.memory_address,
+                        self.context.executor.value_to_store_u16,
                     );
                 }
                 MemoryValueType::BYTE => {
                     bus.write(
-                        self.context.execution.memory_address,
-                        self.context.execution.value_to_store_u8,
+                        self.context.executor.memory_address,
+                        self.context.executor.value_to_store_u8,
                     );
                 }
 

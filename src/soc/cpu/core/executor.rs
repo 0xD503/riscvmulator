@@ -172,59 +172,59 @@ impl RISC_V_CPU {
     fn instruction_load_byte(&mut self) {
         trace!("Executing LB...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.memory_value_type = MemoryValueType::BYTE;
+        self.context.executor.memory_value_type = MemoryValueType::BYTE;
     }
 
     fn instruction_load_half(&mut self) {
         trace!("Executing LH...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.memory_value_type = MemoryValueType::HALF_WORD;
+        self.context.executor.memory_value_type = MemoryValueType::HALF_WORD;
     }
 
     fn instruction_load_word(&mut self) {
         trace!("Executing LW...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.memory_value_type = MemoryValueType::WORD;
+        self.context.executor.memory_value_type = MemoryValueType::WORD;
     }
 
     fn instruction_load_byte_unsigned(&mut self) {
         trace!("Executing LBU...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.memory_value_type =
+        self.context.executor.memory_value_type =
             MemoryValueType::UNSIGNED_BYTE;
     }
 
     fn instruction_load_half_unsigned(&mut self) {
         trace!("Executing LHU...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.memory_value_type =
+        self.context.executor.memory_value_type =
             MemoryValueType::UNSIGNED_HALF_WORD;
     }
 
     fn instruction_addi(&mut self) {
         trace!("Executing ADDI...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             + self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen;
     }
@@ -232,14 +232,14 @@ impl RISC_V_CPU {
     fn instruction_slli(&mut self) {
         trace!("Executing SLLI...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             << self.context.decoder.shamt;
     }
 
     fn instruction_slti(&mut self) {
         trace!("Executing SLTI...");
 
-        self.context.execution.result =
+        self.context.executor.result =
             if (self.context.decoder.source_register_1 as SignedXLen)
                 < (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen)
@@ -253,7 +253,7 @@ impl RISC_V_CPU {
     fn instruction_sltiu(&mut self) {
         trace!("Executing SLTIU...");
 
-        self.context.execution.result =
+        self.context.executor.result =
             if (self.context.decoder.source_register_1 as UnsignedXLen)
                 < (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as UnsignedXLen)
@@ -267,7 +267,7 @@ impl RISC_V_CPU {
     fn instruction_xori(&mut self) {
         trace!("Executing XORI...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             ^ self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen;
     }
@@ -275,14 +275,14 @@ impl RISC_V_CPU {
     fn instruction_srli(&mut self) {
         trace!("Executing SRLI...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             >> self.context.decoder.shamt;
     }
 
     fn instruction_srai(&mut self) {
         trace!("Executing SRAI...");
 
-        self.context.execution.result =
+        self.context.executor.result =
             ((self.context.decoder.source_register_1 as SignedXLen)
                 >> self.context.decoder.shamt) as XLen;
     }
@@ -290,7 +290,7 @@ impl RISC_V_CPU {
     fn instruction_ori(&mut self) {
         trace!("Executing ORI...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             | self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen;
     }
@@ -298,7 +298,7 @@ impl RISC_V_CPU {
     fn instruction_andi(&mut self) {
         trace!("Executing ANDI...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             & self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen;
     }
@@ -306,7 +306,7 @@ impl RISC_V_CPU {
     fn instruction_auipc(&mut self) {
         trace!("Executing AUIPC...");
 
-        self.context.execution.result = self.context.PC.read()
+        self.context.executor.result = self.context.PC.read()
             + self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen;
     }
@@ -314,64 +314,64 @@ impl RISC_V_CPU {
     fn instruction_store_byte(&mut self) {
         trace!("Executing SB...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.value_to_store_u8 =
+        self.context.executor.value_to_store_u8 =
             self.context.decoder.source_register_2 as Byte;
-        self.context.execution.memory_value_type = MemoryValueType::BYTE;
+        self.context.executor.memory_value_type = MemoryValueType::BYTE;
     }
 
     fn instruction_store_half_word(&mut self) {
         trace!("Executing SH...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.value_to_store_u16 =
+        self.context.executor.value_to_store_u16 =
             self.context.decoder.source_register_2 as HalfWord;
-        self.context.execution.memory_value_type = MemoryValueType::HALF_WORD;
+        self.context.executor.memory_value_type = MemoryValueType::HALF_WORD;
     }
 
     fn instruction_store_word(&mut self) {
         trace!("Executing SW...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.value_to_store_u32 =
+        self.context.executor.value_to_store_u32 =
             self.context.decoder.source_register_2 as Word;
-        self.context.execution.memory_value_type = MemoryValueType::WORD;
+        self.context.executor.memory_value_type = MemoryValueType::WORD;
     }
 
     fn instruction_add(&mut self) {
         trace!("Executing ADD...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             + self.context.decoder.source_register_2;
     }
 
     fn instruction_sub(&mut self) {
         trace!("Executing SUB...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             - self.context.decoder.source_register_2;
     }
 
     fn instruction_sll(&mut self) {
         trace!("Executing SLL...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             << self.context.decoder.source_register_2;
     }
 
     fn instruction_slt(&mut self) {
         trace!("Executing SLT...");
 
-        self.context.execution.result =
+        self.context.executor.result =
             if (self.context.decoder.source_register_1 as SignedXLen)
                 < (self.context.decoder.source_register_2 as SignedXLen)
             {
@@ -384,34 +384,33 @@ impl RISC_V_CPU {
     fn instruction_sltu(&mut self) {
         trace!("Executing SLTU...");
 
-        self.context.execution.result =
-            if self.context.decoder.source_register_1
-                < self.context.decoder.source_register_2
-            {
-                1
-            } else {
-                0
-            }
+        self.context.executor.result = if self.context.decoder.source_register_1
+            < self.context.decoder.source_register_2
+        {
+            1
+        } else {
+            0
+        }
     }
 
     fn instruction_xor(&mut self) {
         trace!("Executing XOR...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             ^ self.context.decoder.source_register_2;
     }
 
     fn instruction_srl(&mut self) {
         trace!("Executing SRL...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             >> self.context.decoder.source_register_2;
     }
 
     fn instruction_sra(&mut self) {
         trace!("Executing SRA...");
 
-        self.context.execution.result =
+        self.context.executor.result =
             ((self.context.decoder.source_register_1 as SignedXLen)
                 >> self.context.decoder.source_register_2) as XLen;
     }
@@ -419,21 +418,21 @@ impl RISC_V_CPU {
     fn instruction_or(&mut self) {
         trace!("Executing OR...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             | self.context.decoder.source_register_2;
     }
 
     fn instruction_and(&mut self) {
         trace!("Executing AND...");
 
-        self.context.execution.result = self.context.decoder.source_register_1
+        self.context.executor.result = self.context.decoder.source_register_1
             & self.context.decoder.source_register_2;
     }
 
     fn instruction_lui(&mut self) {
         trace!("Executing LUI...");
 
-        self.context.execution.result = self.context.decoder.immediate
+        self.context.executor.result = self.context.decoder.immediate
             as SignedImmediate
             as SignedXLen as XLen;
     }
@@ -444,7 +443,7 @@ impl RISC_V_CPU {
         if self.context.decoder.source_register_1
             == self.context.decoder.source_register_2
         {
-            self.context.execution.branch_target_address =
+            self.context.executor.branch_target_address =
                 self.context.PC.read()
                     + (self.context.decoder.immediate as SignedImmediate
                         as SignedXLen as XLen);
@@ -466,7 +465,7 @@ impl RISC_V_CPU {
         if self.context.decoder.source_register_1
             != self.context.decoder.source_register_2
         {
-            self.context.execution.branch_target_address =
+            self.context.executor.branch_target_address =
                 self.context.PC.read()
                     + (self.context.decoder.immediate as SignedImmediate
                         as SignedXLen as XLen);
@@ -486,7 +485,7 @@ impl RISC_V_CPU {
         if (self.context.decoder.source_register_1 as SignedXLen)
             < (self.context.decoder.source_register_2 as SignedXLen)
         {
-            self.context.execution.branch_target_address =
+            self.context.executor.branch_target_address =
                 self.context.PC.read()
                     + (self.context.decoder.immediate as SignedImmediate
                         as SignedXLen as XLen);
@@ -504,7 +503,7 @@ impl RISC_V_CPU {
         if (self.context.decoder.source_register_1 as SignedXLen)
             >= (self.context.decoder.source_register_2 as SignedXLen)
         {
-            self.context.execution.branch_target_address =
+            self.context.executor.branch_target_address =
                 self.context.PC.read()
                     + (self.context.decoder.immediate as SignedImmediate
                         as SignedXLen as XLen);
@@ -522,7 +521,7 @@ impl RISC_V_CPU {
         if (self.context.decoder.source_register_1 as UnsignedXLen)
             < (self.context.decoder.source_register_2 as UnsignedXLen)
         {
-            self.context.execution.branch_target_address =
+            self.context.executor.branch_target_address =
                 self.context.PC.read()
                     + (self.context.decoder.immediate as SignedImmediate
                         as SignedXLen as XLen);
@@ -540,7 +539,7 @@ impl RISC_V_CPU {
         if (self.context.decoder.source_register_1 as UnsignedXLen)
             >= (self.context.decoder.source_register_2 as UnsignedXLen)
         {
-            self.context.execution.branch_target_address =
+            self.context.executor.branch_target_address =
                 self.context.PC.read()
                     + (self.context.decoder.immediate as SignedImmediate
                         as SignedXLen as XLen);
@@ -555,12 +554,12 @@ impl RISC_V_CPU {
     fn instruction_jalr(&mut self) {
         trace!("Executing JALR...");
 
-        self.context.execution.jump_target_address =
+        self.context.executor.jump_target_address =
             (self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen))
                 & !(XLen::MAX & 0x01);
-        self.context.execution.result = self.context.PC.read() + RISCV_PC_STEP;
+        self.context.executor.result = self.context.PC.read() + RISCV_PC_STEP;
         // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -570,10 +569,10 @@ impl RISC_V_CPU {
     fn instruction_jal(&mut self) {
         trace!("Executing JAL...");
 
-        self.context.execution.jump_target_address = self.context.PC.read()
+        self.context.executor.jump_target_address = self.context.PC.read()
             + (self.context.decoder.immediate as SignedImmediate as SignedXLen
                 as XLen);
-        self.context.execution.result = self.context.PC.read() + RISCV_PC_STEP;
+        self.context.executor.result = self.context.PC.read() + RISCV_PC_STEP;
         // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -583,21 +582,21 @@ impl RISC_V_CPU {
     fn instruction_load_double_word(&mut self) {
         trace!("Executing LD...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.memory_value_type = MemoryValueType::DOUBLE_WORD;
+        self.context.executor.memory_value_type = MemoryValueType::DOUBLE_WORD;
     }
 
     fn instruction_load_word_unsigned(&mut self) {
         trace!("Executing LWU...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.memory_value_type =
+        self.context.executor.memory_value_type =
             MemoryValueType::UNSIGNED_WORD;
     }
 
@@ -606,7 +605,7 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             + self.context.decoder.immediate;
-        self.context.execution.result =
+        self.context.executor.result =
             result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
@@ -615,7 +614,7 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             << self.context.decoder.immediate;
-        self.context.execution.result =
+        self.context.executor.result =
             result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
@@ -624,7 +623,7 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             >> self.context.decoder.immediate;
-        self.context.execution.result =
+        self.context.executor.result =
             result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
@@ -637,19 +636,19 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as SignedXLen32)
             >> self.context.decoder.immediate;
-        self.context.execution.result = result32 as SignedXLen as XLen;
+        self.context.executor.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_store_double_word(&mut self) {
         trace!("Executing SD...");
 
-        self.context.execution.memory_address =
+        self.context.executor.memory_address =
             self.context.decoder.source_register_1
                 + (self.context.decoder.immediate as SignedImmediate
                     as SignedXLen as XLen);
-        self.context.execution.value_to_store_u64 =
+        self.context.executor.value_to_store_u64 =
             self.context.decoder.source_register_2;
-        self.context.execution.memory_value_type = MemoryValueType::DOUBLE_WORD;
+        self.context.executor.memory_value_type = MemoryValueType::DOUBLE_WORD;
     }
 
     fn instruction_add_word(&mut self) {
@@ -657,7 +656,7 @@ impl RISC_V_CPU {
 
         let result32 = self.context.decoder.source_register_1 as SignedXLen32
             + self.context.decoder.source_register_2 as SignedXLen32;
-        self.context.execution.result = result32 as SignedXLen as XLen;
+        self.context.executor.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_sub_word(&mut self) {
@@ -665,7 +664,7 @@ impl RISC_V_CPU {
 
         let result32 = self.context.decoder.source_register_1 as SignedXLen32
             - self.context.decoder.source_register_2 as SignedXLen32;
-        self.context.execution.result = result32 as SignedXLen as XLen;
+        self.context.executor.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_shift_left_logical_word(&mut self) {
@@ -673,7 +672,7 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             << self.context.decoder.shamt;
-        self.context.execution.result =
+        self.context.executor.result =
             result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
@@ -682,7 +681,7 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as XLen32)
             >> self.context.decoder.shamt;
-        self.context.execution.result =
+        self.context.executor.result =
             result32 as SignedXLen32 as SignedXLen as XLen;
     }
 
@@ -695,7 +694,7 @@ impl RISC_V_CPU {
 
         let result32 = (self.context.decoder.source_register_1 as SignedXLen32)
             >> self.context.decoder.shamt;
-        self.context.execution.result = result32 as SignedXLen as XLen;
+        self.context.executor.result = result32 as SignedXLen as XLen;
     }
 
     fn instruction_fence(&mut self) {
@@ -771,7 +770,7 @@ impl RISC_V_CPU {
     fn instruction_machine_return(&mut self) {
         trace!("Executing MRET...");
 
-        self.context.execution.return_target_address = self
+        self.context.executor.return_target_address = self
             .context
             .control_status_registers
             .read(CSRRegisterName::mepc as usize);
@@ -846,7 +845,7 @@ impl RISC_V_CPU {
     }
 
     fn read_csr_to_result(&mut self) {
-        self.context.execution.result = self
+        self.context.executor.result = self
             .context
             .control_status_registers
             .read(self.context.decoder.immediate as usize);
