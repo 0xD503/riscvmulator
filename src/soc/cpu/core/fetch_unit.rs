@@ -1,5 +1,5 @@
-use crate::constants::arch::BusAddrType;
-use crate::constants::arch::InstructionType;
+use crate::constants::arch::{BusAddrType, InstructionType};
+use crate::constants::soc::INITIAL_INSTRUCTION;
 use crate::soc::Bus;
 use crate::soc::cpu::core::gp_registers::Register;
 use crate::soc::cpu::core::registers::RegisterInterface;
@@ -17,6 +17,10 @@ impl FetchUnit {
         FetchUnit {
             current_instruction: instr,
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.current_instruction = INITIAL_INSTRUCTION;
     }
 
     pub(in crate::soc::cpu) fn fetch(

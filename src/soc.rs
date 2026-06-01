@@ -3,21 +3,17 @@ pub mod memory;
 pub mod memory_bus;
 
 use self::cpu::RISC_V_CPU;
-use self::cpu::core::Context;
 use self::cpu::core::decoder::{Decoder, constants::Opcode};
 use self::cpu::core::executor::Executor;
 use self::cpu::core::fetch_unit::FetchUnit;
 use self::cpu::core::gp_registers::{Register, RegisterFile};
 use self::cpu::core::registers::{RegisterFileInterface, RegisterInterface};
+use self::cpu::core::{ArchState, Context};
 use self::cpu::extensions::zicsr::CSRFile;
 use self::memory::MemoryValueType;
 use self::memory_bus::{Bus, SystemBus};
 
-use crate::constants::arch::Byte;
-use crate::constants::arch::{
-    BusAddrType, RISCV_NUM_OF_REGISTERS, RISCV_PC_STEP,
-    RISCV_X0_ZERO_REGISTER_VALUE, XLen,
-};
+use crate::constants::arch::{BusAddrType, Byte, RISCV_PC_STEP, XLen};
 use crate::constants::soc::{
     INITIAL_INSTRUCTION, MEM_RESET_VALUE, PC_RESET_VALUE, RAM_BASE, RAM_END,
     RAM_SIZE,
@@ -37,9 +33,11 @@ impl SoC {
         Self {
             cpu: RISC_V_CPU {
                 context: Context {
-                    PC: Register::new(PC_RESET_VALUE),
-                    gp_register_file: RegisterFile::new(),
-                    control_status_registers: CSRFile::new(),
+                    arch_state: ArchState {
+                        PC: Register::new(PC_RESET_VALUE),
+                        gp_register_file: RegisterFile::new(),
+                        control_status_registers: CSRFile::new(),
+                    },
                     fetch_unit: FetchUnit::new(INITIAL_INSTRUCTION),
                     decoder: Decoder {
                         ..Default::default()
@@ -73,16 +71,6 @@ impl SoC {
         self.cpu.reset();
         self.bus.reset();
 
-        self.cpu.context.PC.reset(); // = PC_RESET_VALUE;
-        // register `x0_zero` is hardwired with all bits equal to 0, so do nothing with `x0_zero`
-        for i in 1..RISCV_NUM_OF_REGISTERS {
-            self.cpu
-                .context
-                .gp_register_file
-                .write(i, RISCV_X0_ZERO_REGISTER_VALUE);
-        }
-        self.cpu.context.fetch_unit.current_instruction = INITIAL_INSTRUCTION;
-
         // fill memory with NOP's
         self.bus.memory_reset();
         for addr in (RAM_BASE..RAM_END).step_by(RISCV_PC_STEP as usize) {
@@ -91,7 +79,10 @@ impl SoC {
     }
 
     pub fn step(&mut self) {
-        trace!("Current PC: {:#018X}", self.cpu.context.PC.read());
+        trace!(
+            "Current PC: {:#018X}",
+            self.cpu.context.arch_state.PC.read()
+        );
 
         self.cpu.fetch(&self.bus);
         self.cpu.decode();

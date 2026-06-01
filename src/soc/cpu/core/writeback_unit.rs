@@ -19,6 +19,7 @@ impl RISC_V_CPU {
         );
 
         self.context
+            .arch_state
             .gp_register_file
             .write(register_offset, self.context.executor.result);
     }
@@ -75,11 +76,11 @@ impl RISC_V_CPU {
     fn call_trap_handler(&mut self) {
         match self.context.executor.zicsr.trap_cause {
             MCause_Code::EXCEPTION_ENV_CALL_FROM_U_MODE => {
-                self.context.control_status_registers.write(
+                self.context.arch_state.control_status_registers.write(
                     CSRRegisterName::mcause as usize,
                     self.context.executor.zicsr.trap_cause.clone() as XLen,
                 );
-                self.context.control_status_registers.write(
+                self.context.arch_state.control_status_registers.write(
                     CSRRegisterName::mepc as usize,
                     self.context.executor.zicsr.epc as XLen,
                 );
@@ -89,11 +90,11 @@ impl RISC_V_CPU {
                 todo!();
             }
             MCause_Code::EXCEPTION_ENV_CALL_FROM_M_MODE => {
-                self.context.control_status_registers.write(
+                self.context.arch_state.control_status_registers.write(
                     CSRRegisterName::mcause as usize,
                     self.context.executor.zicsr.trap_cause.clone() as XLen,
                 );
-                self.context.control_status_registers.write(
+                self.context.arch_state.control_status_registers.write(
                     CSRRegisterName::mepc as usize,
                     self.context.executor.zicsr.epc as XLen,
                 );
@@ -113,6 +114,7 @@ impl RISC_V_CPU {
         trace!("Writing to CSR #{register_offset:#?}...");
 
         self.context
+            .arch_state
             .control_status_registers
             .write(register_offset, self.context.executor.zicsr.csr_value);
     }

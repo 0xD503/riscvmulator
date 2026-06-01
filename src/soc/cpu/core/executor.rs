@@ -7,6 +7,7 @@ use crate::constants::arch::{
     SignedImmediate, SignedXLen, SignedXLen32, UnsignedXLen, Word, XLen,
     XLen32,
 };
+use crate::soc::cpu::core::ArchState;
 use crate::soc::cpu::core::decoder::Decoder;
 use crate::soc::cpu::core::gp_registers::Register;
 use crate::soc::cpu::core::registers::{
@@ -210,13 +211,16 @@ impl Executor {
     pub(in crate::soc::cpu) fn execute(
         &mut self,
         decoder: &Decoder,
-        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
-        pc: &Register,
+        arch_state: &ArchState,
     ) {
         // default executor context
         self.need_to_branch = false;
 
-        self.dispatch(decoder, control_status_registers, pc);
+        self.dispatch(
+            decoder,
+            &arch_state.control_status_registers,
+            &arch_state.PC,
+        );
     }
 
     fn instruction_load_byte(&mut self, decoder: &Decoder) {

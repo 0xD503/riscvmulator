@@ -165,6 +165,7 @@ impl<AddrType> Memory<AddrType> {
         trace!("Reading memory at addr: {address:#018X?}");
 
         let address = address - RAM_BASE;
+        // TODO: probably incorrect (possible out of bound access)
         let bytes = (self.byte_array)
             [address as usize..address as usize + size_of::<MemValType>()]
             .try_into()

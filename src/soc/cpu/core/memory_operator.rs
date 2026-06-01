@@ -1,35 +1,36 @@
 use crate::constants::arch::{BusAddrType, Byte, DoubleWord, HalfWord, Word};
-use crate::soc::cpu::RISC_V_CPU;
+use crate::soc::cpu::core::decoder::Decoder;
+use crate::soc::cpu::core::executor::Executor;
 use crate::soc::memory::{MemoryValue, MemoryValueType};
 use crate::soc::memory_bus::{Bus, SystemBus};
 
 use log::{error, trace};
 
-impl RISC_V_CPU {
+impl Executor {
     // memop handlers
     fn read_memory_signed<ValType: MemoryValue>(
         &mut self,
         bus: &mut SystemBus<BusAddrType>,
     ) {
-        self.context.executor.result = bus
-            .read::<ValType>(self.context.executor.memory_address)
-            .sign_extend();
+        self.result = bus.read::<ValType>(self.memory_address).sign_extend();
     }
 
     fn read_memory_unsigned<ValType: MemoryValue>(
         &mut self,
         bus: &mut SystemBus<BusAddrType>,
     ) {
-        self.context.executor.result = bus
-            .read::<ValType>(self.context.executor.memory_address)
-            .zero_extend();
+        self.result = bus.read::<ValType>(self.memory_address).zero_extend();
     }
 
-    pub fn memory_operation(&mut self, bus: &mut SystemBus<BusAddrType>) {
-        if self.context.decoder.need_to_read_memory {
+    pub fn memory_operation(
+        &mut self,
+        bus: &mut SystemBus<BusAddrType>,
+        decoder: &Decoder,
+    ) {
+        if decoder.need_to_read_memory {
             trace!("Executing memory read...");
 
-            match self.context.executor.memory_value_type {
+            match self.memory_value_type {
                 MemoryValueType::DOUBLE_WORD => {
                     self.read_memory_signed::<DoubleWord>(bus);
                 }
@@ -52,33 +53,21 @@ impl RISC_V_CPU {
                     self.read_memory_unsigned::<Byte>(bus);
                 }
             }
-        } else if self.context.decoder.need_to_write_memory {
+        } else if decoder.need_to_write_memory {
             trace!("Executing memory write...");
 
-            match self.context.executor.memory_value_type {
+            match self.memory_value_type {
                 MemoryValueType::DOUBLE_WORD => {
-                    bus.write(
-                        self.context.executor.memory_address,
-                        self.context.executor.value_to_store_u64,
-                    );
+                    bus.write(self.memory_address, self.value_to_store_u64);
                 }
                 MemoryValueType::WORD => {
-                    bus.write(
-                        self.context.executor.memory_address,
-                        self.context.executor.value_to_store_u32,
-                    );
+                    bus.write(self.memory_address, self.value_to_store_u32);
                 }
                 MemoryValueType::HALF_WORD => {
-                    bus.write(
-                        self.context.executor.memory_address,
-                        self.context.executor.value_to_store_u16,
-                    );
+                    bus.write(self.memory_address, self.value_to_store_u16);
                 }
                 MemoryValueType::BYTE => {
-                    bus.write(
-                        self.context.executor.memory_address,
-                        self.context.executor.value_to_store_u8,
-                    );
+                    bus.write(self.memory_address, self.value_to_store_u8);
                 }
 
                 MemoryValueType::UNSIGNED_WORD

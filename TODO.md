@@ -26,6 +26,7 @@
 - [ ] add unit tests
 - [ ] add benchmarks (compare with Spike)
 - [ ] separate code into crates
+- [ ] scripts/commands for building `riscv-tests` and `riscv-arch-test`
 
 ## Refactor
 
@@ -116,8 +117,8 @@ Target layout (module skeletons already exist, just empty):
 
 - [x] Move decoder structs and methods; tests pass
 - [x] Move executor structs and methods; tests pass
-- [ ] Move `Context` and `RISC_V_CPU`; tests pass
-- [ ] Move privilege types; tests pass
+- [x] Move `Context` and `RISC_V_CPU`; tests pass
+- [x] Move privilege types; tests pass
 
 ---
 

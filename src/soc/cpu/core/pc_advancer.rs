@@ -18,8 +18,9 @@ impl RISC_V_CPU {
             trace!("Advancing PC...");
 
             self.context
+                .arch_state
                 .PC
-                .write(self.context.PC.read() + RISCV_PC_STEP);
+                .write(self.context.arch_state.PC.read() + RISCV_PC_STEP);
         } else {
             trace!("Skip advancing PC...");
         }

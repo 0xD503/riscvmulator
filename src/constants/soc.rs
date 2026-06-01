@@ -1,8 +1,8 @@
-use super::arch::{Byte, InstructionType, XLen};
+use super::arch::{Byte, INSTRUCTION_NOP, InstructionType, XLen};
 
 pub const PC_RESET_VALUE: XLen = RAM_BASE;
 
-pub const INITIAL_INSTRUCTION: InstructionType = 0x00000000;
+pub const INITIAL_INSTRUCTION: InstructionType = INSTRUCTION_NOP;
 
 pub const MEM_RESET_VALUE: Byte = 0x00;
 pub const RAM_BASE: XLen = 0x80000000;

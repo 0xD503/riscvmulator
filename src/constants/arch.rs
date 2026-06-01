@@ -1,4 +1,5 @@
 //
+use crate::soc::cpu::core::decoder::constants::Opcode;
 use crate::soc::cpu::privileged::machine::{MXLen, SignedMXLen, UnsignedMXLen};
 
 // XLEN is never greater than MXLEN, but XLEN might be smaller than MXLEN in
@@ -141,8 +142,6 @@ pub const MASK_J_11: InstructionType = 0x01 << BIT_OFFSET_B_11_FINAL;
 pub const BIT_OFFSET_J_20: usize = 31;
 pub const BIT_OFFSET_J_20_FINAL: usize = 20;
 
-//const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
-
 pub const OPCODE_LOAD: u8 = 0b0000011;
 pub const OPCODE_STORE: u8 = 0b0100011;
 pub const OPCODE_MADD: u8 = 0b1000011;
@@ -175,3 +174,5 @@ pub const OPCODE_RESERVED_2: u8 = 0b0011111;
 pub const OPCODE_RESERVED_3: u8 = 0b0111111;
 pub const OPCODE_RESERVED_4: u8 = 0b1011111;
 pub const OPCODE_RESERVED_5: u8 = 0b1111111;
+
+pub const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;
