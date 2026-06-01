@@ -69,23 +69,6 @@ impl SoC {
         }
     }
 
-    fn fetch(&mut self) {
-        trace!(
-            "Fetching instruction at addr: {:#018X?}",
-            self.cpu.context.PC
-        );
-
-        self.cpu
-            .context
-            .fetch_unit
-            .set_current_instruction(self.bus.read(self.cpu.context.PC.read()));
-
-        trace!(
-            "Fetched instruction: {:#018X?}",
-            self.cpu.context.fetch_unit.current_instruction()
-        );
-    }
-
     pub fn reset(&mut self) {
         self.cpu.reset();
         self.bus.reset();
@@ -98,10 +81,7 @@ impl SoC {
                 .gp_register_file
                 .write(i, RISCV_X0_ZERO_REGISTER_VALUE);
         }
-        self.cpu
-            .context
-            .fetch_unit
-            .set_current_instruction(INITIAL_INSTRUCTION);
+        self.cpu.context.fetch_unit.current_instruction = INITIAL_INSTRUCTION;
 
         // fill memory with NOP's
         self.bus.memory_reset();
@@ -113,7 +93,7 @@ impl SoC {
     pub fn step(&mut self) {
         trace!("Current PC: {:#018X}", self.cpu.context.PC.read());
 
-        self.fetch();
+        self.cpu.fetch(&self.bus);
         self.cpu.decode();
         self.cpu.execute();
         self.cpu.memory_operation(&mut self.bus);

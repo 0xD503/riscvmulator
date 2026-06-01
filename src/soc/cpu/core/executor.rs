@@ -14,7 +14,7 @@ use crate::soc::cpu::core::registers::{
 };
 use crate::soc::cpu::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::cpu::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
-use crate::soc::cpu::priveleged::machine::{
+use crate::soc::cpu::privileged::machine::{
     MCause_Code, MSTATUS_MPP_MASK, MSTATUS_MPP_OFFSET, MStatus_MPP,
 };
 use crate::soc::memory::MemoryValueType;

@@ -1,8 +1,15 @@
+use crate::constants::arch::BusAddrType;
 use crate::constants::arch::InstructionType;
+use crate::soc::Bus;
+use crate::soc::cpu::core::gp_registers::Register;
+use crate::soc::cpu::core::registers::RegisterInterface;
+use crate::soc::memory_bus::SystemBus;
+
+use log::trace;
 
 #[derive(Clone)]
 pub struct FetchUnit {
-    current_instruction: InstructionType,
+    pub(crate) current_instruction: InstructionType,
 }
 
 impl FetchUnit {
@@ -12,11 +19,15 @@ impl FetchUnit {
         }
     }
 
-    pub fn current_instruction(&self) -> InstructionType {
-        self.current_instruction
-    }
+    pub(in crate::soc::cpu) fn fetch(
+        &mut self,
+        bus: &SystemBus<BusAddrType>,
+        pc: &Register,
+    ) {
+        trace!("Fetching instruction at addr: {:#018X?}", pc);
 
-    pub fn set_current_instruction(&mut self, value: InstructionType) {
-        self.current_instruction = value;
+        self.current_instruction = bus.read(pc.read());
+
+        trace!("Fetched instruction: {:#018X?}", self.current_instruction);
     }
 }

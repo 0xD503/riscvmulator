@@ -22,7 +22,6 @@ pub struct Context {
     pub(crate) gp_register_file: RegisterFile<RISCV_NUM_OF_REGISTERS>,
     pub(crate) PC: Register,
     pub(crate) control_status_registers: CSRFile<RISCV_NUM_OF_CSR>,
-    // pub(crate) current_instruction: InstructionType,
     pub(crate) fetch_unit: FetchUnit,
     pub(crate) decoder: Decoder,
     pub(crate) executor: Executor,

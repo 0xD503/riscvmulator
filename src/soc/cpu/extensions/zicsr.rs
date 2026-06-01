@@ -6,7 +6,7 @@ use crate::soc::cpu::core::registers::{
 };
 
 pub mod constants;
-use crate::soc::cpu::priveleged::machine::MCause_Code;
+use crate::soc::cpu::privileged::machine::MCause_Code;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Copy, Clone)]
