@@ -1,14 +1,14 @@
 // use super::
 
 use crate::constants::arch::XLen;
-use crate::soc::cpu::RISC_V_CPU;
+use crate::soc::cpu::Hart;
 use crate::soc::cpu::core::registers::RegisterFileInterface;
 use crate::soc::cpu::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::cpu::privileged::machine::MCause_Code;
 
 use log::{error, trace};
 
-impl RISC_V_CPU {
+impl Hart {
     // write back handlers
     fn write_back_to_reg(&mut self) {
         let register_offset = self.context.decoder.destination_register_offset;

@@ -111,13 +111,13 @@ Target layout (module skeletons already exist, just empty):
   `decode()`
 - `soc/cpu/core/executor/mod.rs` — `ExecutionContext`, `execute_*()`, `execute()`
 - `soc/cpu/core/mod.rs` — `Context` struct
-- `soc/cpu/mod.rs` — `RISC_V_CPU`, `memory_operation()`, `write_back()`,
+- `soc/cpu/mod.rs` — `Hart`, `memory_operation()`, `write_back()`,
   `advance_pc()`
 - `soc/cpu/priveleged/` — privilege types currently scattered in lib.rs
 
 - [x] Move decoder structs and methods; tests pass
 - [x] Move executor structs and methods; tests pass
-- [x] Move `Context` and `RISC_V_CPU`; tests pass
+- [x] Move `Context` and `Hart`; tests pass
 - [x] Move privilege types; tests pass
 
 ---

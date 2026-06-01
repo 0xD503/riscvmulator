@@ -2,7 +2,7 @@ pub mod cpu;
 pub mod memory;
 pub mod memory_bus;
 
-use self::cpu::RISC_V_CPU;
+use self::cpu::Hart;
 use self::cpu::core::decoder::{Decoder, constants::Opcode};
 use self::cpu::core::executor::Executor;
 use self::cpu::core::fetch_unit::FetchUnit;
@@ -23,7 +23,7 @@ use crate::soc::cpu::extensions::zicsr::ExecutorZicsrContext;
 use log::trace;
 
 pub struct SoC {
-    pub(crate) cpu: RISC_V_CPU,
+    pub(crate) cpu: Hart,
     // memory and memory mapped IO
     pub(crate) bus: SystemBus<BusAddrType>,
 }
@@ -31,7 +31,7 @@ pub struct SoC {
 impl SoC {
     pub fn new() -> Self {
         Self {
-            cpu: RISC_V_CPU {
+            cpu: Hart {
                 context: Context {
                     arch_state: ArchState {
                         PC: Register::new(PC_RESET_VALUE),

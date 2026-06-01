@@ -1,10 +1,10 @@
 use crate::constants::arch::RISCV_PC_STEP;
-use crate::soc::cpu::RISC_V_CPU;
+use crate::soc::cpu::Hart;
 use crate::soc::cpu::core::registers::RegisterInterface;
 
 use log::trace;
 
-impl RISC_V_CPU {
+impl Hart {
     // advancing PC
     fn is_need_to_advance_pc(&self) -> bool {
         !self.context.decoder.need_to_jump

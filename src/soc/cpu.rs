@@ -8,14 +8,12 @@ use self::core::registers::RegisterInterface;
 use crate::constants::arch::{BusAddrType, XLen};
 use crate::soc::memory_bus::SystemBus;
 
-#[allow(clippy::upper_case_acronyms)]
-#[allow(non_camel_case_types)]
 #[derive(Clone)]
-pub struct RISC_V_CPU {
+pub struct Hart {
     pub(crate) context: Context,
 }
 
-impl RISC_V_CPU {
+impl Hart {
     pub fn reset(&mut self) {
         self.context.reset();
     }
