@@ -3,8 +3,9 @@ pub mod constants;
 use self::constants::{
     BRANCH_Funct3, FenceMode, Funct7, I_Funct12, JALR_Funct3, MISC_MEM_Funct3,
     OP_32_Funct3, OP_Funct3, OP_IMM_32_Funct3, OP_IMM_Funct3, OP_IMM_Funct7,
-    OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode, OpcodeToInstructionFormat,
-    STORE_Funct3, SYSTEM_Funct3, SYSTEM_Imm_transfer_control_return_from,
+    OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant,
+    OpcodeToInstructionFormat, STORE_Funct3, SYSTEM_Funct3,
+    SYSTEM_Imm_transfer_control_return_from,
 };
 
 use super::executor::constants::ExecutableCommand;
@@ -25,6 +26,7 @@ pub struct Decoder {
     pub(crate) source_register_1: XLen,
     pub(crate) source_register_2: XLen,
     pub(crate) destination_register_offset: usize,
+    pub(in crate::soc) instruction_size: OpcodeQuadrant,
 
     pub(crate) funct3: InstructionType,
     pub(crate) i_funct7: OP_IMM_Funct7,

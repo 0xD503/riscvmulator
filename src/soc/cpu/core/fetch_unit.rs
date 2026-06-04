@@ -1,3 +1,5 @@
+use std::ffi::FromBytesUntilNulError;
+
 use crate::constants::arch::{BusAddrType, InstructionType};
 use crate::constants::soc::INITIAL_INSTRUCTION;
 use crate::soc::Bus;
@@ -31,6 +33,9 @@ impl FetchUnit {
         trace!("Fetching instruction at addr: {:#018X?}", pc);
 
         self.current_instruction = bus.read(pc.read());
+        // match From::from(self.current_instruction & (0b11 as InstructionType)) {
+        //     //
+        // }
 
         trace!("Fetched instruction: {:#018X?}", self.current_instruction);
     }

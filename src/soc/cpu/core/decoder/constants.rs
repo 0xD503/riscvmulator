@@ -594,3 +594,31 @@ impl From<Opcode> for OpcodeToInstructionFormat {
         }
     }
 }
+
+#[derive(Default, Clone)]
+pub enum OpcodeQuadrant {
+    Quadrant00 = 0b00,
+    Quadrant01 = 0b01,
+    Quadrant10 = 0b10,
+    #[default]
+    Quadrant11 = 0b11,
+}
+
+impl From<InstructionType> for OpcodeQuadrant {
+    fn from(quadrant: InstructionType) -> Self {
+        match quadrant {
+            0b11 => OpcodeQuadrant::Quadrant11,
+            0b10 => OpcodeQuadrant::Quadrant10,
+            0b01 => OpcodeQuadrant::Quadrant01,
+            0b00 => OpcodeQuadrant::Quadrant00,
+
+            _ => {
+                error!("Opcode quadrant is unreachable: {:#04b}", quadrant);
+                unreachable!(
+                    "Opcode quadrant is unreachable: {:#04b}",
+                    quadrant
+                );
+            }
+        }
+    }
+}
