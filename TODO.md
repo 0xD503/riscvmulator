@@ -81,7 +81,7 @@ These decisions affect every phase below; resolve them upfront.
 - **Device scripting**: Wasm via `wasmtime`; design `Device` trait signatures to be
   WIT-expressible from the start (no closures, no borrowed data across boundary)
   so a `WasmDevice` adapter can be added later without changing the trait
-- **Hardware description — single source of truth**: `emulator.toml` is the *only*
+- **Hardware description — single source of truth**: `emulator.toml` is the _only_
   human-authored description of the machine. The guest's device tree is a derived
   artifact, never hand-written:
   `config.toml → (generate) machine.dts → (dtc) machine.dtb → guest`. The emulator
@@ -92,7 +92,7 @@ These decisions affect every phase below; resolve them upfront.
   different consumers (emulator vs. OpenSBI/Linux); hand-authoring both guarantees
   drift (move a base address in config, forget the DTS, kernel hangs). A static DTB
   is also incompatible with runtime-configurable devices + hot-plug + Wasm plugins.
-  Generation is a *merge*: config supplies the chosen values (addresses, IRQs, RAM,
+  Generation is a _merge_: config supplies the chosen values (addresses, IRQs, RAM,
   harts); each `Device` impl supplies its own DT boilerplate (`compatible`, cell
   counts, phandles) — so the `Device` trait must be "describe-yourself-in-DT"-able,
   the same forward-design discipline as making it WIT-compatible. Host-only fields
@@ -107,10 +107,10 @@ These decisions affect every phase below; resolve them upfront.
   builds on a 16/32-bit-aware foundation; compressed instruction size tracked in
   decoder context; `advance_pc()` uses that value
 - **Multicore model**: harts as `Vec<Hart>` over a shared `Send`/`Sync` bus
-  (`ArchState` is the per-hart seam). Introduce the multi-hart *structure* early
+  (`ArchState` is the per-hart seam). Introduce the multi-hart _structure_ early
   (Phase 5) — same philosophy as the C-readiness fetch redesign — so every
   later device/extension/MMU phase is SMP-aware from the start. The SMP
-  *semantics* (cross-hart atomics, IPIs, per-hart interrupt contexts) are
+  _semantics_ (cross-hart atomics, IPIs, per-hart interrupt contexts) are
   completed in the phases that own them, not all at once in Phase 5.
 - **Crate layout**: extract the SoC into a workspace crate under `crates/`
   (Phase 7) once the outward/embedder API — construct, configure, attach
@@ -177,7 +177,7 @@ detect this at the instruction boundary so all subsequent work is C-aware.
       array — eliminates heap allocation on every store instruction
 - [ ] Remove unused phantom type from `Memory<AddrType>`
 - [ ] Remove unused phantom type from `SystemBus<AddrType>`
-- [ ] Bounds-check the *full* access, not just the start address: a multi-byte
+- [ ] Bounds-check the _full_ access, not just the start address: a multi-byte
       load/store straddling `RAM_END` currently slices past the `Vec` and panics
       unintentionally (this is a real bug, not an ISA placeholder)
 
@@ -201,10 +201,10 @@ detect this at the instruction boundary so all subsequent work is C-aware.
 
 Depends on: Phase 1 (`ArchState` per-hart seam), Phase 4 (hart count from config)
 
-Introduce the multi-hart *structure* early — like the C-readiness fetch
+Introduce the multi-hart _structure_ early — like the C-readiness fetch
 redesign — so all subsequent device/extension/MMU work is built SMP-aware from
 the start. This phase delivers plumbing and the run-loop model; the SMP
-*semantics* are completed in the phases that own them (marked "(later)").
+_semantics_ are completed in the phases that own them (marked "(later)").
 
 - [ ] `SoC` owns `harts: Vec<Hart>` instead of a single hart; each hart has a
       `hartid`
