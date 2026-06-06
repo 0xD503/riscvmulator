@@ -30,8 +30,10 @@ pub enum MemoryValueType {
 }
 
 pub trait MemoryValue: Sized {
+    type Bytes: AsRef<[Byte]>;
+
     fn from_le_bytes(bytes: &[Byte]) -> Self;
-    fn to_le_bytes(&self) -> Vec<Byte>;
+    fn to_le_bytes(&self) -> Self::Bytes;
 
     fn sign_extend(&self) -> XLen;
     fn zero_extend(&self) -> XLen;
@@ -40,12 +42,14 @@ pub trait MemoryValue: Sized {
 }
 
 impl MemoryValue for Byte {
+    type Bytes = [Byte; size_of::<Self>()];
+
     fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
 
-    fn to_le_bytes(&self) -> Vec<Byte> {
-        Self::to_le_bytes(*self).to_vec()
+    fn to_le_bytes(&self) -> Self::Bytes {
+        Self::to_le_bytes(*self)
     }
 
     fn sign_extend(&self) -> XLen {
@@ -62,12 +66,14 @@ impl MemoryValue for Byte {
 }
 
 impl MemoryValue for HalfWord {
+    type Bytes = [Byte; size_of::<Self>()];
+
     fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
 
-    fn to_le_bytes(&self) -> Vec<Byte> {
-        Self::to_le_bytes(*self).to_vec()
+    fn to_le_bytes(&self) -> Self::Bytes {
+        Self::to_le_bytes(*self)
     }
 
     fn sign_extend(&self) -> XLen {
@@ -83,12 +89,14 @@ impl MemoryValue for HalfWord {
     }
 }
 impl MemoryValue for Word {
+    type Bytes = [Byte; size_of::<Self>()];
+
     fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
 
-    fn to_le_bytes(&self) -> Vec<Byte> {
-        Self::to_le_bytes(*self).to_vec()
+    fn to_le_bytes(&self) -> Self::Bytes {
+        Self::to_le_bytes(*self)
     }
 
     fn sign_extend(&self) -> XLen {
@@ -105,12 +113,14 @@ impl MemoryValue for Word {
 }
 
 impl MemoryValue for DoubleWord {
+    type Bytes = [Byte; size_of::<Self>()];
+
     fn from_le_bytes(bytes: &[Byte]) -> Self {
         Self::from_le_bytes(bytes.try_into().unwrap())
     }
 
-    fn to_le_bytes(&self) -> Vec<Byte> {
-        Self::to_le_bytes(*self).to_vec()
+    fn to_le_bytes(&self) -> Self::Bytes {
+        Self::to_le_bytes(*self)
     }
 
     fn sign_extend(&self) -> XLen {
@@ -127,12 +137,14 @@ impl MemoryValue for DoubleWord {
 }
 
 // impl MemoryValue for QuadWord {
+//     type Bytes = [Byte; size_of::<Self>()];
+
 //     fn from_le_bytes(bytes: &[Byte]) -> Self {
 //         Self::from_le_bytes(bytes.try_into().unwrap())
 //     }
 
-//     fn to_le_bytes(&self) -> Vec<Byte> {
-//         Self::to_le_bytes(*self).to_vec()
+//     fn to_le_bytes(&self) -> Self::Bytes {
+//         Self::to_le_bytes(*self)
 //     }
 
 //     // NOTICE: truncates value
@@ -190,7 +202,7 @@ impl<AddrType> Memory<AddrType> {
         let bytes = value.to_le_bytes();
         self.byte_array
             [address as usize..address as usize + size_of::<MemValType>()]
-            .copy_from_slice(&bytes);
+            .copy_from_slice(bytes.as_ref());
     }
 
     fn fill(&mut self, value: Byte) {

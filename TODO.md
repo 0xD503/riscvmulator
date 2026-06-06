@@ -174,8 +174,8 @@ detect this at the instruction boundary so all subsequent work is C-aware.
 
 - [ ] `MemoryValue::to_le_bytes()`: change return from `Vec<Byte>` to a fixed-size
       array — eliminates heap allocation on every store instruction
-- [ ] Remove unused phantom type from `Memory<AddrType>`
-- [ ] Remove unused phantom type from `SystemBus<AddrType>`
+- [ ] ~~Remove unused phantom type from `Memory<AddrType>`~~
+- [ ] ~~Remove unused phantom type from `SystemBus<AddrType>`~~
 - [ ] Bounds-check the _full_ access, not just the start address: a multi-byte
       load/store straddling `RAM_END` currently slices past the `Vec` and panics
       unintentionally (this is a real bug, not an ISA placeholder)
@@ -412,3 +412,7 @@ Depends on: Phase 6 (`Device` trait already WIT-compatible)
 - [ ] Sandbox: each plugin in its own `wasmtime::Store`; host exports explicit
       and minimal
 - [ ] Port HTIF to Wasm as reference implementation / smoke test
+
+### Phase 17 - Implement some device as extension
+
+- [ ] implemented
