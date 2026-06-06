@@ -3,7 +3,7 @@
 ## Following action
 
 - refactor device discovery, add HTIF as device, not statically hard code in bus
-- implement `M` extension
+- phase 3
 
 ## Tech debt
 
@@ -64,7 +64,6 @@
 - [ ] `G` extensions (general purpose `IMAFD` + privileged extensions)
 - [ ] Linux-able
 - [ ] `C` extension (compressed instructions)
-- [ ] `Q` extension (quad instructions)
 - [ ] `RV64/32E` (embedded)
 
 ---
@@ -413,10 +412,3 @@ Depends on: Phase 6 (`Device` trait already WIT-compatible)
 - [ ] Sandbox: each plugin in its own `wasmtime::Store`; host exports explicit
       and minimal
 - [ ] Port HTIF to Wasm as reference implementation / smoke test
-
----
-
-### Phase 17 — Q extension (optional, last)
-
-- [ ] 128-bit floating point — needs soft-float library (`f128` not native in Rust)
-- [ ] Deferred until F/D are complete and stable
