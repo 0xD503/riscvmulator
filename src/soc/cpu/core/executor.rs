@@ -2,16 +2,15 @@ pub mod constants;
 
 use self::constants::ExecutableCommand;
 
+use super::ArchState;
+use super::decoder::Decoder;
+use super::fetch_unit::FetchUnit;
+use super::gp_registers::Register;
+use super::registers::{RegisterFileInterface, RegisterInterface};
+
 use crate::constants::arch::{
-    Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, RISCV_PC_STEP,
-    SignedImmediate, SignedXLen, SignedXLen32, UnsignedXLen, Word, XLen,
-    XLen32,
-};
-use crate::soc::cpu::core::ArchState;
-use crate::soc::cpu::core::decoder::Decoder;
-use crate::soc::cpu::core::gp_registers::Register;
-use crate::soc::cpu::core::registers::{
-    RegisterFileInterface, RegisterInterface,
+    Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, SignedImmediate, SignedXLen,
+    SignedXLen32, UnsignedXLen, Word, XLen, XLen32,
 };
 use crate::soc::cpu::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::cpu::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
@@ -53,6 +52,7 @@ impl Executor {
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
         pc: &Register,
+        fetch_unit: &FetchUnit,
     ) {
         match decoder.command_to_execute {
             // RV32I
@@ -103,9 +103,13 @@ impl Executor {
             ExecutableCommand::BLTU => self.instruction_bltu(decoder, pc),
             ExecutableCommand::BGEU => self.instruction_bgeu(decoder, pc),
             // I_103
-            ExecutableCommand::JALR => self.instruction_jalr(decoder, pc),
+            ExecutableCommand::JALR => {
+                self.instruction_jalr(decoder, pc, fetch_unit)
+            }
             // J_111
-            ExecutableCommand::JAL => self.instruction_jal(decoder, pc),
+            ExecutableCommand::JAL => {
+                self.instruction_jal(decoder, pc, fetch_unit)
+            }
 
             // RV64I
             // I_3
@@ -212,6 +216,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
         arch_state: &ArchState,
+        fetch_unit: &FetchUnit,
     ) {
         // default executor context
         self.need_to_branch = false;
@@ -220,6 +225,7 @@ impl Executor {
             decoder,
             &arch_state.control_status_registers,
             &arch_state.PC,
+            fetch_unit,
         );
     }
 
@@ -544,25 +550,35 @@ impl Executor {
         );
     }
 
-    fn instruction_jalr(&mut self, decoder: &Decoder, pc: &Register) {
+    fn instruction_jalr(
+        &mut self,
+        decoder: &Decoder,
+        pc: &Register,
+        fetch_unit: &FetchUnit,
+    ) {
         trace!("Executing JALR...");
 
         self.jump_target_address = (decoder.source_register_1
             + (decoder.immediate as SignedImmediate as SignedXLen as XLen))
             & !(XLen::MAX & 0x01);
-        self.result = pc.read() + RISCV_PC_STEP;
+        self.result = pc.read() + fetch_unit.instruction_size as XLen;
         // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
         );
     }
 
-    fn instruction_jal(&mut self, decoder: &Decoder, pc: &Register) {
+    fn instruction_jal(
+        &mut self,
+        decoder: &Decoder,
+        pc: &Register,
+        fetch_unit: &FetchUnit,
+    ) {
         trace!("Executing JAL...");
 
         self.jump_target_address = pc.read()
             + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
-        self.result = pc.read() + RISCV_PC_STEP;
+        self.result = pc.read() + fetch_unit.instruction_size as XLen;
         // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"

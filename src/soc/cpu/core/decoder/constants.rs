@@ -2,7 +2,12 @@ use std::fmt::{self, Binary};
 
 use log::error;
 
-use crate::constants::arch::*;
+use crate::{
+    constants::arch::*,
+    soc::cpu::extensions::compressed::constants::InstructionTypeCompressed,
+};
+
+pub const OPCODE_QUADRANT_MASK: InstructionType = 0b11;
 
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
@@ -597,17 +602,21 @@ impl From<Opcode> for OpcodeToInstructionFormat {
 
 #[derive(Default, Clone)]
 pub enum OpcodeQuadrant {
+    // 16-bit instruction size
     Quadrant00 = 0b00,
     Quadrant01 = 0b01,
     Quadrant10 = 0b10,
     #[default]
+    // >= 32-bit instruction size
     Quadrant11 = 0b11,
 }
 
 impl From<InstructionType> for OpcodeQuadrant {
     fn from(quadrant: InstructionType) -> Self {
         match quadrant {
+            // >= 32-bit instruction size
             0b11 => OpcodeQuadrant::Quadrant11,
+            // 16-bit instruction size
             0b10 => OpcodeQuadrant::Quadrant10,
             0b01 => OpcodeQuadrant::Quadrant01,
             0b00 => OpcodeQuadrant::Quadrant00,
@@ -617,6 +626,34 @@ impl From<InstructionType> for OpcodeQuadrant {
                 unreachable!(
                     "Opcode quadrant is unreachable: {:#04b}",
                     quadrant
+                );
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum InstructionSize {
+    I16 = size_of::<InstructionTypeCompressed>() as isize,
+    I32 = size_of::<InstructionType>() as isize,
+    I48 = 6,
+    I64 = 8,
+}
+
+impl From<usize> for InstructionSize {
+    fn from(value: usize) -> Self {
+        match value {
+            2 => InstructionSize::I16,
+            4 => InstructionSize::I32,
+            6 => InstructionSize::I48,
+            8 => InstructionSize::I64,
+
+            _ => {
+                error!(
+                    "Instruction size is either unimplemented either doesn't exist : {value:?}"
+                );
+                unreachable!(
+                    "Instruction size is either unimplemented either doesn't exist : {value:?}"
                 );
             }
         }

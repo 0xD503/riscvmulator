@@ -39,7 +39,7 @@ pub const RISCV_NUM_OF_REGISTERS_EMBEDDED: usize = 16;
 pub const RISCV_NUM_OF_CSR: usize = 1 << BITS_NUM_IMM_11_0;
 pub const RISCV_X0_ZERO_REGISTER_VALUE: XLen = 0x00000000;
 pub const RISCV_CSR_INITIAL_VALUE: XLen = 0x00000000;
-pub const RISCV_PC_STEP: XLen = 0x00000004;
+// pub const RISCV_PC_STEP: XLen = size_of::<InstructionType>();
 
 // decoder constants
 pub const BIT_OFFSET_OPCODE: usize = 0;
@@ -174,5 +174,7 @@ pub const OPCODE_RESERVED_2: u8 = 0b0011111;
 pub const OPCODE_RESERVED_3: u8 = 0b0111111;
 pub const OPCODE_RESERVED_4: u8 = 0b1011111;
 pub const OPCODE_RESERVED_5: u8 = 0b1111111;
+
+pub const RISCV_MAX_INSTRUCTION_SIZE: usize = 24;
 
 pub const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;

@@ -1,3 +1,5 @@
+mod constants;
+
 use std::marker::PhantomData;
 use std::mem::size_of;
 
@@ -8,6 +10,8 @@ use crate::constants::arch::{
     SignedWord, SignedXLen, Word, XLen,
 };
 use crate::constants::soc::{MEM_RESET_VALUE, RAM_BASE};
+
+use self::constants::MEMORY_ARRAY_PADDING;
 
 #[allow(clippy::upper_case_acronyms)]
 #[allow(non_camel_case_types)]
@@ -156,7 +160,7 @@ pub struct Memory<AddrType> {
 impl<AddrType> Memory<AddrType> {
     pub fn new(fill_value: Byte, size: usize) -> Self {
         Self {
-            byte_array: vec![fill_value; size],
+            byte_array: vec![fill_value; size + MEMORY_ARRAY_PADDING],
             _phantom_marker: Default::default(),
         }
     }

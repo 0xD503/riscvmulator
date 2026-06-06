@@ -1,28 +1,42 @@
-use std::ffi::FromBytesUntilNulError;
-
 use crate::constants::arch::{BusAddrType, InstructionType};
 use crate::constants::soc::INITIAL_INSTRUCTION;
 use crate::soc::Bus;
+use crate::soc::cpu::core::decoder::constants::{
+    InstructionSize, OPCODE_QUADRANT_MASK, OpcodeQuadrant,
+};
 use crate::soc::cpu::core::gp_registers::Register;
 use crate::soc::cpu::core::registers::RegisterInterface;
+use crate::soc::cpu::extensions::compressed::constants::InstructionTypeCompressed;
 use crate::soc::memory_bus::SystemBus;
 
 use log::trace;
 
 #[derive(Clone)]
 pub struct FetchUnit {
-    pub(crate) current_instruction: InstructionType,
+    pub(in crate::soc) instruction_size: InstructionSize,
+    pub(in crate::soc) current_instruction: InstructionType,
+    pub(in crate::soc) current_instruction_compressed:
+        InstructionTypeCompressed,
 }
 
 impl FetchUnit {
-    pub fn new(instr: InstructionType) -> Self {
+    pub fn new(instr: InstructionType, instr_size: InstructionSize) -> Self {
         FetchUnit {
+            instruction_size: instr_size,
             current_instruction: instr,
+            current_instruction_compressed: instr as InstructionTypeCompressed,
         }
     }
 
     pub fn reset(&mut self) {
+        self.instruction_size = InstructionSize::I32;
         self.current_instruction = INITIAL_INSTRUCTION;
+        self.current_instruction_compressed =
+            INITIAL_INSTRUCTION as InstructionTypeCompressed;
+    }
+
+    fn extract_quadrant(&self) -> OpcodeQuadrant {
+        OpcodeQuadrant::from(self.current_instruction & OPCODE_QUADRANT_MASK)
     }
 
     pub(in crate::soc::cpu) fn fetch(
@@ -30,13 +44,64 @@ impl FetchUnit {
         bus: &SystemBus<BusAddrType>,
         pc: &Register,
     ) {
-        trace!("Fetching instruction at addr: {:#018X?}", pc);
+        trace!("Fetching instruction at addr: {pc:#018X?}");
 
+        // we may have a compressed instruction, so we need to check quadrant
         self.current_instruction = bus.read(pc.read());
-        // match From::from(self.current_instruction & (0b11 as InstructionType)) {
-        //     //
-        // }
+        let quadrant = self.extract_quadrant();
+        match quadrant {
+            // uncompressed instruction set
+            OpcodeQuadrant::Quadrant11 => {
+                self.instruction_size = InstructionSize::I32;
+                trace!(
+                    "Fetched instruction: {:#010X?}",
+                    self.current_instruction
+                );
+            }
+            // compressed instruction set
+            _ => {
+                self.current_instruction_compressed =
+                    self.current_instruction as InstructionTypeCompressed;
+                self.instruction_size = InstructionSize::I16;
+                trace!(
+                    "Fetched instruction: {:#06X?}",
+                    self.current_instruction_compressed
+                );
+            }
+        }
 
-        trace!("Fetched instruction: {:#018X?}", self.current_instruction);
+        //
+        // second way
+        //
+        // // we may have a compressed instruction, so we need to check quadrant
+        // let current_instruction = bus.read::<HalfWord>(pc.read());
+        // match OpcodeQuadrant::from(
+        //     current_instruction as InstructionType & OPCODE_QUADRANT_MASK,
+        // ) {
+        //     OpcodeQuadrant::Quadrant11 => {
+        //         self.current_instruction =
+        //             current_instruction as InstructionType;
+        //         self.current_instruction |= (bus
+        //             .read::<HalfWord>(pc.read() + InstructionSize::I16 as XLen)
+        //             as InstructionType)
+        //             << InstructionTypeCompressed::BITS;
+        //         self.instruction_size = InstructionSize::I32;
+        //         trace!(
+        //             "Fetched instruction: {:#010X?}",
+        //             self.current_instruction
+        //         );
+        //     }
+        //     // compressed instruction set
+        //     OpcodeQuadrant::Quadrant00
+        //     | OpcodeQuadrant::Quadrant01
+        //     | OpcodeQuadrant::Quadrant10 => {
+        //         self.current_instruction_compressed = current_instruction;
+        //         self.instruction_size = InstructionSize::I16;
+        //         trace!(
+        //             "Fetched instruction: {:#06X?}",
+        //             self.current_instruction_compressed
+        //         );
+        //     }
+        // }
     }
 }

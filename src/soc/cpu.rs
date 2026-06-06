@@ -36,9 +36,11 @@ impl Hart {
     }
 
     pub(in crate::soc) fn execute(&mut self) {
-        self.context
-            .executor
-            .execute(&self.context.decoder, &self.context.arch_state);
+        self.context.executor.execute(
+            &self.context.decoder,
+            &self.context.arch_state,
+            &self.context.fetch_unit,
+        );
     }
 
     pub(in crate::soc) fn memory_operation(
@@ -49,4 +51,12 @@ impl Hart {
             .executor
             .memory_operation(bus, &self.context.decoder);
     }
+
+    // pub(in crate::soc) fn write_back() {
+    //     //
+    // }
+
+    // pub(in crate::soc) fn advance_pc() {
+    //     //, fetch_unit: &FetchUnit
+    // }
 }

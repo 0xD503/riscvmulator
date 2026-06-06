@@ -1,9 +1,15 @@
-use crate::constants::arch::RISCV_PC_STEP;
+// use super::fetch_unit::FetchUnit;
+
+use crate::constants::arch::XLen;
 use crate::soc::cpu::Hart;
 use crate::soc::cpu::core::registers::RegisterInterface;
 
 use log::trace;
 
+// #[allow(non_camel_case_types)]
+// struct PC_Advancer;
+
+// impl PC_Advancer {
 impl Hart {
     // advancing PC
     fn is_need_to_advance_pc(&self) -> bool {
@@ -17,10 +23,10 @@ impl Hart {
         if self.is_need_to_advance_pc() {
             trace!("Advancing PC...");
 
-            self.context
-                .arch_state
-                .PC
-                .write(self.context.arch_state.PC.read() + RISCV_PC_STEP);
+            self.context.arch_state.PC.write(
+                self.context.arch_state.PC.read()
+                    + self.context.fetch_unit.instruction_size as XLen,
+            );
         } else {
             trace!("Skip advancing PC...");
         }

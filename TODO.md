@@ -164,10 +164,10 @@ Target layout (module skeletons already exist, just empty):
 Compressed instructions are 16-bit (bits[1:0] ≠ `0b11`). The fetch stage must
 detect this at the instruction boundary so all subsequent work is C-aware.
 
-- [ ] Fetch reads 16 bits first; if bits[1:0] == `0b11`, reads remaining 16 bits
-- [ ] Add `instruction_size: u8` (2 or 4) to decoder context
-- [ ] `advance_pc()` uses `decoder.instruction_size` instead of hardcoded 4
-- [ ] All existing RV64I tests still pass (they only produce 32-bit instructions)
+- [x] Fetch reads 16 bits first; if bits[1:0] == `0b11`, reads remaining 16 bits
+- [x] Add `instruction_size: u8` (2 or 4) to decoder context
+- [x] `advance_pc()` uses `decoder.instruction_size` instead of hardcoded 4
+- [x] All existing RV64I tests still pass (they only produce 32-bit instructions)
 
 ---
 

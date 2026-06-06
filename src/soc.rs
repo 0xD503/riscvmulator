@@ -3,22 +3,25 @@ pub mod memory;
 pub mod memory_bus;
 
 use self::cpu::Hart;
-use self::cpu::core::decoder::{Decoder, constants::Opcode};
+use self::cpu::core::decoder::{
+    Decoder,
+    constants::{InstructionSize, Opcode},
+};
 use self::cpu::core::executor::Executor;
 use self::cpu::core::fetch_unit::FetchUnit;
 use self::cpu::core::gp_registers::{Register, RegisterFile};
 use self::cpu::core::registers::{RegisterFileInterface, RegisterInterface};
 use self::cpu::core::{ArchState, Context};
 use self::cpu::extensions::zicsr::CSRFile;
+use self::cpu::extensions::zicsr::ExecutorZicsrContext;
 use self::memory::MemoryValueType;
 use self::memory_bus::{Bus, SystemBus};
 
-use crate::constants::arch::{BusAddrType, Byte, RISCV_PC_STEP, XLen};
-use crate::constants::soc::{
+use super::constants::arch::{BusAddrType, Byte, InstructionType, XLen};
+use super::constants::soc::{
     INITIAL_INSTRUCTION, MEM_RESET_VALUE, PC_RESET_VALUE, RAM_BASE, RAM_END,
     RAM_SIZE,
 };
-use crate::soc::cpu::extensions::zicsr::ExecutorZicsrContext;
 
 use log::trace;
 
@@ -38,7 +41,10 @@ impl SoC {
                         gp_register_file: RegisterFile::new(),
                         control_status_registers: CSRFile::new(),
                     },
-                    fetch_unit: FetchUnit::new(INITIAL_INSTRUCTION),
+                    fetch_unit: FetchUnit::new(
+                        INITIAL_INSTRUCTION,
+                        InstructionSize::I32,
+                    ),
                     decoder: Decoder {
                         ..Default::default()
                     },
@@ -73,7 +79,7 @@ impl SoC {
 
         // fill memory with NOP's
         self.bus.memory_reset();
-        for addr in (RAM_BASE..RAM_END).step_by(RISCV_PC_STEP as usize) {
+        for addr in (RAM_BASE..RAM_END).step_by(size_of::<InstructionType>()) {
             self.bus.write(addr, Opcode::OP_IMM as Byte);
         }
     }

@@ -3,14 +3,14 @@ pub mod constants;
 use self::constants::{
     BRANCH_Funct3, FenceMode, Funct7, I_Funct12, JALR_Funct3, MISC_MEM_Funct3,
     OP_32_Funct3, OP_Funct3, OP_IMM_32_Funct3, OP_IMM_Funct3, OP_IMM_Funct7,
-    OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant,
-    OpcodeToInstructionFormat, STORE_Funct3, SYSTEM_Funct3,
-    SYSTEM_Imm_transfer_control_return_from,
+    OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode, OpcodeToInstructionFormat,
+    STORE_Funct3, SYSTEM_Funct3, SYSTEM_Imm_transfer_control_return_from,
 };
 
 use super::executor::constants::ExecutableCommand;
 
 use crate::constants::arch::*;
+use crate::soc::cpu::core::decoder::constants::InstructionSize;
 use crate::soc::cpu::core::fetch_unit::FetchUnit;
 use crate::soc::cpu::core::gp_registers::{
     RegisterFile, constants::GPRegisterName,
@@ -26,7 +26,6 @@ pub struct Decoder {
     pub(crate) source_register_1: XLen,
     pub(crate) source_register_2: XLen,
     pub(crate) destination_register_offset: usize,
-    pub(in crate::soc) instruction_size: OpcodeQuadrant,
 
     pub(crate) funct3: InstructionType,
     pub(crate) i_funct7: OP_IMM_Funct7,
@@ -466,19 +465,19 @@ impl Decoder {
                                 //
                                 self.command_to_execute =
                                     ExecutableCommand::EBREAK;
-                                todo!();
+                                todo!("TODO: unimplemented");
                             }
                             SYSTEM_Imm_transfer_control_return_from::URET => {
                                 self.zicsr.need_to_return_from_trap = true;
                                 self.command_to_execute =
                                     ExecutableCommand::URET;
-                                todo!();
+                                todo!("TODO: unimplemented");
                             }
                             SYSTEM_Imm_transfer_control_return_from::SRET => {
                                 self.zicsr.need_to_return_from_trap = true;
                                 self.command_to_execute =
                                     ExecutableCommand::SRET;
-                                todo!();
+                                todo!("TODO: unimplemented");
                             }
                             SYSTEM_Imm_transfer_control_return_from::MRET => {
                                 self.zicsr.need_to_return_from_trap = true;
@@ -749,32 +748,45 @@ impl Decoder {
         fetch_unit: &FetchUnit,
         register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) {
-        self.opcode = self.extract_opcode(fetch_unit);
+        match fetch_unit.instruction_size {
+            InstructionSize::I32 => {
+                self.opcode = self.extract_opcode(fetch_unit);
 
-        match From::from(self.opcode.clone()) {
-            OpcodeToInstructionFormat::R_51_OP
-            | OpcodeToInstructionFormat::R_59_OP_32
-            | OpcodeToInstructionFormat::R_83_OP_FP => self.decode_r_format(fetch_unit, register_file),
-            OpcodeToInstructionFormat::I_3_LOAD
-            | OpcodeToInstructionFormat::I_7_LOAD_FP
-            | OpcodeToInstructionFormat::I_19_OP_IMM
-            | OpcodeToInstructionFormat::I_27_OP_IMM_32
-            | OpcodeToInstructionFormat::I_103_JALR
-            | OpcodeToInstructionFormat::I_115_SYSTEM // (Zicsr_extension)
-            | OpcodeToInstructionFormat::I_15_MISC_MEM // FENCE, Zifencei
-            => self.decode_i_format(fetch_unit, register_file),
-            OpcodeToInstructionFormat::S_35_STORE
-            | OpcodeToInstructionFormat::S_39_STORE_FP => {
-                self.decode_s_format(fetch_unit, register_file)
+                match From::from(self.opcode.clone()) {
+                    OpcodeToInstructionFormat::R_51_OP
+                    | OpcodeToInstructionFormat::R_59_OP_32
+                    | OpcodeToInstructionFormat::R_83_OP_FP =>
+                    self.decode_r_format(fetch_unit, register_file),
+                    OpcodeToInstructionFormat::I_3_LOAD
+                    | OpcodeToInstructionFormat::I_7_LOAD_FP
+                    | OpcodeToInstructionFormat::I_19_OP_IMM
+                    | OpcodeToInstructionFormat::I_27_OP_IMM_32
+                    | OpcodeToInstructionFormat::I_103_JALR
+                    | OpcodeToInstructionFormat::I_115_SYSTEM // (Zicsr_extension)
+                    | OpcodeToInstructionFormat::I_15_MISC_MEM // FENCE, Zifencei
+                    => self.decode_i_format(fetch_unit, register_file),
+                    OpcodeToInstructionFormat::S_35_STORE
+                    | OpcodeToInstructionFormat::S_39_STORE_FP => {
+                        self.decode_s_format(fetch_unit, register_file)
+                    }
+                    OpcodeToInstructionFormat::B_99_BRANCH => self.decode_b_format(fetch_unit, register_file),
+                    OpcodeToInstructionFormat::U_23_AUIPC
+                    | OpcodeToInstructionFormat::U_55_LUI => self.decode_u_format(fetch_unit),
+                    OpcodeToInstructionFormat::J_111_JAL => self.decode_j_format(fetch_unit),
+                    OpcodeToInstructionFormat::R4_67_MADD
+                    | OpcodeToInstructionFormat::R4_71_MSUB
+                    | OpcodeToInstructionFormat::R4_75_NMSUB
+                    | OpcodeToInstructionFormat::R4_79_NMADD => self.decode_r4_format(fetch_unit),
+                }
             }
-            OpcodeToInstructionFormat::B_99_BRANCH => self.decode_b_format(fetch_unit, register_file),
-            OpcodeToInstructionFormat::U_23_AUIPC
-            | OpcodeToInstructionFormat::U_55_LUI => self.decode_u_format(fetch_unit),
-            OpcodeToInstructionFormat::J_111_JAL => self.decode_j_format(fetch_unit),
-            OpcodeToInstructionFormat::R4_67_MADD
-            | OpcodeToInstructionFormat::R4_71_MSUB
-            | OpcodeToInstructionFormat::R4_75_NMSUB
-            | OpcodeToInstructionFormat::R4_79_NMADD => self.decode_r4_format(fetch_unit),
+            InstructionSize::I16 => {
+                // compressed ISA
+                todo!("TODO: unimplemented");
+            }
+
+            _ => {
+                todo!("TODO: unimplemented");
+            }
         }
     }
 
