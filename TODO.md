@@ -184,7 +184,7 @@ detect this at the instruction boundary so all subsequent work is C-aware.
 
 ### Phase 4 — Configuration system
 
-- [ ] Fix `config.rs`: remove hardcoded relative path to `cfg/emulator.toml`
+- [x] Fix `config.rs`: remove hardcoded relative path to `cfg/emulator.toml`
 - [ ] Populate `EmulatorCfg` struct (memory size, extension flags, log level,
       device list, hart count)
 - [ ] Config priority order: compiled defaults → `emulator.toml` → env vars → CLI

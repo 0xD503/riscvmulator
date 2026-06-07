@@ -1,10 +1,12 @@
+use riscvmulator::config::SocCfg;
 use riscvmulator::soc::SoC;
 use riscvmulator::{elf_loader::load_elf, init_test};
 
 pub fn run_test(test_path: &'static str) {
     init_test();
 
-    let mut soc: SoC = SoC::new();
+    let cfg: SocCfg = Default::default();
+    let mut soc: SoC = SoC::new(cfg);
 
     soc.reset();
 

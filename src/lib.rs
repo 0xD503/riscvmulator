@@ -1,5 +1,5 @@
 // modules includes
-mod config;
+pub mod config;
 mod constants;
 pub mod elf_loader;
 mod logger;
@@ -7,7 +7,7 @@ mod parse_args;
 pub mod soc;
 mod utils;
 
-use config::configure;
+use config::{Config, get_config};
 use logger::init_logger;
 use parse_args::{CLI_Args, parse_args};
 
@@ -20,12 +20,12 @@ use parse_args::{CLI_Args, parse_args};
 
 // current project imports
 
-pub fn init() -> CLI_Args {
+pub fn init() -> (CLI_Args, Config) {
     init_logger();
     let args = parse_args();
-    configure(args.config_file.clone());
+    let config = get_config(args.config_file.clone());
 
-    args
+    (args, config)
 }
 
 pub fn init_test() {

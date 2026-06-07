@@ -44,5 +44,5 @@ just test
 #### Run ELF binaries with emulator
 
 ```Shell
-target/release/riscvmulator <ELF>
+target/release/riscvmulator --input-file <ELF> --config-file cfg/emulator.toml
 ```

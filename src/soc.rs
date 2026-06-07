@@ -2,6 +2,8 @@ pub mod cpu;
 pub mod memory;
 pub mod memory_bus;
 
+use crate::config::SocCfg;
+
 use self::cpu::Hart;
 use self::cpu::core::decoder::{
     Decoder,
@@ -33,7 +35,7 @@ pub struct SoC {
 }
 
 impl SoC {
-    pub fn new() -> Self {
+    pub fn new(cfg: SocCfg) -> Self {
         Self {
             cpu: Hart {
                 context: Context {

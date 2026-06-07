@@ -1,0 +1,21 @@
+[emulator]
+log_level = "info"
+# 0 means as fast as possible
+frequency_hz = 0
+
+[soc]
+harts_num = 1
+xtal_frequency_hz = 16384
+
+[soc.hart]
+extension_I = true
+extension_M = false
+extension_A = false
+extension_F = false
+extension_D = false
+extension_C = false
+extension_Zifencei = false
+extension_Zicsr = false
+
+[soc.memory]
+size_bytes = 262144

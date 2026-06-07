@@ -1,16 +1,10 @@
-// mod constants;
-// mod soc;
-
 use riscvmulator::elf_loader::load_elf;
-// use riscvmulator::{init, soc::soc::SoC};
 use riscvmulator::{init, soc::SoC};
-// use riscvmulator::init;
-// use riscvmulator::soc::soc::SoC;
 
 fn main() {
-    let args = init();
+    let (args, config) = init();
 
-    let mut soc: SoC = SoC::new();
+    let mut soc: SoC = SoC::new(config.soc.unwrap_or_default());
 
     soc.reset();
 
