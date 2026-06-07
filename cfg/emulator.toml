@@ -1,5 +1,5 @@
 [soc]
-cores_num = 1
+harts_num = 1
 
 [soc.memory]
-size_bytes = 65536
+size_bytes = 262144

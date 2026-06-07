@@ -24,9 +24,7 @@ struct Config {
     emulator: Option<EmulatorCfg>,
 }
 
-pub fn configure() {
-    const DEFAULT_CONFIG_PATH: &str = "cfg/emulator.toml";
-    let config_path = DEFAULT_CONFIG_PATH;
+pub fn configure(config_path: String) {
     let binding = fs::read_to_string(config_path).unwrap();
     let file_content = binding.as_str();
     let config: Config = toml::from_str(file_content).unwrap();

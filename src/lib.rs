@@ -23,11 +23,11 @@ use parse_args::{CLI_Args, parse_args};
 pub fn init() -> CLI_Args {
     init_logger();
     let args = parse_args();
-    configure();
+    configure(args.config_file.clone());
 
     args
 }
 
 pub fn init_test() {
-    configure();
+    // configure();
 }
