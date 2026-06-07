@@ -175,6 +175,7 @@ pub const OPCODE_RESERVED_3: u8 = 0b0111111;
 pub const OPCODE_RESERVED_4: u8 = 0b1011111;
 pub const OPCODE_RESERVED_5: u8 = 0b1111111;
 
-pub const RISCV_MAX_INSTRUCTION_SIZE: usize = 24;
+// pub const RISCV_MAX_INSTRUCTION_SIZE: usize = 24;
+// pub const RISCV_MIN_INSTRUCTION_SIZE: usize = 2;
 
 pub const INSTRUCTION_NOP: InstructionType = Opcode::OP_IMM as InstructionType;

@@ -1,4 +1,4 @@
-use crate::constants::arch::{BusAddrType, InstructionType};
+use crate::constants::arch::{BusAddrType, HalfWord, InstructionType, XLen};
 use crate::constants::soc::INITIAL_INSTRUCTION;
 use crate::soc::Bus;
 use crate::soc::cpu::core::decoder::constants::{
@@ -35,8 +35,8 @@ impl FetchUnit {
             INITIAL_INSTRUCTION as InstructionTypeCompressed;
     }
 
-    fn extract_quadrant(&self) -> OpcodeQuadrant {
-        OpcodeQuadrant::from(self.current_instruction & OPCODE_QUADRANT_MASK)
+    fn extract_quadrant(&self, instruction: InstructionType) -> OpcodeQuadrant {
+        OpcodeQuadrant::from(instruction & OPCODE_QUADRANT_MASK)
     }
 
     pub(in crate::soc::cpu) fn fetch(
@@ -46,45 +46,15 @@ impl FetchUnit {
     ) {
         trace!("Fetching instruction at addr: {pc:#018X?}");
 
-        // we may have a compressed instruction, so we need to check quadrant
-        self.current_instruction = bus.read(pc.read());
-        let quadrant = self.extract_quadrant();
-        match quadrant {
-            // uncompressed instruction set
-            OpcodeQuadrant::Quadrant11 => {
-                self.instruction_size = InstructionSize::I32;
-                trace!(
-                    "Fetched instruction: {:#010X?}",
-                    self.current_instruction
-                );
-            }
-            // compressed instruction set
-            _ => {
-                self.current_instruction_compressed =
-                    self.current_instruction as InstructionTypeCompressed;
-                self.instruction_size = InstructionSize::I16;
-                trace!(
-                    "Fetched instruction: {:#06X?}",
-                    self.current_instruction_compressed
-                );
-            }
-        }
-
-        //
-        // second way
-        //
+        // //
+        // // first way
+        // //
         // // we may have a compressed instruction, so we need to check quadrant
-        // let current_instruction = bus.read::<HalfWord>(pc.read());
-        // match OpcodeQuadrant::from(
-        //     current_instruction as InstructionType & OPCODE_QUADRANT_MASK,
-        // ) {
+        // self.current_instruction = bus.instruction_read(pc.read());
+        // let quadrant = self.extract_quadrant(self.current_instruction);
+        // match quadrant {
+        //     // uncompressed instruction set
         //     OpcodeQuadrant::Quadrant11 => {
-        //         self.current_instruction =
-        //             current_instruction as InstructionType;
-        //         self.current_instruction |= (bus
-        //             .read::<HalfWord>(pc.read() + InstructionSize::I16 as XLen)
-        //             as InstructionType)
-        //             << InstructionTypeCompressed::BITS;
         //         self.instruction_size = InstructionSize::I32;
         //         trace!(
         //             "Fetched instruction: {:#010X?}",
@@ -92,10 +62,9 @@ impl FetchUnit {
         //         );
         //     }
         //     // compressed instruction set
-        //     OpcodeQuadrant::Quadrant00
-        //     | OpcodeQuadrant::Quadrant01
-        //     | OpcodeQuadrant::Quadrant10 => {
-        //         self.current_instruction_compressed = current_instruction;
+        //     _ => {
+        //         self.current_instruction_compressed =
+        //             self.current_instruction as InstructionTypeCompressed;
         //         self.instruction_size = InstructionSize::I16;
         //         trace!(
         //             "Fetched instruction: {:#06X?}",
@@ -103,5 +72,40 @@ impl FetchUnit {
         //         );
         //     }
         // }
+
+        //
+        // second way
+        //
+        // we may have a compressed instruction, so we need to check quadrant
+        let current_instruction = bus.instruction_read::<HalfWord>(pc.read());
+        let quadrant =
+            self.extract_quadrant(current_instruction as InstructionType);
+        match quadrant {
+            OpcodeQuadrant::Quadrant11 => {
+                self.current_instruction =
+                    current_instruction as InstructionType;
+                self.current_instruction |= (bus.instruction_read::<HalfWord>(
+                    pc.read() + InstructionSize::I16 as XLen,
+                )
+                    as InstructionType)
+                    << InstructionTypeCompressed::BITS;
+                self.instruction_size = InstructionSize::I32;
+                trace!(
+                    "Fetched instruction: {:#010X?}",
+                    self.current_instruction
+                );
+            }
+            // compressed instruction set
+            OpcodeQuadrant::Quadrant00
+            | OpcodeQuadrant::Quadrant01
+            | OpcodeQuadrant::Quadrant10 => {
+                self.current_instruction_compressed = current_instruction;
+                self.instruction_size = InstructionSize::I16;
+                trace!(
+                    "Fetched instruction: {:#06X?}",
+                    self.current_instruction_compressed
+                );
+            }
+        }
     }
 }

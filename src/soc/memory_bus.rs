@@ -8,6 +8,9 @@ use crate::soc::memory::{Memory, MemoryValue};
 // // pub const HTIF_FROM_HOST: XLen = 0x80001004;
 
 pub trait Bus<AddrType> {
+    fn memory_reset(&mut self);
+
+    // data read/write
     fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
     // fn read_data(&self, address: XLen, size: usize) -> Vec<Byte>;
 
@@ -18,7 +21,11 @@ pub trait Bus<AddrType> {
     );
     // fn write_data(&mut self, address: XLen, data: Vec<Byte>);
 
-    fn memory_reset(&mut self);
+    // instruction read/write
+    fn instruction_read<MemValType: MemoryValue>(
+        &self,
+        address: AddrType,
+    ) -> MemValType;
 }
 
 #[derive(Default)]
@@ -57,7 +64,9 @@ impl<AddrType> SystemBus<AddrType> {
 
 impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
     fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
-        if (RAM_BASE..RAM_END).contains(&address) {
+        if (RAM_BASE..=(RAM_END - size_of::<MemValType>() as XLen))
+            .contains(&address)
+        {
             self.memory.read(address)
         } else {
             error!(
@@ -85,7 +94,9 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
                 }
             }
         }
-        if (RAM_BASE..RAM_END).contains(&address) {
+        if (RAM_BASE..=(RAM_END - size_of::<MemValType>() as XLen))
+            .contains(&address)
+        {
             self.memory.write(address, value);
         } else {
             error!(
@@ -93,6 +104,24 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
             );
             panic!(
                 "an attempt to write to unimplemented address space: {address:#018X}"
+            );
+        }
+    }
+
+    fn instruction_read<MemValType: MemoryValue>(
+        &self,
+        address: XLen,
+    ) -> MemValType {
+        if (RAM_BASE..=(RAM_END - size_of::<MemValType>() as XLen))
+            .contains(&address)
+        {
+            self.memory.read(address)
+        } else {
+            error!(
+                "an attempt to read instruction from unimplemented address space: {address:#018X}"
+            );
+            panic!(
+                "an attempt to read instruction from unimplemented address space: {address:#018X}"
             );
         }
     }

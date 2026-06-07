@@ -28,6 +28,7 @@ use log::trace;
 pub struct SoC {
     pub(crate) cpu: Hart,
     // memory and memory mapped IO
+    // von Neumann architechture, so common bus is used for instructions/data
     pub(crate) bus: SystemBus<BusAddrType>,
 }
 
