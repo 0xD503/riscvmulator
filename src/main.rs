@@ -2,13 +2,14 @@ use riscvmulator::elf_loader::load_elf;
 use riscvmulator::{init, soc::SoC};
 
 fn main() {
-    let (args, config) = init();
+    let config = init();
 
-    let mut soc: SoC = SoC::new(config.soc.unwrap_or_default());
+    let mut soc: SoC = SoC::new(&config.soc);
 
-    soc.reset();
+    soc.reset(&config.soc);
 
-    load_elf(args.input_file.into(), &mut soc);
+    // dbg!("{:?}", config.emulator.input_file.clone());
+    load_elf(config.emulator.input_file.unwrap().into(), &mut soc);
 
     soc.ready_for_testing();
 

@@ -17,6 +17,7 @@ pub struct ElfData {
 }
 
 pub fn load_elf(file_path: PathBuf, soc: &mut SoC) -> Option<ElfData> {
+    // dbg!("{:?}", file_path.clone());
     let content = fs::read(file_path).unwrap();
     let slice = content.as_slice();
     let file = ElfBytes::<AnyEndian>::minimal_parse(slice).ok()?;

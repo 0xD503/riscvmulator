@@ -1,8 +1,9 @@
-use log::{error, info};
+use log::{error, info, trace};
 
-use crate::constants::arch::{Byte, XLen};
-use crate::constants::soc::{RAM_BASE, RAM_END};
+use crate::constants::arch::{Byte, InstructionType, XLen};
 use crate::soc::memory::{Memory, MemoryValue};
+
+use super::cpu::core::decoder::constants::Opcode;
 
 // pub const HTIF_TO_HOST: XLen = 0x80001000;
 // // pub const HTIF_FROM_HOST: XLen = 0x80001004;
@@ -30,26 +31,41 @@ pub trait Bus<AddrType> {
 
 #[derive(Default)]
 pub struct SystemBus<AddrType> {
+    ram_base: XLen,
     memory: Memory<AddrType>,
-    initialized: bool,
+    ram_end: XLen,
 
     // testing facilities
+    initialized: bool,
     htif_to_host: XLen,
 }
 
 impl<AddrType> SystemBus<AddrType> {
-    pub fn new(fill_value: Byte, size: usize) -> Self {
+    pub fn new(fill_value: Byte, ram_size: usize, ram_base: XLen) -> Self {
         Self {
-            memory: Memory::new(fill_value, size),
+            ram_base,
+            memory: Memory::new(fill_value, ram_size),
+            ram_end: ram_base + ram_size as XLen,
+
             initialized: false,
-            htif_to_host: 0x80001000,
+            htif_to_host: 0x8000_1000,
         }
     }
 
     pub fn reset(&mut self) {
         self.memory.reset();
+
         self.initialized = false;
-        self.htif_to_host = 0x80001000;
+        self.htif_to_host = 0x8000_1000;
+    }
+
+    pub fn fill_with_nops(&mut self) {
+        self.memory_reset();
+        for addr in
+            (self.ram_base..self.ram_end).step_by(size_of::<InstructionType>())
+        {
+            self.write(addr, Opcode::OP_IMM as Byte);
+        }
     }
 
     // testing facilities
@@ -64,10 +80,13 @@ impl<AddrType> SystemBus<AddrType> {
 
 impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
     fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
-        if (RAM_BASE..=(RAM_END - size_of::<MemValType>() as XLen))
+        if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
             .contains(&address)
         {
-            self.memory.read(address)
+            trace!("Reading memory at addr: {address:#018X?}");
+
+            let offset = address - self.ram_base;
+            self.memory.read(offset)
         } else {
             error!(
                 "an attempt to read from unimplemented address space: {address:#018X}"
@@ -94,10 +113,13 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
                 }
             }
         }
-        if (RAM_BASE..=(RAM_END - size_of::<MemValType>() as XLen))
+        if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
             .contains(&address)
         {
-            self.memory.write(address, value);
+            trace!("Writing memory at addr: {address:#018X?}");
+
+            let offset = address - self.ram_base;
+            self.memory.write(offset, value);
         } else {
             error!(
                 "an attempt to write to unimplemented address space: {address:#018X}"
@@ -112,10 +134,13 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
         &self,
         address: XLen,
     ) -> MemValType {
-        if (RAM_BASE..=(RAM_END - size_of::<MemValType>() as XLen))
+        if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
             .contains(&address)
         {
-            self.memory.read(address)
+            trace!("Reading instruction from memory at addr: {address:#018X?}");
+
+            let offset = address - self.ram_base;
+            self.memory.read(offset)
         } else {
             error!(
                 "an attempt to read instruction from unimplemented address space: {address:#018X}"

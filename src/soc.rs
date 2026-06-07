@@ -5,10 +5,7 @@ pub mod memory_bus;
 use crate::config::SocCfg;
 
 use self::cpu::Hart;
-use self::cpu::core::decoder::{
-    Decoder,
-    constants::{InstructionSize, Opcode},
-};
+use self::cpu::core::decoder::{Decoder, constants::InstructionSize};
 use self::cpu::core::executor::Executor;
 use self::cpu::core::fetch_unit::FetchUnit;
 use self::cpu::core::gp_registers::{Register, RegisterFile};
@@ -19,11 +16,8 @@ use self::cpu::extensions::zicsr::ExecutorZicsrContext;
 use self::memory::MemoryValueType;
 use self::memory_bus::{Bus, SystemBus};
 
-use super::constants::arch::{BusAddrType, Byte, InstructionType, XLen};
-use super::constants::soc::{
-    INITIAL_INSTRUCTION, MEM_RESET_VALUE, PC_RESET_VALUE, RAM_BASE, RAM_END,
-    RAM_SIZE,
-};
+use super::constants::arch::{BusAddrType, XLen};
+use super::constants::soc::{INITIAL_INSTRUCTION, MEM_RESET_VALUE};
 
 use log::trace;
 
@@ -35,12 +29,12 @@ pub struct SoC {
 }
 
 impl SoC {
-    pub fn new(cfg: SocCfg) -> Self {
+    pub fn new(cfg: &SocCfg) -> Self {
         Self {
             cpu: Hart {
                 context: Context {
                     arch_state: ArchState {
-                        PC: Register::new(PC_RESET_VALUE),
+                        PC: Register::new(cfg.hart.pc_reset_value),
                         gp_register_file: RegisterFile::new(),
                         control_status_registers: CSRFile::new(),
                     },
@@ -53,9 +47,9 @@ impl SoC {
                     },
                     executor: Executor {
                         result: XLen::MIN,
-                        branch_target_address: PC_RESET_VALUE,
-                        jump_target_address: PC_RESET_VALUE,
-                        return_target_address: PC_RESET_VALUE,
+                        branch_target_address: cfg.hart.pc_reset_value,
+                        jump_target_address: cfg.hart.pc_reset_value,
+                        return_target_address: cfg.hart.pc_reset_value,
                         memory_address: XLen::MIN,
                         value_to_store_u8: Default::default(),
                         value_to_store_u16: Default::default(),
@@ -72,19 +66,20 @@ impl SoC {
                     },
                 },
             },
-            bus: SystemBus::new(MEM_RESET_VALUE, RAM_SIZE),
+            bus: SystemBus::new(
+                MEM_RESET_VALUE,
+                cfg.bus.memory.size_bytes,
+                cfg.bus.ram_base,
+            ),
         }
     }
 
-    pub fn reset(&mut self) {
-        self.cpu.reset();
+    pub fn reset(&mut self, cfg: &SocCfg) {
+        self.cpu.reset(cfg);
         self.bus.reset();
 
         // fill memory with NOP's
-        self.bus.memory_reset();
-        for addr in (RAM_BASE..RAM_END).step_by(size_of::<InstructionType>()) {
-            self.bus.write(addr, Opcode::OP_IMM as Byte);
-        }
+        self.bus.fill_with_nops();
     }
 
     pub fn step(&mut self) {

@@ -14,6 +14,7 @@
 - [ ] profile bottlenecks
 - [ ] conditional compilation for test facilities/scaffolding (→ Phase 6)
 - [ ] get rid of warnings
+- [ ] get rid of panics (`unwrap()`/`expect()`/`ok()`/etc)
 
 ## Fixes
 

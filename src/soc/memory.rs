@@ -9,7 +9,7 @@ use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, SignedByte, SignedDoubleWord, SignedHalfWord,
     SignedWord, SignedXLen, Word, XLen,
 };
-use crate::constants::soc::{MEM_RESET_VALUE, RAM_BASE};
+use crate::constants::soc::MEM_RESET_VALUE;
 
 use self::constants::MEMORY_ARRAY_PADDING;
 
@@ -177,13 +177,12 @@ impl<AddrType> Memory<AddrType> {
         }
     }
 
-    pub fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
-        trace!("Reading memory at addr: {address:#018X?}");
+    pub fn read<MemValType: MemoryValue>(&self, offset: XLen) -> MemValType {
+        trace!("Reading memory at offset: {offset:#018X?}");
 
-        let address = address - RAM_BASE;
         // TODO: probably incorrect (possible out of bound access)
         let bytes = (self.byte_array)
-            [address as usize..address as usize + size_of::<MemValType>()]
+            [offset as usize..offset as usize + size_of::<MemValType>()]
             .try_into()
             .unwrap();
         // TODO: notice, so far emulator only supports little-endian
@@ -192,16 +191,15 @@ impl<AddrType> Memory<AddrType> {
 
     pub fn write<MemValType: MemoryValue>(
         &mut self,
-        address: XLen,
+        offset: XLen,
         value: MemValType,
     ) {
-        trace!("Writing memory at addr: {address:#018X?}");
+        trace!("Writing memory at offset: {offset:#018X?}");
 
-        let address = address - RAM_BASE;
         // TODO: notice, so far emulator only supports little-endian
         let bytes = value.to_le_bytes();
         self.byte_array
-            [address as usize..address as usize + size_of::<MemValType>()]
+            [offset as usize..offset as usize + size_of::<MemValType>()]
             .copy_from_slice(bytes.as_ref());
     }
 

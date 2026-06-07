@@ -5,6 +5,7 @@ pub mod privileged;
 use self::core::Context;
 use self::core::registers::RegisterInterface;
 
+use crate::config::SocCfg;
 use crate::constants::arch::{BusAddrType, XLen};
 use crate::soc::memory_bus::SystemBus;
 
@@ -14,8 +15,8 @@ pub struct Hart {
 }
 
 impl Hart {
-    pub fn reset(&mut self) {
-        self.context.reset();
+    pub fn reset(&mut self, cfg: &SocCfg) {
+        self.context.reset(cfg);
     }
 
     pub(crate) fn set_pc(&mut self, value: XLen) {

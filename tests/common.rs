@@ -6,9 +6,9 @@ pub fn run_test(test_path: &'static str) {
     init_test();
 
     let cfg: SocCfg = Default::default();
-    let mut soc: SoC = SoC::new(cfg);
+    let mut soc: SoC = SoC::new(&cfg);
 
-    soc.reset();
+    soc.reset(&cfg);
 
     load_elf(test_path.into(), &mut soc);
 

@@ -7,7 +7,7 @@ mod parse_args;
 pub mod soc;
 mod utils;
 
-use config::{Config, get_config};
+use config::Config;
 use logger::init_logger;
 use parse_args::{CLI_Args, parse_args};
 
@@ -20,12 +20,12 @@ use parse_args::{CLI_Args, parse_args};
 
 // current project imports
 
-pub fn init() -> (CLI_Args, Config) {
+pub fn init() -> Config {
     init_logger();
     let args = parse_args();
-    let config = get_config(args.config_file.clone());
+    let config = Config::build(&args.clone());
 
-    (args, config)
+    config
 }
 
 pub fn init_test() {
