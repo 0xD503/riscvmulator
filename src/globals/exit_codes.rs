@@ -7,8 +7,8 @@ pub enum ExitCode {
     Success = 0,
     // Error = 1,
     ConfigRead = 2,
-    ConfigBuild = 78,
-    ConfigValidation = 65,
+    ConfigBuild = 3,
+    ConfigValidation = 4,
 
-    ElfRead = 3,
+    ElfRead = 5,
 }

@@ -9,7 +9,7 @@ use figment::{
     Figment,
     providers::{Env, Format, Serialized, Toml},
 };
-use log::debug;
+use log::{debug, info};
 use serde::{Deserialize, Serialize};
 
 use super::CLI_Args;
@@ -147,7 +147,9 @@ impl Config {
         if let Some(conf_file) = &cli_args.config_file {
             config = config.merge(Toml::file(conf_file));
         } else {
-            return Err(ConfigError::Read(cli_args.config_file.clone()));
+            info!("Configuration file was not provided");
+            // config;
+            // return Err(ConfigError::Read(cli_args.config_file.clone()));
         }
         config = config.merge(
             Env::prefixed(CONFIG_ENV_VAR_PREFIX)
