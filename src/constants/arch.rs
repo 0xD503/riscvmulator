@@ -37,8 +37,8 @@ pub type BusAddrType = XLen;
 pub const RISCV_NUM_OF_REGISTERS: usize = 32;
 pub const RISCV_NUM_OF_REGISTERS_EMBEDDED: usize = 16;
 pub const RISCV_NUM_OF_CSR: usize = 1 << BITS_NUM_IMM_11_0;
-pub const RISCV_X0_ZERO_REGISTER_VALUE: XLen = 0x00000000;
-pub const RISCV_CSR_INITIAL_VALUE: XLen = 0x00000000;
+pub const RISCV_X0_ZERO_REGISTER_VALUE: XLen = 0x0000_0000;
+pub const RISCV_CSR_INITIAL_VALUE: XLen = 0x0000_0000;
 // pub const RISCV_PC_STEP: XLen = size_of::<InstructionType>();
 
 // decoder constants

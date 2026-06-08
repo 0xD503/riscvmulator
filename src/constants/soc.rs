@@ -1,7 +1,5 @@
 use super::arch::{Byte, INSTRUCTION_NOP, InstructionType};
 
-// pub const PC_RESET_VALUE: XLen = RAM_BASE;
-
 pub const INITIAL_INSTRUCTION: InstructionType = INSTRUCTION_NOP;
 
 pub const MEM_RESET_VALUE: Byte = 0x00;

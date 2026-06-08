@@ -177,12 +177,11 @@ impl<AddrType> Memory<AddrType> {
         }
     }
 
-    pub fn read<MemValType: MemoryValue>(&self, offset: XLen) -> MemValType {
+    pub fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
         trace!("Reading memory at offset: {offset:#018X?}");
 
         // TODO: probably incorrect (possible out of bound access)
-        let bytes = (self.byte_array)
-            [offset as usize..offset as usize + size_of::<MemValType>()]
+        let bytes = (self.byte_array)[offset..offset + size_of::<MemValType>()]
             .try_into()
             .unwrap();
         // TODO: notice, so far emulator only supports little-endian
@@ -191,15 +190,14 @@ impl<AddrType> Memory<AddrType> {
 
     pub fn write<MemValType: MemoryValue>(
         &mut self,
-        offset: XLen,
+        offset: usize,
         value: MemValType,
     ) {
         trace!("Writing memory at offset: {offset:#018X?}");
 
         // TODO: notice, so far emulator only supports little-endian
         let bytes = value.to_le_bytes();
-        self.byte_array
-            [offset as usize..offset as usize + size_of::<MemValType>()]
+        self.byte_array[offset..offset + size_of::<MemValType>()]
             .copy_from_slice(bytes.as_ref());
     }
 

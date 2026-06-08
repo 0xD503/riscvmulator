@@ -1,7 +1,7 @@
 [emulator]
 log_level = "info"
 ## 0 means as fast as possible
-frequency_hz = 0
+throttle_frequency = 0
 
 [soc]
 harts_num = 1
@@ -25,4 +25,12 @@ extension_Zicsr = false
 base_addr = 0x8000_0000
 size_bytes = 262144    ## 256 KB
 
-[soc.bus.peripherals]
+# [[soc.bus.devices]]
+# name = "ram"
+# base_addr = 0x8000_0000
+# size_bytes = 262144    ## 256 KB
+
+# [[soc.bus.devices]]
+# name = ""
+# base_addr = 0x0000_0000
+# size_bytes = 0

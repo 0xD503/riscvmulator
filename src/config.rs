@@ -16,6 +16,7 @@ use self::constants::*;
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub(super) struct HartCfg {
     pub(super) pc_reset_value: XLen,
 
@@ -47,9 +48,11 @@ impl Default for HartCfg {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub(super) struct MemoryCfg {
     pub(super) base_addr: XLen,
     pub(super) size_bytes: usize,
+    #[serde(skip)]
     ram_end: XLen,
 }
 
@@ -64,6 +67,7 @@ impl Default for MemoryCfg {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct BusCfg {
     pub(super) memory: MemoryCfg,
 }
@@ -77,10 +81,12 @@ impl Default for BusCfg {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct SocCfg {
     pub(super) hart: HartCfg,
     pub(super) bus: BusCfg,
     harts_num: u32,
+    xtal_frequency_hz: u64,
 }
 
 impl Default for SocCfg {
@@ -89,14 +95,17 @@ impl Default for SocCfg {
             hart: HartCfg::default(),
             bus: BusCfg::default(),
             harts_num: DEFAULT_HARTS_NUM,
+            xtal_frequency_hz: DEFAULT_XTAL_FREQ_HZ,
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct EmulatorCfg {
     log_level: String,
     pub input_file: Option<String>,
+    throttle_frequency: u64,
 }
 
 impl Default for EmulatorCfg {
@@ -104,11 +113,13 @@ impl Default for EmulatorCfg {
         Self {
             log_level: String::from_str(DEFAULT_LOG_LEVEL).unwrap(),
             input_file: None,
+            throttle_frequency: DEFAULT_THROTTLE_FREQ,
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub soc: SocCfg,
     pub emulator: EmulatorCfg,
@@ -190,7 +201,7 @@ impl Config {
             valid = false;
             error!("number of harts should be >= 1");
         }
-        if cfg.soc.hart.extension_I == false {
+        if !cfg.soc.hart.extension_I {
             valid = false;
             error!("RISC-V base integer extension is not enabled");
         }

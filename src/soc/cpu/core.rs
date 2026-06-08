@@ -13,7 +13,6 @@ use self::gp_registers::{Register, RegisterFile};
 
 use super::extensions::zicsr::CSRFile;
 
-// use crate::config::constants::DEFAULT_PC_RESET_VALUE;
 use crate::config::SocCfg;
 use crate::constants::arch::{RISCV_NUM_OF_CSR, RISCV_NUM_OF_REGISTERS};
 use crate::soc::cpu::core::fetch_unit::FetchUnit;

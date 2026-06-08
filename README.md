@@ -26,6 +26,7 @@ compliance tests.
 
 ```Shell
 git clone --recurse-submodules https://github.com/0xD503/riscvmulator.git
+cd riscvmulator
 git submodule update --init --recursive
 ```
 

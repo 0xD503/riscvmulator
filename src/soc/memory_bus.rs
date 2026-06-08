@@ -29,7 +29,6 @@ pub trait Bus<AddrType> {
     ) -> MemValType;
 }
 
-#[derive(Default)]
 pub struct SystemBus<AddrType> {
     ram_base: XLen,
     memory: Memory<AddrType>,
@@ -40,7 +39,7 @@ pub struct SystemBus<AddrType> {
     htif_to_host: XLen,
 }
 
-impl<AddrType> SystemBus<AddrType> {
+impl<AddrType: std::ops::Sub> SystemBus<AddrType> {
     pub fn new(fill_value: Byte, ram_base: XLen, ram_size: usize) -> Self {
         Self {
             ram_base,
@@ -68,6 +67,13 @@ impl<AddrType> SystemBus<AddrType> {
         }
     }
 
+    // fn compute_offset_within_device(
+    //     addr: AddrType,
+    //     base_addr: AddrType,
+    // ) -> usize {
+    //     (addr - base_addr) as usize
+    // }
+
     // testing facilities
     pub fn ready_for_testing(&mut self) {
         self.initialized = true;
@@ -85,7 +91,7 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
         {
             trace!("Reading memory at addr: {address:#018X?}");
 
-            let offset = address - self.ram_base;
+            let offset = (address - self.ram_base) as usize;
             self.memory.read(offset)
         } else {
             error!(
@@ -118,7 +124,7 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
         {
             trace!("Writing memory at addr: {address:#018X?}");
 
-            let offset = address - self.ram_base;
+            let offset = (address - self.ram_base) as usize;
             self.memory.write(offset, value);
         } else {
             error!(
@@ -139,7 +145,7 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
         {
             trace!("Reading instruction from memory at addr: {address:#018X?}");
 
-            let offset = address - self.ram_base;
+            let offset = (address - self.ram_base) as usize;
             self.memory.read(offset)
         } else {
             error!(
