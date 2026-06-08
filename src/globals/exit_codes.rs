@@ -6,6 +6,9 @@
 pub enum ExitCode {
     Success = 0,
     // Error = 1,
+    ConfigRead = 2,
     ConfigBuild = 78,
     ConfigValidation = 65,
+
+    ElfRead = 3,
 }

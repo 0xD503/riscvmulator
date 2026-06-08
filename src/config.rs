@@ -145,7 +145,9 @@ impl Config {
 
         let mut config = Figment::from(Serialized::defaults(Config::default()));
         if let Some(conf_file) = &cli_args.config_file {
-            config = config.merge(Toml::file(conf_file.clone()));
+            config = config.merge(Toml::file(conf_file));
+        } else {
+            return Err(ConfigError::Read(cli_args.config_file.clone()));
         }
         config = config.merge(
             Env::prefixed(CONFIG_ENV_VAR_PREFIX)
@@ -225,6 +227,7 @@ impl Config {
 }
 
 pub enum ConfigError {
+    Read(Option<String>),
     Build(figment::Error),
     Validation(Vec<String>),
 }
@@ -232,6 +235,7 @@ pub enum ConfigError {
 impl ConfigError {
     pub fn exit_code(&self) -> i32 {
         match self {
+            Self::Read(_) => ExitCode::ConfigRead as i32,
             Self::Build(_) => ExitCode::ConfigBuild as i32,
             Self::Validation(_) => ExitCode::ConfigValidation as i32,
         }
@@ -241,13 +245,20 @@ impl ConfigError {
 impl fmt::Display for ConfigError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
+            Self::Read(path) => {
+                if let Some(path) = path {
+                    writeln!(formatter, "failed to open file: {path}")
+                } else {
+                    writeln!(formatter, "failed to open file: path not set")
+                }
+            }
             Self::Build(error) => {
                 writeln!(formatter, "failed to build config: {error}")
             }
             Self::Validation(errors) => {
                 writeln!(
                     formatter,
-                    "The following erros occurred during config validation:"
+                    "The following errors occurred during config validation:"
                 )?;
                 for err in errors {
                     writeln!(formatter, "{err}")?;

@@ -1,4 +1,5 @@
 use crate::constants::arch::XLen;
+use crate::globals::exit_codes::ExitCode;
 use crate::soc::memory_bus::Bus;
 // use crate::soc::soc::SoC;
 use crate::soc::SoC;
@@ -17,7 +18,10 @@ pub struct ElfData {
 }
 
 pub fn load_elf(file_path: PathBuf, soc: &mut SoC) -> Option<ElfData> {
-    let content = fs::read(file_path).unwrap();
+    let content = fs::read(file_path).unwrap_or_else(|error| {
+        error!("failed to read file, reason: {error}");
+        std::process::exit(ExitCode::ElfRead as i32);
+    });
     let slice = content.as_slice();
     let file = ElfBytes::<AnyEndian>::minimal_parse(slice).ok()?;
 

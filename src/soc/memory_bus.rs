@@ -11,7 +11,6 @@ use super::cpu::core::decoder::constants::Opcode;
 
 pub trait Bus<AddrType> {
     fn memory_reset(&mut self);
-    fn ram_end(&self) -> XLen;
 
     // data read/write
     fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
@@ -62,8 +61,8 @@ impl<AddrType: std::ops::Sub> SystemBus<AddrType> {
 
     pub fn fill_with_nops(&mut self) {
         self.memory_reset();
-        for addr in (self.ram_base..self.ram_end())
-            .step_by(size_of::<InstructionType>())
+        for addr in
+            (self.ram_base..self.ram_end).step_by(size_of::<InstructionType>())
         {
             self.write(addr, Opcode::OP_IMM as Byte);
         }
@@ -88,7 +87,7 @@ impl<AddrType: std::ops::Sub> SystemBus<AddrType> {
 
 impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
     fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
-        if (self.ram_base..=(self.ram_end() - size_of::<MemValType>() as XLen))
+        if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
             .contains(&address)
         {
             trace!("Reading memory at addr: {address:#018X?}");
@@ -121,7 +120,7 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
                 }
             }
         }
-        if (self.ram_base..=(self.ram_end() - size_of::<MemValType>() as XLen))
+        if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
             .contains(&address)
         {
             trace!("Writing memory at addr: {address:#018X?}");
@@ -142,7 +141,7 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
         &self,
         address: XLen,
     ) -> MemValType {
-        if (self.ram_base..=(self.ram_end() - size_of::<MemValType>() as XLen))
+        if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
             .contains(&address)
         {
             trace!("Reading instruction from memory at addr: {address:#018X?}");
@@ -161,9 +160,5 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
 
     fn memory_reset(&mut self) {
         self.memory.reset();
-    }
-
-    fn ram_end(&self) -> XLen {
-        self.ram_end
     }
 }
