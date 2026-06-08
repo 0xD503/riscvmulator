@@ -17,6 +17,8 @@ use super::constants::arch::XLen;
 
 use self::constants::*;
 
+use crate::globals::exit_codes::ExitCode;
+
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
@@ -167,10 +169,10 @@ impl Config {
             ));
         }
 
-        if let Some(throttle_freq) = &cli_args.throttle_freq {
+        if let Some(throttle_frequency) = &cli_args.throttle_frequency {
             config = config.merge(Serialized::default(
-                "emulator.throttle_freq",
-                throttle_freq,
+                "emulator.throttle_frequency",
+                throttle_frequency,
             ));
         }
         if let Some(log_level) = &cli_args.log_level {
@@ -183,7 +185,7 @@ impl Config {
         }
 
         let mut config: Config =
-            config.extract().map_err(|err| ConfigError::Build(err))?;
+            config.extract().map_err(ConfigError::Build)?;
 
         config.validate()?;
         config.resolve();
@@ -192,7 +194,6 @@ impl Config {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
-        // let mut valid = true;
         let mut errors_list = Vec::new();
 
         if self.soc.bus.memory.size_bytes == 0 {
@@ -215,8 +216,9 @@ impl Config {
         }
     }
 
-    /// autoresloves some values from existing ones
+    /// autoresolves some values from existing ones
     fn resolve(&mut self) {
+        // TODO: autoresolves
         // self.soc.bus.memory.ram_end = self.soc.bus.memory.base_addr
         //     + self.soc.bus.memory.size_bytes as XLen;
     }
@@ -225,6 +227,15 @@ impl Config {
 pub enum ConfigError {
     Build(figment::Error),
     Validation(Vec<String>),
+}
+
+impl ConfigError {
+    pub fn exit_code(&self) -> i32 {
+        match self {
+            Self::Build(_) => ExitCode::ConfigBuild as i32,
+            Self::Validation(_) => ExitCode::ConfigValidation as i32,
+        }
+    }
 }
 
 impl fmt::Display for ConfigError {
@@ -236,7 +247,7 @@ impl fmt::Display for ConfigError {
             Self::Validation(errors) => {
                 writeln!(
                     formatter,
-                    "The following erros occured during config validation:"
+                    "The following erros occurred during config validation:"
                 )?;
                 for err in errors {
                     writeln!(formatter, "{err}")?;

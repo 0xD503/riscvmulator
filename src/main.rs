@@ -6,7 +6,7 @@ use riscvmulator::{init, soc::SoC};
 fn main() {
     let config = init().unwrap_or_else(|errors| {
         error!("{errors}");
-        std::process::exit(1);
+        std::process::exit(errors.exit_code());
     });
 
     let mut soc: SoC = SoC::new(&config.soc);

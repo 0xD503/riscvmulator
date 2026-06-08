@@ -156,7 +156,7 @@ impl MemoryValue for DoubleWord {
 //     fn zero_extend(&self) -> XLen {
 //         *self as XLen
 //     }
-//
+
 //     fn to_u64(&self) -> u64 {
 //         *self as u64
 //     }
@@ -180,7 +180,11 @@ impl<AddrType> Memory<AddrType> {
     pub fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
         trace!("Reading memory at offset: {offset:#018X?}");
 
-        // TODO: probably incorrect (possible out of bound access)
+        // bus makes bounds check, so we assume that `offset` is always correct
+        debug_assert!(
+            offset + size_of::<MemValType>() <= self.byte_array.len()
+        );
+
         let bytes = (self.byte_array)[offset..offset + size_of::<MemValType>()]
             .try_into()
             .unwrap();
@@ -194,6 +198,11 @@ impl<AddrType> Memory<AddrType> {
         value: MemValType,
     ) {
         trace!("Writing memory at offset: {offset:#018X?}");
+
+        // bus makes bounds check, so we assume that `offset` is always correct
+        debug_assert!(
+            offset + size_of::<MemValType>() <= self.byte_array.len()
+        );
 
         // TODO: notice, so far emulator only supports little-endian
         let bytes = value.to_le_bytes();

@@ -4,6 +4,8 @@ use serde::Serialize;
 
 use crate::utils;
 
+use super::globals::exit_codes::ExitCode;
+
 #[allow(non_camel_case_types)]
 #[derive(Parser, Serialize, Clone, Debug)]
 #[command(version, about)]
@@ -26,7 +28,7 @@ pub struct CLI_Args {
     pub(crate) memory_size: Option<usize>,
     #[arg(long, required = false)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) throttle_freq: Option<u64>,
+    pub(crate) throttle_frequency: Option<u64>,
     #[arg(long, required = false)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) log_level: Option<String>,
@@ -37,7 +39,7 @@ pub fn parse_args() -> CLI_Args {
 
     if args.license {
         utils::print_license_text();
-        std::process::exit(0);
+        std::process::exit(ExitCode::Success as i32);
     }
 
     args

@@ -2,6 +2,7 @@
 pub mod config;
 mod constants;
 pub mod elf_loader;
+mod globals;
 mod logger;
 mod parse_args;
 pub mod soc;

@@ -20,8 +20,8 @@ pub type Word = u32;
 pub type SignedWord = i32;
 pub type DoubleWord = u64;
 pub type SignedDoubleWord = i64;
-// type QuadWord = u128;
-// type SignedQuadWord = i128;
+// pub type QuadWord = u128;
+// pub type SignedQuadWord = i128;
 
 pub type SignedImmediate = i32;
 pub type UnsignedImmediate = u32;
