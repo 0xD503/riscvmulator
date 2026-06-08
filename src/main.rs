@@ -1,3 +1,5 @@
+use log::info;
+
 use riscvmulator::elf_loader::load_elf;
 use riscvmulator::{init, soc::SoC};
 
@@ -5,11 +7,15 @@ fn main() {
     let config = init();
 
     let mut soc: SoC = SoC::new(&config.soc);
-
     soc.reset(&config.soc);
+    info!("SoC was reset");
 
-    // dbg!("{:?}", config.emulator.input_file.clone());
-    load_elf(config.emulator.input_file.unwrap().into(), &mut soc);
+    if let Some(in_file) = config.emulator.input_file {
+        load_elf(in_file.into(), &mut soc);
+    } else {
+        info!("running in interactive mode");
+        todo!("interactive mode");
+    }
 
     soc.ready_for_testing();
 

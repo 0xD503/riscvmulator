@@ -1,38 +1,44 @@
 use clap::Parser;
+// use log::debug;
 use serde::Serialize;
 
 use crate::utils;
 
 #[allow(non_camel_case_types)]
-#[derive(Serialize, Clone, Debug)]
+#[derive(Parser, Serialize, Clone, Debug)]
+#[command(version, about)]
 pub struct CLI_Args {
+    #[arg(long, required = false, action = clap::ArgAction::SetTrue)]
+    #[serde(skip)] // not a config value
+    license: bool,
+    #[arg(long, required = false)]
+    #[serde(skip)] // not a config value, but path to config
+    pub(crate) config_file: Option<String>,
+
+    #[arg(long, required = false)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) input_file: Option<String>,
+    #[arg(long, required = false)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) config_file: Option<String>,
+    pub(crate) harts_num: Option<u32>,
+    #[arg(long, required = false)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) memory_size: Option<usize>,
+    #[arg(long, required = false)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) throttle_freq: Option<u64>,
+    #[arg(long, required = false)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) log_level: Option<String>,
 }
 
 pub fn parse_args() -> CLI_Args {
-    let args = Args::parse();
+    let args = CLI_Args::parse();
 
     if args.license {
         utils::print_license_text();
         std::process::exit(0);
     }
 
-    CLI_Args {
-        input_file: Some(args.input_file),
-        config_file: Some(args.config_file),
-    }
-}
-
-#[derive(Parser)]
-#[command(version, about)]
-struct Args {
-    #[arg(long, required = false, action = clap::ArgAction::SetTrue)]
-    license: bool,
-    #[arg(long, required = true)]
-    input_file: String,
-    #[arg(long, required = false)]
-    config_file: String,
+    args
 }

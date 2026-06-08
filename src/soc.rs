@@ -68,8 +68,8 @@ impl SoC {
             },
             bus: SystemBus::new(
                 MEM_RESET_VALUE,
+                cfg.bus.memory.base_addr,
                 cfg.bus.memory.size_bytes,
-                cfg.bus.ram_base,
             ),
         }
     }

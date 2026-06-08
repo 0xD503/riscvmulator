@@ -41,7 +41,7 @@ pub struct SystemBus<AddrType> {
 }
 
 impl<AddrType> SystemBus<AddrType> {
-    pub fn new(fill_value: Byte, ram_size: usize, ram_base: XLen) -> Self {
+    pub fn new(fill_value: Byte, ram_base: XLen, ram_size: usize) -> Self {
         Self {
             ram_base,
             memory: Memory::new(fill_value, ram_size),

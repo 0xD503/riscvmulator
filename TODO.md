@@ -188,9 +188,9 @@ detect this at the instruction boundary so all subsequent work is C-aware.
 - [x] Fix `config.rs`: remove hardcoded relative path to `cfg/emulator.toml`
 - [ ] Populate `EmulatorCfg` struct (memory size, extension flags, log level,
       device list, hart count)
-- [ ] Config priority order: compiled defaults → `emulator.toml` → env vars → CLI
-- [ ] Memory size from config actually applied (currently computed and dropped)
-- [ ] Per-extension enable flags in config (M, A, F, D, C, Zifencei, etc.)
+- [x] Config priority order: compiled defaults → `emulator.toml` → env vars → CLI
+- [x] Memory size from config actually applied (currently computed and dropped)
+- [x] Per-extension enable flags in config (M, A, F, D, C, Zifencei, etc.)
 - [ ] Per-device fields needed for DTB generation: base address, size, IRQ line
       (so the device tree can be derived from config — see "Hardware description"
       decision; consumed at Phase 15)

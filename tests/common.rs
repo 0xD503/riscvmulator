@@ -1,6 +1,10 @@
 use riscvmulator::config::SocCfg;
+use riscvmulator::elf_loader::load_elf;
 use riscvmulator::soc::SoC;
-use riscvmulator::{elf_loader::load_elf, init_test};
+
+fn init_test() {
+    //
+}
 
 pub fn run_test(test_path: &'static str) {
     init_test();

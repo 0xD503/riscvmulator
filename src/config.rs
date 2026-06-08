@@ -6,7 +6,7 @@ use figment::{
     Figment,
     providers::{Env, Format, Serialized, Toml},
 };
-use log::error;
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
 use super::CLI_Args;
@@ -48,13 +48,17 @@ impl Default for HartCfg {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(super) struct MemoryCfg {
+    pub(super) base_addr: XLen,
     pub(super) size_bytes: usize,
+    ram_end: XLen,
 }
 
 impl Default for MemoryCfg {
     fn default() -> Self {
         Self {
+            base_addr: DEFAULT_RAM_BASE,
             size_bytes: DEFAULT_MEMORY_SIZE,
+            ram_end: DEFAULT_RAM_END,
         }
     }
 }
@@ -62,16 +66,12 @@ impl Default for MemoryCfg {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BusCfg {
     pub(super) memory: MemoryCfg,
-    pub(super) ram_base: XLen,
-    ram_end: XLen,
 }
 
 impl Default for BusCfg {
     fn default() -> Self {
         Self {
             memory: MemoryCfg::default(),
-            ram_base: DEFAULT_RAM_BASE,
-            ram_end: DEFAULT_RAM_END,
         }
     }
 }
@@ -97,7 +97,6 @@ impl Default for SocCfg {
 pub struct EmulatorCfg {
     log_level: String,
     pub input_file: Option<String>,
-    // config_file: Option<String>,
 }
 
 impl Default for EmulatorCfg {
@@ -105,7 +104,6 @@ impl Default for EmulatorCfg {
         Self {
             log_level: String::from_str(DEFAULT_LOG_LEVEL).unwrap(),
             input_file: None,
-            // config_file: None,
         }
     }
 }
@@ -127,29 +125,58 @@ impl Default for Config {
 
 impl Config {
     pub fn build(cli_args: &CLI_Args) -> Config {
-        let mut config = Figment::from(Serialized::defaults(Config::default()))
-            .merge(Toml::file(cli_args.config_file.as_ref().unwrap().clone()))
-            .merge(Env::prefixed(CONFIG_ENV_VAR_PREFIX));
+        debug!("Building emulator config");
 
+        let mut config = Figment::from(Serialized::defaults(Config::default()));
+        if let Some(conf_file) = &cli_args.config_file {
+            config = config.merge(Toml::file(conf_file.clone()));
+        }
+        config = config.merge(
+            Env::prefixed(CONFIG_ENV_VAR_PREFIX)
+                // if you want to use environment variable, it should use
+                // double undescores (`__`) to substitute dots `.` in
+                // nesting objects.
+                // For example, in order to set `soc.bus.memory.size_bytes`
+                // you should use prefixed environment variable:
+                // `RVMULATOR_SOC__BUS__MEMORY__SIZE_BYTES`
+                .split("__"),
+        );
+        // overrides provided by CLI args
+        if let Some(harts_num) = &cli_args.harts_num {
+            config =
+                config.merge(Serialized::default("soc.harts_num", harts_num));
+        }
+        if let Some(memory_size) = &cli_args.memory_size {
+            config = config.merge(Serialized::default(
+                "soc.bus.memory.size_bytes",
+                memory_size,
+            ));
+        }
+
+        if let Some(throttle_freq) = &cli_args.throttle_freq {
+            config = config.merge(Serialized::default(
+                "emulator.throttle_freq",
+                throttle_freq,
+            ));
+        }
+        if let Some(log_level) = &cli_args.log_level {
+            config = config
+                .merge(Serialized::default("emulator.log_level", log_level));
+        }
         if let Some(input_file) = &cli_args.input_file {
             config = config
                 .merge(Serialized::default("emulator.input_file", input_file));
         }
-        // .merge(Serialized::defaults(cli_args))
+
         let mut config: Config = config
             .extract()
             // TODO: get rid of panic
             .expect("failed to build config");
 
-        // dbg!(":?", config);
-        // dbg!(":?", cli_args);
         Config::validate(&config);
         Config::resolve(&mut config);
 
         config
-        // Config {
-        //     ..Default::default()
-        // }
     }
 
     fn validate(cfg: &Config) {
@@ -157,15 +184,15 @@ impl Config {
 
         if cfg.soc.bus.memory.size_bytes == 0 {
             valid = false;
-            error!("Memory size should be > 0");
+            error!("memory size should be > 0");
         }
         if cfg.soc.harts_num < 1 {
             valid = false;
-            error!("Number of harts should be >= 1");
+            error!("number of harts should be >= 1");
         }
-        if cfg.emulator.input_file.is_none() {
+        if cfg.soc.hart.extension_I == false {
             valid = false;
-            error!("Input file should be provided");
+            error!("RISC-V base integer extension is not enabled");
         }
         // TODO: add more checks
 
@@ -176,7 +203,7 @@ impl Config {
 
     /// autoresloves some values from existing ones
     fn resolve(cfg: &mut Config) {
-        cfg.soc.bus.ram_end =
-            cfg.soc.bus.ram_base + cfg.soc.bus.memory.size_bytes as XLen;
+        cfg.soc.bus.memory.ram_end = cfg.soc.bus.memory.base_addr
+            + cfg.soc.bus.memory.size_bytes as XLen;
     }
 }
