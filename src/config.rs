@@ -1,12 +1,15 @@
 mod constants;
 
-use std::str::FromStr;
+use std::{
+    fmt::{self, Formatter},
+    str::FromStr,
+};
 
 use figment::{
     Figment,
     providers::{Env, Format, Serialized, Toml},
 };
-use log::{debug, error};
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 use super::CLI_Args;
@@ -52,8 +55,8 @@ impl Default for HartCfg {
 pub(super) struct MemoryCfg {
     pub(super) base_addr: XLen,
     pub(super) size_bytes: usize,
-    #[serde(skip)]
-    ram_end: XLen,
+    // #[serde(skip)]
+    // ram_end: XLen,
 }
 
 impl Default for MemoryCfg {
@@ -61,7 +64,7 @@ impl Default for MemoryCfg {
         Self {
             base_addr: DEFAULT_RAM_BASE,
             size_bytes: DEFAULT_MEMORY_SIZE,
-            ram_end: DEFAULT_RAM_END,
+            // ram_end: DEFAULT_RAM_END,
         }
     }
 }
@@ -135,7 +138,7 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn build(cli_args: &CLI_Args) -> Config {
+    pub fn build(cli_args: &CLI_Args) -> Result<Config, ConfigError> {
         debug!("Building emulator config");
 
         let mut config = Figment::from(Serialized::defaults(Config::default()));
@@ -179,42 +182,67 @@ impl Config {
                 .merge(Serialized::default("emulator.input_file", input_file));
         }
 
-        let mut config: Config = config
-            .extract()
-            // TODO: get rid of panic
-            .expect("failed to build config");
+        let mut config: Config =
+            config.extract().map_err(|err| ConfigError::Build(err))?;
 
-        Config::validate(&config);
-        Config::resolve(&mut config);
+        config.validate()?;
+        config.resolve();
 
-        config
+        Ok(config)
     }
 
-    fn validate(cfg: &Config) {
-        let mut valid = true;
+    fn validate(&self) -> Result<(), ConfigError> {
+        // let mut valid = true;
+        let mut errors_list = Vec::new();
 
-        if cfg.soc.bus.memory.size_bytes == 0 {
-            valid = false;
-            error!("memory size should be > 0");
+        if self.soc.bus.memory.size_bytes == 0 {
+            errors_list.push("memory size should be > 0".to_string());
         }
-        if cfg.soc.harts_num < 1 {
-            valid = false;
-            error!("number of harts should be >= 1");
+        if self.soc.harts_num < 1 {
+            errors_list.push("number of harts should be >= 1".to_string());
         }
-        if !cfg.soc.hart.extension_I {
-            valid = false;
-            error!("RISC-V base integer extension is not enabled");
+        if !self.soc.hart.extension_I {
+            errors_list.push(
+                "RISC-V base integer extension is not enabled".to_string(),
+            );
         }
         // TODO: add more checks
 
-        if !valid {
-            std::process::exit(1);
+        if errors_list.is_empty() {
+            Ok(())
+        } else {
+            Err(ConfigError::Validation(errors_list))
         }
     }
 
     /// autoresloves some values from existing ones
-    fn resolve(cfg: &mut Config) {
-        cfg.soc.bus.memory.ram_end = cfg.soc.bus.memory.base_addr
-            + cfg.soc.bus.memory.size_bytes as XLen;
+    fn resolve(&mut self) {
+        // self.soc.bus.memory.ram_end = self.soc.bus.memory.base_addr
+        //     + self.soc.bus.memory.size_bytes as XLen;
+    }
+}
+
+pub enum ConfigError {
+    Build(figment::Error),
+    Validation(Vec<String>),
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        match self {
+            Self::Build(error) => {
+                writeln!(formatter, "failed to build config: {error}")
+            }
+            Self::Validation(errors) => {
+                writeln!(
+                    formatter,
+                    "The following erros occured during config validation:"
+                )?;
+                for err in errors {
+                    writeln!(formatter, "{err}")?;
+                }
+                Ok(())
+            }
+        }
     }
 }

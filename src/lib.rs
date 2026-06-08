@@ -11,11 +11,11 @@ mod utils;
 // use log::{debug, error, info, trace, warn};
 
 // current project imports
-use config::Config;
+use config::{Config, ConfigError};
 use logger::init_logger;
 use parse_args::{CLI_Args, parse_args};
 
-pub fn init() -> Config {
+pub fn init() -> Result<Config, ConfigError> {
     init_logger();
     let args = parse_args();
     let config = Config::build(&args.clone());

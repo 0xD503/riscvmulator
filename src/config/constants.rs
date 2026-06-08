@@ -14,8 +14,8 @@ pub const DEFAULT_XTAL_FREQ_HZ: u64 = 16384;
 pub const DEFAULT_PC_RESET_VALUE: XLen = DEFAULT_RAM_BASE;
 pub const DEFAULT_RAM_BASE: XLen = 0x8000_0000;
 pub const DEFAULT_MEMORY_SIZE: usize = 65536; // 64 KB
-pub const DEFAULT_RAM_END: XLen =
-    DEFAULT_RAM_BASE + DEFAULT_MEMORY_SIZE as XLen;
+// pub const DEFAULT_RAM_END: XLen =
+//     DEFAULT_RAM_BASE + DEFAULT_MEMORY_SIZE as XLen;
 
 pub const DEFAULT_LOG_LEVEL: &str = "info";
 pub const DEFAULT_THROTTLE_FREQ: u64 = 0;

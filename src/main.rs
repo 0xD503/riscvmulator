@@ -1,10 +1,13 @@
-use log::info;
+use log::{error, info};
 
 use riscvmulator::elf_loader::load_elf;
 use riscvmulator::{init, soc::SoC};
 
 fn main() {
-    let config = init();
+    let config = init().unwrap_or_else(|errors| {
+        error!("{errors}");
+        std::process::exit(1);
+    });
 
     let mut soc: SoC = SoC::new(&config.soc);
     soc.reset(&config.soc);
