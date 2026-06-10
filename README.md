@@ -17,7 +17,7 @@ compliance tests.
 
 ### Prerequisites
 
-- `podman`/`podman-compose`
+- `podman`/`podman-compose` or `docker`
 - `just` task runner
 
 ### Clone, init, build, test, run
@@ -28,6 +28,12 @@ compliance tests.
 git clone --recurse-submodules https://github.com/0xD503/riscvmulator.git
 cd riscvmulator
 git submodule update --init --recursive
+```
+
+If you use Docker instead of Podman, set `CONTAINER_ENGINE` variable:
+
+```Shell
+export CONTAINER_ENGINE=docker
 ```
 
 #### Build release version

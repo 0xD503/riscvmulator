@@ -1,4 +1,4 @@
-## all podman services (containers)
+## all container services (containers)
 services:
   ## release container
   emulator:
@@ -6,6 +6,8 @@ services:
     build:
       ## use `COntainerfile` withing current dir
       context: .
+      ## container file name within context
+      dockerfile: Containerfile
       ## stop build at `${RELEASE_CONTAINER_NAME}` stage
       target: ${RELEASE_CONTAINER_NAME}
       args:
@@ -21,11 +23,13 @@ services:
 
   ## development container: Rust + RISC-V toolchain, source mounted live
   ## Usage:
-  ##   podman-compose run --rm dev              → interactive shell
-  ##   podman-compose run --rm dev cargo build  → one-off command
+  ##   ${CONTAINER_ENGINE} run --rm dev              → interactive shell
+  ##   ${CONTAINER_ENGINE} run --rm dev cargo build  → one-off command
   dev:
     build:
       context: .
+      ## container file name within context
+      dockerfile: Containerfile
       target: ${DEV_CONTAINER_NAME}
       args:
         WD: ${WD}
@@ -48,7 +52,7 @@ services:
     ## command to run on container run: interactive shell
     command: ${USER_SHELL}
     ## map host identity to container user so bind-mount files stay user's
-    userns_mode: "keep-id"
+    userns_mode: "${DEV_USERNS_MODE:-keep-id}"
 
 ## declare named volumes to keep them between container runs
 volumes:

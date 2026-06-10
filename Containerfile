@@ -59,6 +59,9 @@ RUN rm -rf src
 COPY . .
 RUN touch src/main.rs && cargo build --${BUILD_TYPE}
 
+## mark "inside dev container" for the justfile's RUN_IN_CONTAINER detection
+ENV IN_DEV_CONTAINER=1
+
 ## switch to dev user
 USER ${DEV_USERNAME}
 
@@ -86,6 +89,10 @@ RUN apt-get update && apt-get install --assume-yes \
 WORKDIR ${WD}
 
 RUN useradd -m -s ${USER_SHELL} ${USERNAME}
+
+## mark "inside container"
+ENV IN_APP_CONTAINER=1
+
 USER ${USERNAME}
 
 COPY --from=${DEV_CONTAINER_NAME} ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
