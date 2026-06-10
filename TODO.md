@@ -2,8 +2,7 @@
 
 ## Following action
 
-- refactor device discovery, add HTIF as device, not statically hard code in bus
-- phase 3
+- phase5
 
 ## Tech debt
 
@@ -44,8 +43,6 @@
 ## Linux Readiness Roadmap
 
 ### Architectural decisions
-
-These decisions affect every phase below; resolve them upfront.
 
 - **Hot-plug model**: pause-point — simulation loop checks an `AtomicBool` between
   steps; device list is only modified at those pause points (no locking on bus
@@ -97,110 +94,27 @@ These decisions affect every phase below; resolve them upfront.
 
 ---
 
-### Phase 0 — Bug fixes (prerequisite, do first)
-
-- [x] `FENCE_I`: decode path falls into `unreachable!()` — stub as no-op
-- [x] `MStatus_MPP::From<XLen>`: only handles `0b00` (USER); add 1=SUPERVISOR,
-      2=HYPERVISOR, 3=MACHINE
-- [x] `SoC::reset()`: does not reset `decoder` or `execution` context fields
-- [x] `elf_loader`: `.ok().unwrap().unwrap()` on symbol table panics on stripped
-      ELF — convert to `Result`
-- [x] `is_need_to_advance_pc()`: `if cond { true } else { false }` → just `cond`
-
----
-
 ### Phase 1 — Modularize lib.rs
 
-Pure mechanical refactor; no behavior change. Run tests after each file move.
-
-Target layout (module skeletons already exist, just empty):
-
-- `lib.rs` — `SoC` struct + `step()` only
-- `soc/cpu/core/decoder/mod.rs` — `Decoder`, `FENCE_Context`, `decode_*_format()`,
-  `decode()`
-- `soc/cpu/core/executor/mod.rs` — `ExecutionContext`, `execute_*()`, `execute()`
-- `soc/cpu/core/mod.rs` — `Context` struct
-- `soc/cpu/mod.rs` — `Hart`, `memory_operation()`, `write_back()`,
-  `advance_pc()`
-- `soc/cpu/priveleged/` — privilege types currently scattered in lib.rs
-
-- [x] Move decoder structs and methods; tests pass
-- [x] Move executor structs and methods; tests pass
-- [x] Move `Context` and `Hart`; tests pass
-- [x] Move privilege types; tests pass
+- [x] `FetchUnit`/`Decoder`/`Executor`, `ArchState`
 
 ---
 
-### Phase 2 — Fetch/decode redesign (C extension readiness)
+### Phase 2 — Fetch/decode redesign
 
-Compressed instructions are 16-bit (bits[1:0] ≠ `0b11`). The fetch stage must
-detect this at the instruction boundary so all subsequent work is C-aware.
-
-- [x] Fetch reads 16 bits first; if bits[1:0] == `0b11`, reads remaining 16 bits
-- [x] Add `instruction_size: u8` (2 or 4) to decoder context
-- [x] `advance_pc()` uses `decoder.instruction_size` instead of hardcoded 4
-- [x] All existing RV64I tests still pass (they only produce 32-bit instructions)
+- [x] fetch is 16/32-bit aware via `instruction_size`
 
 ---
 
 ### Phase 3 — Memory model cleanup
 
-- [x] `MemoryValue::to_le_bytes()`: change return from `Vec<Byte>` to a fixed-size
-      array — eliminates heap allocation on every store instruction
-- [ ] ~~Remove unused phantom type from `Memory<AddrType>`~~
-- [ ] ~~Remove unused phantom type from `SystemBus<AddrType>`~~
-- [x] Bounds-check the _full_ access, not just the start address: a multi-byte
-      load/store straddling `RAM_END` currently slices past the `Vec` and panics
-      unintentionally (this is a real bug, not an ISA placeholder)
+- [x] `to_le_bytes()` refactored; memory access bounds check past `RAM_END`
 
 ---
 
 ### Phase 4 — Configuration system
 
-- [x] Fix `config.rs`: remove hardcoded relative path to `cfg/emulator.toml`
-- [x] Populate config structs (memory size, extension flags, log level, hart
-      count) — present and deserialized; device list still pending (below)
-- [x] Config priority order: compiled defaults → `emulator.toml` → env vars → CLI
-- [x] Memory size from config actually applied (currently computed and dropped)
-- [x] Per-extension enable flags in config (M, A, F, D, C, Zifencei, etc.)
-- [x] `log_level` actually applied to the logger — currently parsed but inert
-      (`--log-level=trace` produces no trace output). `init_logger()` runs before
-      `Config::build()` and `env_logger` inits only once, so the value arrives too
-      late. Fix: build the logger after config, feeding `emulator.log_level` as the
-      default filter (RVMULATOR_EMULATOR**LOGGING**LEVEL still overrides)
-- [x] Device list config: a `devices` array (`Vec<DeviceCfg>`) on the bus carrying
-      the per-device fields needed for DTB generation — base address, size, IRQ
-      line (so the device tree can be derived from config — see "Hardware
-      description" decision; schema shaped at Phase 4, consumed at Phase 15)
-
----
-
-### Phase 4.2 — Docker support (Podman alternative)
-
-The `justfile` already reads `CONTAINER_ENGINE` (defaults to `podman`), so the
-recipes are mostly engine-agnostic. These are the gaps that block a clean
-`CONTAINER_ENGINE=docker just test` for contributors who only have Docker:
-
-- [ ] In-container detection works under Docker: `IS_IN_CONTAINER` keys off the
-      `$container` env var, which Podman sets automatically but Docker does not.
-      Set an explicit marker in the `Containerfile` (e.g. `ENV container=docker`
-      or a dedicated `IN_DEV_CONTAINER=1`) — or detect `/.dockerenv` — so nested
-      compose calls are skipped inside a Docker dev shell too
-- [ ] Compose invocation form: `COMPOSE` hardcodes `{{CONTAINER_ENGINE}}-compose`
-      (hyphen). Docker v2 ships `docker compose` (plugin, space); legacy
-      `docker-compose` may be absent. Make the compose command engine-aware
-- [ ] Compose file discovery: the file is named `podman-compose.yml`, which
-      `docker compose` won't auto-load (it looks for `compose.yml` /
-      `docker-compose.yml`). Either pass `-f podman-compose.yml` in the recipes
-      or rename to a neutral `compose.yml` both engines pick up
-- [ ] Mounted-file ownership: rootless Podman maps host user ↔ container; Docker
-      writes bind-mounted files (e.g. `target/`, `cargo fmt` output) as root by
-      default. Add `user:`/UID-GID mapping (or `userns`) so build artifacts stay
-      host-user-owned under Docker
-- [ ] Verify image build under Docker: confirm compose references `Containerfile`
-      explicitly (`docker build` defaults to `Dockerfile`)
-- [ ] Document `CONTAINER_ENGINE=docker` usage in `CLAUDE.md` / README once the
-      above work; note any `docker compose` vs `docker-compose` caveat
+- [x] configuraion with figment (defaults ← TOML ← `RVMULATOR_*` env vars ← CLI args), `RUST_LOG` changed to `RVMULATOR_EMULATOR__LOGGING__LEVEL`
 
 ---
 
@@ -419,8 +333,7 @@ Depends on: Phase 6 (`Device` trait already WIT-compatible)
 - [ ] Plugin loader: `.wasm` path + base address specified in `emulator.toml`
 - [ ] Sandbox: each plugin in its own `wasmtime::Store`; host exports explicit
       and minimal
-- [ ] Port HTIF to Wasm as reference implementation / smoke test
 
 ### Phase 17 - Implement some device as extension
 
-- [ ] implemented
+- [ ] Port HTIF to Wasm as reference implementation / smoke test
