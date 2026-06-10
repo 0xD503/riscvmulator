@@ -44,7 +44,7 @@ impl FetchUnit {
         bus: &SystemBus<BusAddrType>,
         pc: &Register,
     ) {
-        trace!("Fetching instruction at addr: {pc:#018X?}");
+        trace!("Fetching instruction at addr: {:#018X?}", pc.read());
 
         // //
         // // first way

@@ -17,9 +17,9 @@ use logger::init_logger;
 use parse_args::{CLI_Args, parse_args};
 
 pub fn init() -> Result<Config, ConfigError> {
-    init_logger();
     let args = parse_args();
     let config = Config::build(&args.clone());
+    init_logger(&config);
 
     config
 }

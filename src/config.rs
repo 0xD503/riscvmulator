@@ -1,17 +1,15 @@
-mod constants;
+pub mod constants;
 
 use std::{
     error::Error,
     fmt::{self, Formatter},
     fs,
-    str::FromStr,
 };
 
 use figment::{
     Figment,
     providers::{Env, Format, Serialized, Toml},
 };
-use log::{debug, info};
 use serde::{Deserialize, Serialize};
 
 use super::CLI_Args;
@@ -129,18 +127,34 @@ impl Default for SocCfg {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
+pub(crate) struct LoggingCfg {
+    pub(crate) level: String,
+    pub(crate) style: String,
+}
+
+impl Default for LoggingCfg {
+    fn default() -> Self {
+        Self {
+            level: DEFAULT_LOG_LEVEL.to_string(),
+            style: DEFAULT_LOG_STYLE.to_string(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct EmulatorCfg {
-    log_level: String,
     pub input_file: Option<String>,
     throttle_frequency: u64,
+    pub(crate) logging: LoggingCfg,
 }
 
 impl Default for EmulatorCfg {
     fn default() -> Self {
         Self {
-            log_level: String::from_str(DEFAULT_LOG_LEVEL).unwrap(),
             input_file: None,
             throttle_frequency: DEFAULT_THROTTLE_FREQ,
+            logging: Default::default(),
         }
     }
 }
@@ -163,7 +177,7 @@ impl Default for Config {
 
 impl Config {
     pub fn build(cli_args: &CLI_Args) -> Result<Config, ConfigError> {
-        debug!("Building emulator config");
+        // debug!("Building emulator config");
 
         let mut config = Figment::from(Serialized::defaults(Config::default()));
         if let Some(conf_file) = &cli_args.config_file {
@@ -171,7 +185,7 @@ impl Config {
                 .map_err(|_| ConfigError::Read(Some(conf_file.clone())))?;
             config = config.merge(Toml::string(&file_content));
         } else {
-            info!("Configuration file was not provided");
+            // info!("Configuration file was not provided");
         }
         config = config.merge(
             Env::prefixed(CONFIG_ENV_VAR_PREFIX)
@@ -233,7 +247,43 @@ impl Config {
                 "RISC-V base integer extension is not enabled".to_string(),
             );
         }
-        // TODO: add more checks
+        for dev in &self.soc.bus.devices {
+            if dev.size_bytes == 0 {
+                let dev_name = &dev.name;
+                errors_list.push(format!(
+                    "{dev_name} device space size should be > 0"
+                ));
+            }
+            if let Some(irq_line) = &dev.irq_line {
+                if irq_line.0 == 0 {
+                    let dev_name = &dev.name;
+                    errors_list.push(format!(
+                        "{dev_name}: IRQ line shouldn't be == 0"
+                    ));
+                }
+            }
+        }
+        if self.soc.xtal_frequency_hz == 0 {
+            errors_list.push("XTAL frequency should be > 0 Hz".to_string());
+        }
+
+        if self.emulator.logging.level != "off"
+            && self.emulator.logging.level != "error"
+            && self.emulator.logging.level != "warn"
+            && self.emulator.logging.level != "info"
+            && self.emulator.logging.level != "debug"
+            && self.emulator.logging.level != "trace"
+        {
+            let level = &self.emulator.logging.level;
+            errors_list.push(format!("{level}: invalid log level"));
+        }
+        if self.emulator.logging.style != "auto"
+            && self.emulator.logging.style != "always"
+            && self.emulator.logging.style != "never"
+        {
+            let style = &self.emulator.logging.style;
+            errors_list.push(format!("{style}: invalid log style"));
+        }
 
         if errors_list.is_empty() {
             Ok(())

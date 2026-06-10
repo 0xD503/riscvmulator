@@ -191,11 +191,11 @@ detect this at the instruction boundary so all subsequent work is C-aware.
 - [x] Config priority order: compiled defaults → `emulator.toml` → env vars → CLI
 - [x] Memory size from config actually applied (currently computed and dropped)
 - [x] Per-extension enable flags in config (M, A, F, D, C, Zifencei, etc.)
-- [ ] `log_level` actually applied to the logger — currently parsed but inert
+- [x] `log_level` actually applied to the logger — currently parsed but inert
       (`--log-level=trace` produces no trace output). `init_logger()` runs before
       `Config::build()` and `env_logger` inits only once, so the value arrives too
       late. Fix: build the logger after config, feeding `emulator.log_level` as the
-      default filter (RUST_LOG still overrides)
+      default filter (RVMULATOR_EMULATOR**LOGGING**LEVEL still overrides)
 - [x] Device list config: a `devices` array (`Vec<DeviceCfg>`) on the bus carrying
       the per-device fields needed for DTB generation — base address, size, IRQ
       line (so the device tree can be derived from config — see "Hardware

@@ -91,7 +91,7 @@ USER ${USERNAME}
 COPY --from=${DEV_CONTAINER_NAME} ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
 
 ## set runtime environment variables
-ENV RUST_LOG=${RELEASE_LOG_LEVEL}
+ENV RVMULATOR_EMULATOR__LOGGING__LEVEL=${RELEASE_LOG_LEVEL}
 ENV APP_NAME=${APP_NAME}
 
 ## set listening port for container

@@ -1,7 +1,10 @@
 [emulator]
-log_level = "info"
 ## 0 means as fast as possible
 throttle_frequency = 0
+
+[emulator.logging]
+level = "info"
+style = "auto"
 
 [soc]
 harts_num = 1
@@ -30,9 +33,3 @@ name = "uart"
 base_addr = 0x1000_0000
 size_bytes = 100
 irq_line = 10
-
-# [[soc.bus.devices]]
-# name = ""
-# base_addr = 0x0000_0000
-# size_bytes = 0
-# irq_line = 0

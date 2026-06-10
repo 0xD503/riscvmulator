@@ -13,8 +13,8 @@ IS_IN_CONTAINER := env_var_or_default("container", "")
 CONTAINER_ENGINE := env_var_or_default("CONTAINER_ENGINE", "podman")
 COMPOSE := CONTAINER_ENGINE + "-compose run --rm"
 RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" } else { COMPOSE + " " + DEV_SERVICE_NAME + " " }
-RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { "RUST_LOG=debug" + " " } else { COMPOSE + " -e RUST_LOG=debug -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
-RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { "RUST_LOG=trace" + " " } else { COMPOSE + " -e RUST_LOG=trace -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
+RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { "RVMULATOR_EMULATOR__LOGGING__LEVEL=debug" + " " } else { COMPOSE + " -e RVMULATOR_EMULATOR__LOGGING__LEVEL=debug -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
+RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { "RVMULATOR_EMULATOR__LOGGING__LEVEL=trace" + " " } else { COMPOSE + " -e RVMULATOR_EMULATOR__LOGGING__LEVEL=trace -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
 
 
 ## development
