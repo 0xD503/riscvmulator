@@ -31,7 +31,7 @@
 
 ## Refactor
 
-- [ ] use jump table for command execution
+- [ ] use jump table for command execution (→ Phase 8 — see dispatch-table items)
 - [ ] add reset method to `Register`
 
 ## Features
@@ -185,6 +185,25 @@ single-crate-move step; finer multi-crate decomposition stays deferred to last.
 
 ### Phase 8 — Extension framework
 
+Foundational refactor first: the execute-stage **dispatch table** (supersedes
+Refactor → "use jump table"). Land it here, not earlier — it has **no perf
+payoff** (a dense `match` already lowers to a jump table *and* inlines the arms;
+fn-pointers forbid inlining and add an indirect call), so its only value is the
+per-extension decoupling this phase introduces — there's nothing to register
+until extensions exist.
+
+- [ ] Unify executor handler signatures behind an `ExecOperands<'a>` borrow
+      bundle (`&Decoder`, `&CSRFile`, `&Register` pc, `&FetchUnit`) so every
+      handler is one `fn(&mut Executor, &ExecOperands)` type. Required because an
+      `Executor` method can't also take `&Context` (disjoint-borrow rule) — pass
+      the disjoint siblings as a bundle, not the whole context; the bundle is
+      assembled in `execute()`. (May be pulled earlier as a standalone seam so
+      Phase 9+ handlers adopt the uniform signature from the start.)
+- [ ] Replace the `match decoder.command_to_execute` in `Executor::dispatch`
+      with a `[fn(&mut Executor, &ExecOperands); N]` table keyed by
+      `ExecutableCommand` — `static`, so it's shared across harts
+- [ ] Each extension module contributes its own handler slice, so enabling an
+      extension = registering its entries (ties into the per-module split below)
 - [ ] Move base RV64I decode/execute logic to `soc/cpu/extensions/base/`
 - [ ] Each extension gets its own module under `soc/cpu/extensions/`
 - [ ] Decoder queries extension modules in order when opcode unhandled by base ISA
