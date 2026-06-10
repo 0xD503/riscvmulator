@@ -39,34 +39,6 @@
 
 - [ ] generate exception if address is misaligned (→ Phase 11)
 
-## Linux-ready compliance tests
-
-- [x] rv64ui-p-\*
-- [ ] rv64mi-p-\*
-- [ ] rv64si-p-\*
-- [ ] rv64um-p-\*
-- [ ] rv64ua-p-\*
-- [ ] rv64uf-p-\*
-- [ ] rv64ud-p-\*
-- [ ] rv64uq-\*
-- [ ] rv64uc-\*
-
-## Main features
-
-- [x] `RV32I`
-- [x] `RV64I`
-- [ ] `M` extension (mul/div)
-- [ ] `A` extension (atomics)
-- [ ] `F` extension (floating point)
-- [ ] `D` extension
-- [ ] `Zifencei` extension (`FENCE_I` instruction)
-- [ ] `Zicsr` extension (control and status registers (CSRs))
-- [ ] basic privileged ISA
-- [ ] `G` extensions (general purpose `IMAFD` + privileged extensions)
-- [ ] Linux-able
-- [ ] `C` extension (compressed instructions)
-- [ ] `RV64/32E` (embedded)
-
 ---
 
 ## Linux Readiness Roadmap
