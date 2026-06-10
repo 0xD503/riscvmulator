@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 //
 use crate::soc::cpu::core::decoder::constants::Opcode;
 use crate::soc::cpu::privileged::machine::{MXLen, SignedMXLen, UnsignedMXLen};
@@ -33,6 +35,10 @@ pub type InstructionType = u32;
 pub type SignedInstructionType = i32;
 
 pub type BusAddrType = XLen;
+
+#[allow(non_camel_case_types)]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct IRQ_Line(u32);
 
 pub const RISCV_NUM_OF_REGISTERS: usize = 32;
 pub const RISCV_NUM_OF_REGISTERS_EMBEDDED: usize = 16;

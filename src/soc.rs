@@ -22,7 +22,7 @@ use super::constants::soc::{INITIAL_INSTRUCTION, MEM_RESET_VALUE};
 use log::trace;
 
 pub struct SoC {
-    pub(crate) cpu: Hart,
+    pub(crate) hart: Hart,
     // memory and memory mapped IO
     // von Neumann architechture, so common bus is used for instructions/data
     pub(crate) bus: SystemBus<BusAddrType>,
@@ -31,7 +31,7 @@ pub struct SoC {
 impl SoC {
     pub fn new(cfg: &SocCfg) -> Self {
         Self {
-            cpu: Hart {
+            hart: Hart {
                 context: Context {
                     arch_state: ArchState {
                         PC: Register::new(cfg.hart.pc_reset_value),
@@ -75,7 +75,7 @@ impl SoC {
     }
 
     pub fn reset(&mut self, cfg: &SocCfg) {
-        self.cpu.reset(cfg);
+        self.hart.reset(cfg);
         self.bus.reset();
 
         // fill memory with NOP's
@@ -85,17 +85,17 @@ impl SoC {
     pub fn step(&mut self) {
         trace!(
             "Current PC: {:#018X}",
-            self.cpu.context.arch_state.PC.read()
+            self.hart.context.arch_state.PC.read()
         );
 
-        self.cpu.fetch(&self.bus);
-        self.cpu.decode();
-        self.cpu.execute();
-        self.cpu.memory_operation(&mut self.bus);
-        self.cpu.write_back();
+        self.hart.fetch(&self.bus);
+        self.hart.decode();
+        self.hart.execute();
+        self.hart.memory_operation(&mut self.bus);
+        self.hart.write_back();
 
         // step PC
-        self.cpu.advance_pc();
+        self.hart.advance_pc();
     }
 
     // testing facilities

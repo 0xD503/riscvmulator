@@ -63,7 +63,7 @@ pub fn load_elf(file_path: PathBuf, soc: &mut SoC) -> Option<ElfData> {
             );
         }
     }
-    soc.cpu.set_pc(file.ehdr.e_entry);
+    soc.hart.set_pc(file.ehdr.e_entry);
 
     Some(ElfData {
         e_entry: file.ehdr.e_entry,

@@ -186,14 +186,49 @@ detect this at the instruction boundary so all subsequent work is C-aware.
 ### Phase 4 — Configuration system
 
 - [x] Fix `config.rs`: remove hardcoded relative path to `cfg/emulator.toml`
-- [ ] Populate `EmulatorCfg` struct (memory size, extension flags, log level,
-      device list, hart count)
+- [x] Populate config structs (memory size, extension flags, log level, hart
+      count) — present and deserialized; device list still pending (below)
 - [x] Config priority order: compiled defaults → `emulator.toml` → env vars → CLI
 - [x] Memory size from config actually applied (currently computed and dropped)
 - [x] Per-extension enable flags in config (M, A, F, D, C, Zifencei, etc.)
-- [ ] Per-device fields needed for DTB generation: base address, size, IRQ line
-      (so the device tree can be derived from config — see "Hardware description"
-      decision; consumed at Phase 15)
+- [ ] `log_level` actually applied to the logger — currently parsed but inert
+      (`--log-level=trace` produces no trace output). `init_logger()` runs before
+      `Config::build()` and `env_logger` inits only once, so the value arrives too
+      late. Fix: build the logger after config, feeding `emulator.log_level` as the
+      default filter (RUST_LOG still overrides)
+- [x] Device list config: a `devices` array (`Vec<DeviceCfg>`) on the bus carrying
+      the per-device fields needed for DTB generation — base address, size, IRQ
+      line (so the device tree can be derived from config — see "Hardware
+      description" decision; schema shaped at Phase 4, consumed at Phase 15)
+
+---
+
+### Phase 4.2 — Docker support (Podman alternative)
+
+The `justfile` already reads `CONTAINER_ENGINE` (defaults to `podman`), so the
+recipes are mostly engine-agnostic. These are the gaps that block a clean
+`CONTAINER_ENGINE=docker just test` for contributors who only have Docker:
+
+- [ ] In-container detection works under Docker: `IS_IN_CONTAINER` keys off the
+      `$container` env var, which Podman sets automatically but Docker does not.
+      Set an explicit marker in the `Containerfile` (e.g. `ENV container=docker`
+      or a dedicated `IN_DEV_CONTAINER=1`) — or detect `/.dockerenv` — so nested
+      compose calls are skipped inside a Docker dev shell too
+- [ ] Compose invocation form: `COMPOSE` hardcodes `{{CONTAINER_ENGINE}}-compose`
+      (hyphen). Docker v2 ships `docker compose` (plugin, space); legacy
+      `docker-compose` may be absent. Make the compose command engine-aware
+- [ ] Compose file discovery: the file is named `podman-compose.yml`, which
+      `docker compose` won't auto-load (it looks for `compose.yml` /
+      `docker-compose.yml`). Either pass `-f podman-compose.yml` in the recipes
+      or rename to a neutral `compose.yml` both engines pick up
+- [ ] Mounted-file ownership: rootless Podman maps host user ↔ container; Docker
+      writes bind-mounted files (e.g. `target/`, `cargo fmt` output) as root by
+      default. Add `user:`/UID-GID mapping (or `userns`) so build artifacts stay
+      host-user-owned under Docker
+- [ ] Verify image build under Docker: confirm compose references `Containerfile`
+      explicitly (`docker build` defaults to `Dockerfile`)
+- [ ] Document `CONTAINER_ENGINE=docker` usage in `CLAUDE.md` / README once the
+      above work; note any `docker compose` vs `docker-compose` caveat
 
 ---
 

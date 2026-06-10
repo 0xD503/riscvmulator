@@ -1,7 +1,9 @@
 mod constants;
 
 use std::{
+    error::Error,
     fmt::{self, Formatter},
+    fs,
     str::FromStr,
 };
 
@@ -17,7 +19,10 @@ use super::constants::arch::XLen;
 
 use self::constants::*;
 
-use crate::globals::exit_codes::ExitCode;
+use crate::{
+    constants::arch::{BusAddrType, IRQ_Line},
+    globals::exit_codes::ExitCode,
+};
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
@@ -55,7 +60,7 @@ impl Default for HartCfg {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub(super) struct MemoryCfg {
-    pub(super) base_addr: XLen,
+    pub(super) base_addr: BusAddrType,
     pub(super) size_bytes: usize,
     // #[serde(skip)]
     // ram_end: XLen,
@@ -73,14 +78,31 @@ impl Default for MemoryCfg {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
+struct DeviceCfg {
+    name: String,
+    base_addr: BusAddrType,
+    size_bytes: usize,
+    irq_line: Option<IRQ_Line>,
+}
+
+// impl Default for DeviceCfg {
+//     fn default() -> Self {
+//         Self {}
+//     }
+// }
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct BusCfg {
     pub(super) memory: MemoryCfg,
+    devices: Vec<DeviceCfg>,
 }
 
 impl Default for BusCfg {
     fn default() -> Self {
         Self {
             memory: MemoryCfg::default(),
+            devices: Default::default(), // empty list of devices
         }
     }
 }
@@ -145,11 +167,11 @@ impl Config {
 
         let mut config = Figment::from(Serialized::defaults(Config::default()));
         if let Some(conf_file) = &cli_args.config_file {
-            config = config.merge(Toml::file(conf_file));
+            let file_content = fs::read_to_string(conf_file)
+                .map_err(|_| ConfigError::Read(Some(conf_file.clone())))?;
+            config = config.merge(Toml::string(&file_content));
         } else {
             info!("Configuration file was not provided");
-            // config;
-            // return Err(ConfigError::Read(cli_args.config_file.clone()));
         }
         config = config.merge(
             Env::prefixed(CONFIG_ENV_VAR_PREFIX)
@@ -223,11 +245,10 @@ impl Config {
     /// autoresolves some values from existing ones
     fn resolve(&mut self) {
         // TODO: autoresolves
-        // self.soc.bus.memory.ram_end = self.soc.bus.memory.base_addr
-        //     + self.soc.bus.memory.size_bytes as XLen;
     }
 }
 
+#[derive(Debug)]
 pub enum ConfigError {
     Read(Option<String>),
     Build(figment::Error),
@@ -270,3 +291,5 @@ impl fmt::Display for ConfigError {
         }
     }
 }
+
+impl Error for ConfigError {}
