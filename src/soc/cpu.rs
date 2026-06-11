@@ -2,6 +2,8 @@ pub mod core;
 pub mod extensions;
 pub mod privileged;
 
+use log::trace;
+
 use self::core::Context;
 use self::core::registers::RegisterInterface;
 
@@ -15,7 +17,7 @@ pub struct Hart {
 }
 
 impl Hart {
-    pub fn reset(&mut self, cfg: &SocCfg) {
+    pub(in crate::soc) fn reset(&mut self, cfg: &SocCfg) {
         self.context.reset(cfg);
     }
 
@@ -23,20 +25,20 @@ impl Hart {
         self.context.arch_state.PC.write(value);
     }
 
-    pub(in crate::soc) fn fetch(&mut self, bus: &SystemBus<BusAddrType>) {
+    fn fetch(&mut self, bus: &SystemBus<BusAddrType>) {
         self.context
             .fetch_unit
             .fetch(bus, &self.context.arch_state.PC);
     }
 
-    pub(in crate::soc) fn decode(&mut self) {
+    fn decode(&mut self) {
         self.context.decoder.decode(
             &self.context.fetch_unit,
             &self.context.arch_state.gp_register_file,
         );
     }
 
-    pub(in crate::soc) fn execute(&mut self) {
+    fn execute(&mut self) {
         self.context.executor.execute(
             &self.context.decoder,
             &self.context.arch_state,
@@ -44,20 +46,30 @@ impl Hart {
         );
     }
 
-    pub(in crate::soc) fn memory_operation(
-        &mut self,
-        bus: &mut SystemBus<BusAddrType>,
-    ) {
+    fn memory_operation(&mut self, bus: &mut SystemBus<BusAddrType>) {
         self.context
             .executor
             .memory_operation(bus, &self.context.decoder);
     }
 
-    // pub(in crate::soc) fn write_back() {
+    // fn write_back() {
     //     //
     // }
 
-    // pub(in crate::soc) fn advance_pc() {
+    // fn advance_pc() {
     //     //, fetch_unit: &FetchUnit
     // }
+
+    pub(in crate::soc) fn step(&mut self, bus: &mut SystemBus<BusAddrType>) {
+        trace!("Current PC: {:#018X}", self.context.arch_state.PC.read());
+
+        self.fetch(bus);
+        self.decode();
+        self.execute();
+        self.memory_operation(bus);
+        self.write_back();
+
+        // step PC
+        self.advance_pc();
+    }
 }

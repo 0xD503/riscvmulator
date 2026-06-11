@@ -19,7 +19,7 @@ impl Hart {
             && !self.context.decoder.zicsr.need_to_call_trap
     }
 
-    pub fn advance_pc(&mut self) {
+    pub(in crate::soc::cpu) fn advance_pc(&mut self) {
         if self.is_need_to_advance_pc() {
             trace!("Advancing PC...");
 

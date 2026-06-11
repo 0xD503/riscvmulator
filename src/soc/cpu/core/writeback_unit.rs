@@ -119,7 +119,7 @@ impl Hart {
             .write(register_offset, self.context.executor.zicsr.csr_value);
     }
 
-    pub fn write_back(&mut self) {
+    pub(in crate::soc::cpu) fn write_back(&mut self) {
         // check if write to general purpose register is necessary
         if self.context.decoder.need_to_write_back {
             self.write_back_to_reg();

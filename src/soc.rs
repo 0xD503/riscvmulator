@@ -9,7 +9,7 @@ use self::cpu::core::decoder::{Decoder, constants::InstructionSize};
 use self::cpu::core::executor::Executor;
 use self::cpu::core::fetch_unit::FetchUnit;
 use self::cpu::core::gp_registers::{Register, RegisterFile};
-use self::cpu::core::registers::{RegisterFileInterface, RegisterInterface};
+use self::cpu::core::registers::RegisterFileInterface;
 use self::cpu::core::{ArchState, Context};
 use self::cpu::extensions::zicsr::CSRFile;
 use self::cpu::extensions::zicsr::ExecutorZicsrContext;
@@ -18,8 +18,6 @@ use self::memory_bus::{Bus, SystemBus};
 
 use super::constants::arch::{BusAddrType, XLen};
 use super::constants::soc::{INITIAL_INSTRUCTION, MEM_RESET_VALUE};
-
-use log::trace;
 
 pub struct SoC {
     pub(crate) hart: Hart,
@@ -83,19 +81,7 @@ impl SoC {
     }
 
     pub fn step(&mut self) {
-        trace!(
-            "Current PC: {:#018X}",
-            self.hart.context.arch_state.PC.read()
-        );
-
-        self.hart.fetch(&self.bus);
-        self.hart.decode();
-        self.hart.execute();
-        self.hart.memory_operation(&mut self.bus);
-        self.hart.write_back();
-
-        // step PC
-        self.hart.advance_pc();
+        self.hart.step(&mut self.bus);
     }
 
     // testing facilities
