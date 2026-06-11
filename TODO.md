@@ -94,6 +94,33 @@
 
 ---
 
+### Rust book reading order (just-in-time, by phase)
+
+The Rust Book (2024 edition) chapters, mapped to the phase that first needs them
+— read each when its phase arrives, not all up front:
+
+- **Ch 15 (smart pointers) + Ch 16 (fearless concurrency)** → **Phase 5**. This
+  is the whole toolkit: `Vec<Hart>`, `Arc` + interior mutability, threads /
+  channels, and the `Send`/`Sync` section (the "shared bus is `Send`/`Sync`"
+  deliverable — don't skip it). Ceiling for Phase 5 is ch 16; nothing past it is
+  required.
+- **Ch 17 (async/await)** → **not on this project's path.** Concurrency here is
+  OS threads + an `AtomicBool` checked between steps (Phase 6 pause-point), not
+  futures. Read for general knowledge whenever; blocks nothing.
+- **Ch 18 (OOP) — trait-objects part (`dyn Trait`, `Box<dyn Device>`)** →
+  **Phase 6** (device registry is `Vec<Box<dyn Device>>`). Encapsulation /
+  state-pattern parts skippable.
+- **Ch 20 (advanced features)** → "advanced functions and closures" (**fn
+  pointers**) for the **Phase 8** dispatch table; "advanced traits" (associated
+  types) helps design the **Phase 6** `Device` trait. The `unsafe` section only
+  matters if the bus goes lock-free instead of `Arc<Mutex>` (deferred).
+- **Ch 19 (patterns and matching)** → polish only; blocks nothing.
+- **Ch 21 (final project: multithreaded web server / thread pool)** → optional
+  but illustrative for a thread-per-hart Phase 5 run loop (channels +
+  `Arc<Mutex<…>>`).
+
+---
+
 ### Phase 1 — Modularize lib.rs
 
 - [x] `FetchUnit`/`Decoder`/`Executor`, `ArchState`
@@ -127,6 +154,13 @@ redesign — so all subsequent device/extension/MMU work is built SMP-aware from
 the start. This phase delivers plumbing and the run-loop model; the SMP
 _semantics_ are completed in the phases that own them (marked "(later)").
 
+- [ ] Introduce `Emulator` orchestrator (`src/emulator.rs`): owns `SoC` + the
+      run loop + a halt flag. De-duplicates `main` and `tests/common` (both
+      currently hand-roll `SoC::new → reset → load_elf → ready_for_testing →
+      loop { step }`). This is the seam the run/pause/step embedder API grows on
+      — kept thin now, surface completed by Phase 6; extracted into the crate at
+      Phase 7. The halt flag is also the first step toward replacing HTIF's
+      `std::process::exit()` (retires `scripts/run_integration_tests.temp.py`).
 - [ ] `SoC` owns `harts: Vec<Hart>` instead of a single hart; each hart has a
       `hartid`
 - [ ] Shared bus is `Send`/`Sync` (Arc + interior mutability, or lock-free),
@@ -177,6 +211,7 @@ incremental compiles through the long extension grind that follows. This is the
 single-crate-move step; finer multi-crate decomposition stays deferred to last.
 
 - [ ] Create a cargo workspace; move the SoC lib into `crates/riscv-soc/`
+      (carries the `Emulator` orchestrator with it — see Phase 5)
 - [ ] Thin binary crate (CLI / `main`) depends on `riscv-soc`
 - [ ] Audit and lock the public API surface that crosses the crate seam
 - [ ] Workspace builds and tests green
