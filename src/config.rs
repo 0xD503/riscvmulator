@@ -111,7 +111,7 @@ impl Default for BusCfg {
 pub struct SocCfg {
     pub(super) hart: HartCfg,
     pub(super) bus: BusCfg,
-    harts_num: u32,
+    pub(super) harts_num: u32,
     xtal_frequency_hz: u64,
 }
 

@@ -73,7 +73,9 @@ pub(crate) fn load_elf(
             );
         }
     }
-    soc.hart.set_pc(file.ehdr.e_entry);
+    for hart in soc.harts.iter_mut() {
+        hart.set_pc(file.ehdr.e_entry);
+    }
 
     Ok(ElfData {
         e_entry: file.ehdr.e_entry,

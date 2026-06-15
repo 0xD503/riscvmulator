@@ -18,6 +18,7 @@ pub struct Hart {
 
 impl Hart {
     pub(in crate::soc) fn reset(&mut self, cfg: &SocCfg) {
+        // TODO: init hart-id, DTB source
         self.context.reset(cfg);
     }
 

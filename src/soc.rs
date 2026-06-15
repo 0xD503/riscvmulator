@@ -20,7 +20,7 @@ use super::constants::arch::{BusAddrType, XLen};
 use super::constants::soc::{INITIAL_INSTRUCTION, MEM_RESET_VALUE};
 
 pub struct SoC {
-    pub(crate) hart: Hart,
+    pub(crate) harts: Vec<Hart>,
     // memory and memory mapped IO
     // von Neumann architechture, so common bus is used for instructions/data
     pub(crate) bus: SystemBus<BusAddrType>,
@@ -29,41 +29,45 @@ pub struct SoC {
 impl SoC {
     pub fn new(cfg: &SocCfg) -> Self {
         Self {
-            hart: Hart {
-                context: Context {
-                    arch_state: ArchState {
-                        PC: Register::new(cfg.hart.pc_reset_value),
-                        gp_register_file: RegisterFile::new(),
-                        control_status_registers: CSRFile::new(),
-                    },
-                    fetch_unit: FetchUnit::new(
-                        INITIAL_INSTRUCTION,
-                        InstructionSize::I32,
-                    ),
-                    decoder: Decoder {
-                        ..Default::default()
-                    },
-                    executor: Executor {
-                        result: XLen::MIN,
-                        branch_target_address: cfg.hart.pc_reset_value,
-                        jump_target_address: cfg.hart.pc_reset_value,
-                        return_target_address: cfg.hart.pc_reset_value,
-                        memory_address: XLen::MIN,
-                        value_to_store_u8: Default::default(),
-                        value_to_store_u16: Default::default(),
-                        value_to_store_u32: Default::default(),
-                        value_to_store_u64: Default::default(),
-                        memory_value_type: MemoryValueType::DOUBLE_WORD,
-                        need_to_branch: false,
-                        zicsr: ExecutorZicsrContext {
-                            csr_value: Default::default(),
-                            trap_cause: Default::default(),
-                            trap_vector: Default::default(),
-                            epc: Default::default(),
+            harts: vec![
+                Hart {
+                    context: Context {
+                        // TODO: init hart-id, DTB source
+                        arch_state: ArchState {
+                            PC: Register::new(cfg.hart.pc_reset_value),
+                            gp_register_file: RegisterFile::new(),
+                            control_status_registers: CSRFile::new(),
+                        },
+                        fetch_unit: FetchUnit::new(
+                            INITIAL_INSTRUCTION,
+                            InstructionSize::I32,
+                        ),
+                        decoder: Decoder {
+                            ..Default::default()
+                        },
+                        executor: Executor {
+                            result: XLen::MIN,
+                            branch_target_address: cfg.hart.pc_reset_value,
+                            jump_target_address: cfg.hart.pc_reset_value,
+                            return_target_address: cfg.hart.pc_reset_value,
+                            memory_address: XLen::MIN,
+                            value_to_store_u8: Default::default(),
+                            value_to_store_u16: Default::default(),
+                            value_to_store_u32: Default::default(),
+                            value_to_store_u64: Default::default(),
+                            memory_value_type: MemoryValueType::DOUBLE_WORD,
+                            need_to_branch: false,
+                            zicsr: ExecutorZicsrContext {
+                                csr_value: Default::default(),
+                                trap_cause: Default::default(),
+                                trap_vector: Default::default(),
+                                epc: Default::default(),
+                            },
                         },
                     },
-                },
-            },
+                };
+                cfg.harts_num as usize
+            ],
             bus: SystemBus::new(
                 MEM_RESET_VALUE,
                 cfg.bus.memory.base_addr,
@@ -73,7 +77,9 @@ impl SoC {
     }
 
     pub fn reset(&mut self, cfg: &SocCfg) {
-        self.hart.reset(cfg);
+        for hart in self.harts.iter_mut() {
+            hart.reset(cfg);
+        }
         self.bus.reset();
 
         // fill memory with NOP's
@@ -81,7 +87,9 @@ impl SoC {
     }
 
     pub fn step(&mut self) {
-        self.hart.step(&mut self.bus);
+        for hart in self.harts.iter_mut() {
+            hart.step(&mut self.bus);
+        }
     }
 
     // testing facilities
