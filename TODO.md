@@ -40,6 +40,7 @@
 - [ ] HALT into interactive mode by `Ctrl+C`
 - [ ] add emulator throtling
 - [ ] implement `EBREAK`, add debug mode
+- [ ] add fuzzer
 
 ---
 
@@ -160,7 +161,7 @@ _semantics_ are completed in the phases that own them (marked "(later)").
 - [ ] Introduce `Emulator` orchestrator (`src/emulator.rs`): owns `SoC` + the
       run loop + a halt flag. De-duplicates `main` and `tests/common` (both
       currently hand-roll `SoC::new → reset → load_elf → ready_for_testing →
-  loop { step }`). This is the seam the run/pause/step embedder API grows on
+loop { step }`). This is the seam the run/pause/step embedder API grows on
       — kept thin now, surface completed by Phase 6; extracted into the crate at
       Phase 7. The halt flag is also the first step toward replacing HTIF's
       `std::process::exit()` (retires `scripts/run_integration_tests.temp.py`).
@@ -208,15 +209,38 @@ Removes hardcoded HTIF from bus; introduces the peripheral plugin system.
 
 Depends on: Phases 4, 5, 6 (outward/embedder API has settled)
 
-Extract the SoC into a workspace crate once the embedder-facing API (construct,
-configure, attach devices, run/pause/step) is stable. Doing it here also speeds
-incremental compiles through the long extension grind that follows. This is the
-single-crate-move step; finer multi-crate decomposition stays deferred to last.
+Extract into a workspace once the embedder-facing API (construct, configure,
+attach devices, run/pause/step) is stable. Doing it here also speeds incremental
+compiles through the long extension grind that follows. Finer decomposition
+(split decoder/isa/devices) stays deferred to last.
 
-- [ ] Create a cargo workspace; move the SoC lib into `crates/riscv-soc/`
-      (carries the `Emulator` orchestrator with it — see Phase 5)
-- [ ] Thin binary crate (CLI / `main`) depends on `riscv-soc`
-- [ ] Audit and lock the public API surface that crosses the crate seam
+**Layered crates** — expose two entry points so consumers pick their layer:
+
+```
+crates/
+  riscv-soc/        the machine: SoC, harts, bus, memory, cpu pipeline,
+                    extensions, devices → SoC::new / step / attach_device
+                    (raw-machine users — debugger, fuzzer, co-sim — stop here)
+  riscv-emulator/   depends on riscv-soc; the host: run loop, halt/pause, ELF
+                    load, lifecycle → Emulator::build_from_config / run
+riscvmulator (bin)  depends on riscv-emulator; CLI + main
+```
+
+The `soc` / `emulator` sibling modules map directly onto `riscv-soc` /
+`riscv-emulator`; this is why they are kept siblings (not nested) — see Phase 5.
+
+- [ ] Create a cargo workspace
+- [ ] Move the machine into `crates/riscv-soc/`; move the host (`Emulator`, run
+      loop, ELF load, init) into `crates/riscv-emulator/` depending on it
+- [ ] Thin binary crate (CLI / `main`) depends on `riscv-emulator`
+- [ ] **One-way dependency:** `bin → emulator → soc`. SoC must never import the
+      emulator — preserve this from now so the split stays mechanical
+- [ ] **Config placement keeps the machine crate lean:** `SocCfg` lives in
+      `riscv-soc`; `EmulatorCfg` + combined `Config` + figment `build()` + clap
+      live in `riscv-emulator`/bin — so `riscv-soc` pulls in **no figment/clap**
+- [ ] `riscv-emulator` optionally `pub use riscv_soc::SoC` so its users can reach
+      the machine without a second dependency (or keep it opaque)
+- [ ] Audit and lock the public API surface crossing each crate seam
 - [ ] Workspace builds and tests green
 
 ---
