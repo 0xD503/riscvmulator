@@ -9,14 +9,22 @@ pub mod constants;
 use crate::soc::cpu::privileged::machine::MCause_Code;
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Default, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct CSR {
     pub(in crate::soc::cpu) value: XLen,
 }
 
 impl CSR {
     fn reset(&mut self) {
-        self.value = Default::default();
+        self.value = RISCV_CSR_INITIAL_VALUE;
+    }
+}
+
+impl Default for CSR {
+    fn default() -> Self {
+        CSR {
+            value: RISCV_CSR_INITIAL_VALUE,
+        }
     }
 }
 
@@ -68,7 +76,7 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
     }
 
     fn reset(&mut self) {
-        for mut register in self.registers {
+        for register in self.registers.iter_mut() {
             register.reset();
         }
     }

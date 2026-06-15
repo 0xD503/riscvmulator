@@ -9,7 +9,7 @@ use crate::soc::cpu::core::registers::{
     RegisterFileInterface, RegisterInterface,
 };
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Register {
     value: XLen,
 }
@@ -20,7 +20,15 @@ impl Register {
     }
 
     pub fn reset(&mut self) {
-        self.value = Default::default();
+        self.value = RISCV_X0_ZERO_REGISTER_VALUE;
+    }
+}
+
+impl Default for Register {
+    fn default() -> Self {
+        Register {
+            value: RISCV_X0_ZERO_REGISTER_VALUE,
+        }
     }
 }
 
@@ -79,7 +87,7 @@ impl<const REGS_NUM: usize> RegisterFileInterface for RegisterFile<REGS_NUM> {
     }
 
     fn reset(&mut self) {
-        for mut register in self.registers {
+        for register in self.registers.iter_mut() {
             register.reset();
         }
     }

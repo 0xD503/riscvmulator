@@ -1,26 +1,29 @@
-use riscvmulator::config::SocCfg;
-use riscvmulator::elf_loader::load_elf;
-use riscvmulator::soc::SoC;
+use riscvmulator::{config::Config, emulator::Emulator};
 
 fn init_test() {
+    //
+}
+
+fn deinit_test() {
     //
 }
 
 pub fn run_test(test_path: &'static str) {
     init_test();
 
-    let cfg: SocCfg = Default::default();
-    let mut soc: SoC = SoC::new(&cfg);
+    let mut emu_config = Config::default();
+    emu_config.set_elf_path(test_path.to_string());
 
-    soc.reset(&cfg);
+    let mut emulator = Emulator::build_from_config(&emu_config)
+        .expect("failed to init emulator");
 
-    load_elf(test_path.into(), &mut soc);
+    emulator
+        .load_elf(emu_config.emulator.input_file.unwrap())
+        .expect("failed to load ELF file");
 
-    // TODO: conditional compilation for test facilities
-    soc.ready_for_testing();
+    emulator.ready_for_testing();
 
-    // TODO: HALT condition
-    loop {
-        soc.step();
-    }
+    emulator.run();
+
+    deinit_test();
 }

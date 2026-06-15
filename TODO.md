@@ -37,6 +37,9 @@
 ## Features
 
 - [ ] generate exception if address is misaligned (→ Phase 11)
+- [ ] HALT into interactive mode by `Ctrl+C`
+- [ ] add emulator throtling
+- [ ] implement `EBREAK`, add debug mode
 
 ---
 
@@ -157,7 +160,7 @@ _semantics_ are completed in the phases that own them (marked "(later)").
 - [ ] Introduce `Emulator` orchestrator (`src/emulator.rs`): owns `SoC` + the
       run loop + a halt flag. De-duplicates `main` and `tests/common` (both
       currently hand-roll `SoC::new → reset → load_elf → ready_for_testing →
-      loop { step }`). This is the seam the run/pause/step embedder API grows on
+  loop { step }`). This is the seam the run/pause/step embedder API grows on
       — kept thin now, surface completed by Phase 6; extracted into the crate at
       Phase 7. The halt flag is also the first step toward replacing HTIF's
       `std::process::exit()` (retires `scripts/run_integration_tests.temp.py`).
@@ -222,7 +225,7 @@ single-crate-move step; finer multi-crate decomposition stays deferred to last.
 
 Foundational refactor first: the execute-stage **dispatch table** (supersedes
 Refactor → "use jump table"). Land it here, not earlier — it has **no perf
-payoff** (a dense `match` already lowers to a jump table *and* inlines the arms;
+payoff** (a dense `match` already lowers to a jump table _and_ inlines the arms;
 fn-pointers forbid inlining and add an indirect call), so its only value is the
 per-extension decoupling this phase introduces — there's nothing to register
 until extensions exist.

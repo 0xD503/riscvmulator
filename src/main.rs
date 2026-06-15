@@ -1,29 +1,32 @@
-use log::{error, info};
+use log::error;
 
-use riscvmulator::elf_loader::load_elf;
-use riscvmulator::{init, soc::SoC};
+use riscvmulator::emulator::Emulator;
+use riscvmulator::init::init;
 
 fn main() {
-    let config = init().unwrap_or_else(|errors| {
-        error!("{errors}");
-        std::process::exit(errors.exit_code());
+    let emu_config = init().unwrap_or_else(|err| {
+        error!("{err}");
+        std::process::exit(err.exit_code());
     });
 
-    let mut soc: SoC = SoC::new(&config.soc);
-    soc.reset(&config.soc);
-    info!("SoC was reset");
+    let mut emulator =
+        Emulator::build_from_config(&emu_config).unwrap_or_else(|err| {
+            error!("{err}");
+            std::process::exit(err.exit_code());
+        });
 
-    if let Some(in_file) = config.emulator.input_file {
-        load_elf(in_file.into(), &mut soc);
-    } else {
-        info!("running in interactive mode");
-        todo!("interactive mode");
+    if let Some(elf_file) = emu_config.emulator.input_file {
+        if let Err(err) = emulator.load_elf(elf_file) {
+            match err {
+                _ => {
+                    error!("{err}");
+                    std::process::exit(err.exit_code());
+                }
+            }
+        }
     }
 
-    soc.ready_for_testing();
+    emulator.ready_for_testing();
 
-    // TODO: HALT condition
-    loop {
-        soc.step();
-    }
+    emulator.run();
 }

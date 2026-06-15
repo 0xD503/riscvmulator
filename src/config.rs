@@ -12,7 +12,7 @@ use figment::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::CLI_Args;
+// use super::CLI_Args;
 use super::constants::arch::XLen;
 
 use self::constants::*;
@@ -20,6 +20,7 @@ use self::constants::*;
 use crate::{
     constants::arch::{BusAddrType, IRQ_Line},
     globals::exit_codes::ExitCode,
+    parse_args::CLI_Args,
 };
 
 #[allow(non_snake_case)]
@@ -216,8 +217,10 @@ impl Config {
             ));
         }
         if let Some(log_level) = &cli_args.log_level {
-            config = config
-                .merge(Serialized::default("emulator.log_level", log_level));
+            config = config.merge(Serialized::default(
+                "emulator.logging.level",
+                log_level,
+            ));
         }
         if let Some(input_file) = &cli_args.input_file {
             config = config
@@ -295,6 +298,10 @@ impl Config {
     /// autoresolves some values from existing ones
     fn resolve(&mut self) {
         // TODO: autoresolves
+    }
+
+    pub fn set_elf_path(&mut self, path: String) {
+        self.emulator.input_file = Some(path);
     }
 }
 

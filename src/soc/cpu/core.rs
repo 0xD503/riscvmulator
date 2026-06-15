@@ -16,7 +16,9 @@ use super::extensions::zicsr::CSRFile;
 use crate::config::SocCfg;
 use crate::constants::arch::{RISCV_NUM_OF_CSR, RISCV_NUM_OF_REGISTERS};
 use crate::soc::cpu::core::fetch_unit::FetchUnit;
-use crate::soc::cpu::core::registers::RegisterInterface;
+use crate::soc::cpu::core::registers::{
+    RegisterFileInterface, RegisterInterface,
+};
 
 #[allow(non_snake_case)]
 #[derive(Clone)]
@@ -28,9 +30,9 @@ pub struct ArchState {
 
 impl ArchState {
     pub(crate) fn reset(&mut self, cfg: &SocCfg) {
-        self.gp_register_file = Default::default();
+        self.gp_register_file.reset();
         self.PC.write(cfg.hart.pc_reset_value);
-        self.control_status_registers = Default::default();
+        self.control_status_registers.reset();
     }
 }
 
