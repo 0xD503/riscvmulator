@@ -1,11 +1,14 @@
+mod elf_loader;
+
 use std::fmt::Display;
 use std::{error::Error, fmt::Formatter};
 
 use log::info;
 
-use crate::elf_loader::{ElfData, ElfError};
 use crate::globals::exit_codes::ExitCode;
-use crate::{config::Config, elf_loader::load_elf, soc::SoC};
+use crate::{config::Config, soc::SoC};
+
+use self::elf_loader::{ElfData, ElfError, load_elf};
 
 pub struct Emulator {
     soc: SoC,
