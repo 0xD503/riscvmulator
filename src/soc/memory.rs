@@ -2,6 +2,8 @@ mod constants;
 
 use std::marker::PhantomData;
 use std::mem::size_of;
+// use std::sync::Mutex;
+use std::sync::{Arc, RwLock};
 
 use log::trace;
 
@@ -164,7 +166,9 @@ impl MemoryValue for DoubleWord {
 
 #[derive(Default)]
 pub struct Memory<AddrType> {
-    byte_array: Vec<Byte>,
+    // TODO: not sure what is better: `RwLock` vs `Mutex`
+    // because `RwLock` may cause writer starvation
+    byte_array: Arc<RwLock<Vec<Byte>>>,
 
     _phantom_marker: PhantomData<AddrType>,
 }
@@ -172,7 +176,10 @@ pub struct Memory<AddrType> {
 impl<AddrType> Memory<AddrType> {
     pub fn new(fill_value: Byte, size: usize) -> Self {
         Self {
-            byte_array: vec![fill_value; size + MEMORY_ARRAY_PADDING],
+            byte_array: Arc::new(RwLock::new(vec![
+                fill_value;
+                size + MEMORY_ARRAY_PADDING
+            ])),
             _phantom_marker: Default::default(),
         }
     }
@@ -180,12 +187,15 @@ impl<AddrType> Memory<AddrType> {
     pub fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
         trace!("Reading memory at offset: {offset:#018X?}");
 
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(
-            offset + size_of::<MemValType>() <= self.byte_array.len()
-        );
+        let byte_array_ptr = Arc::clone(&self.byte_array);
+        let byte_array = byte_array_ptr.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
 
-        let bytes = (self.byte_array)[offset..offset + size_of::<MemValType>()]
+        // bus makes bounds check, so we assume that `offset` is always correct
+        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
+
+        let bytes = byte_array[offset..offset + size_of::<MemValType>()]
             .try_into()
             .unwrap();
         // TODO: notice, so far emulator only supports little-endian
@@ -199,19 +209,26 @@ impl<AddrType> Memory<AddrType> {
     ) {
         trace!("Writing memory at offset: {offset:#018X?}");
 
+        let byte_array_ptr = Arc::clone(&self.byte_array);
+        let mut byte_array = byte_array_ptr.write().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(
-            offset + size_of::<MemValType>() <= self.byte_array.len()
-        );
+        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
 
         // TODO: notice, so far emulator only supports little-endian
         let bytes = value.to_le_bytes();
-        self.byte_array[offset..offset + size_of::<MemValType>()]
+        byte_array[offset..offset + size_of::<MemValType>()]
             .copy_from_slice(bytes.as_ref());
     }
 
     fn fill(&mut self, value: Byte) {
-        self.byte_array.fill(value);
+        let byte_array_ptr = Arc::clone(&self.byte_array);
+        let mut byte_array = byte_array_ptr.write().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        byte_array.fill(value);
     }
 
     pub fn reset(&mut self) {

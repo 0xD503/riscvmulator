@@ -87,6 +87,7 @@ impl SoC {
     }
 
     pub fn step(&mut self) {
+        // TODO should be multithreaded
         for hart in self.harts.iter_mut() {
             hart.step(&mut self.bus);
         }
