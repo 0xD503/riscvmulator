@@ -41,8 +41,34 @@ pub struct Executor {
 }
 
 impl Executor {
-    pub fn reset(&mut self) {
-        *self = Default::default();
+    pub fn new(pc_reset_value: XLen) -> Self {
+        Self::get_reset_instance(pc_reset_value)
+    }
+
+    pub fn reset(&mut self, pc_reset_value: XLen) {
+        *self = Self::get_reset_instance(pc_reset_value);
+    }
+
+    fn get_reset_instance(pc_reset_value: XLen) -> Self {
+        Self {
+            result: XLen::MIN,
+            branch_target_address: pc_reset_value,
+            jump_target_address: pc_reset_value,
+            return_target_address: pc_reset_value,
+            memory_address: XLen::MIN,
+            value_to_store_u8: Default::default(),
+            value_to_store_u16: Default::default(),
+            value_to_store_u32: Default::default(),
+            value_to_store_u64: Default::default(),
+            memory_value_type: MemoryValueType::DOUBLE_WORD,
+            need_to_branch: false,
+            zicsr: ExecutorZicsrContext {
+                csr_value: Default::default(),
+                trap_cause: Default::default(),
+                trap_vector: Default::default(),
+                epc: Default::default(),
+            },
+        }
     }
 }
 

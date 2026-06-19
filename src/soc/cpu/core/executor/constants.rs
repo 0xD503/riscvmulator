@@ -2,7 +2,6 @@
 #[allow(non_camel_case_types)]
 #[derive(Default, Clone, Debug)]
 pub enum ExecutableCommand {
-    #[default]
     LB = 0, // load byte
     LH = 1, // load halfword
     LW = 2, // load word
@@ -29,7 +28,8 @@ pub enum ExecutableCommand {
     SRLW = 20, // shift right logical register word
     SRAW = 21, // shift right arithmetic register word
 
-    ADDI = 22,  // add immediate
+    #[default]
+    ADDI = 22, // add immediate
     SLLI = 23,  // shift left logical immediate
     SLTI = 24,  // set if register less then immediate
     SLTIU = 25, // set if register less then immediate (unsigned)

@@ -48,8 +48,21 @@ pub struct Decoder {
 }
 
 impl Decoder {
+    pub fn new() -> Self {
+        Self::get_reset_instance()
+    }
+
     pub fn reset(&mut self) {
-        *self = Default::default();
+        *self = Self::get_reset_instance();
+    }
+
+    fn get_reset_instance() -> Self {
+        Self {
+            source_register_1: RISCV_X0_ZERO_REGISTER_VALUE,
+            source_register_2: RISCV_X0_ZERO_REGISTER_VALUE,
+            destination_register_offset: GPRegisterName::x0_zero as usize,
+            ..Default::default()
+        }
     }
 }
 

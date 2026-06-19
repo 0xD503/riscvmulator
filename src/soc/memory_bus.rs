@@ -3,8 +3,10 @@ use log::{error, info, trace};
 use crate::constants::arch::{Byte, InstructionType, XLen};
 use crate::globals::exit_codes::ExitCode;
 use crate::soc::memory::{Memory, MemoryValue};
+use crate::soc::peripherals::common::device::RawDevice;
 
 use super::cpu::core::decoder::constants::Opcode;
+use super::peripherals::common::device::Device;
 
 // pub const HTIF_TO_HOST: XLen = 0x80001000;
 // // pub const HTIF_FROM_HOST: XLen = 0x80001004;
@@ -30,6 +32,28 @@ pub trait Bus<AddrType> {
     ) -> MemValType;
 }
 
+pub trait RawBus<AddrType> {
+    // data read/write
+    fn read_raw<MemValType: MemoryValue>(
+        &self,
+        address: AddrType,
+    ) -> MemValType;
+    // fn read_data(&self, address: XLen, size: usize) -> Vec<Byte>;
+
+    fn write_raw<MemValType: MemoryValue>(
+        &mut self,
+        address: AddrType,
+        value: MemValType,
+    );
+    // fn write_data(&mut self, address: XLen, data: Vec<Byte>);
+
+    // // instruction read/write
+    // fn instruction_read_raw<MemValType: MemoryValue>(
+    //     &self,
+    //     address: AddrType,
+    // ) -> MemValType;
+}
+
 pub struct SystemBus<AddrType> {
     ram_base: XLen,
     memory: Memory<AddrType>,
@@ -43,7 +67,7 @@ pub struct SystemBus<AddrType> {
 impl<AddrType: std::ops::Sub> SystemBus<AddrType> {
     pub fn new(fill_value: Byte, ram_base: XLen, ram_size: usize) -> Self {
         Self {
-            ram_base,
+            ram_base: ram_base,
             memory: Memory::new(fill_value, ram_size),
             ram_end: ram_base + ram_size as XLen,
 
@@ -64,7 +88,7 @@ impl<AddrType: std::ops::Sub> SystemBus<AddrType> {
         for addr in
             (self.ram_base..self.ram_end).step_by(size_of::<InstructionType>())
         {
-            self.write(addr, Opcode::OP_IMM as Byte);
+            self.write_raw(addr, Opcode::OP_IMM as Byte);
         }
     }
 
@@ -160,5 +184,58 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
 
     fn memory_reset(&mut self) {
         self.memory.reset();
+    }
+}
+
+impl<AddrType> RawBus<XLen> for SystemBus<AddrType> {
+    fn read_raw<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
+        if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
+            .contains(&address)
+        {
+            trace!("Reading memory at addr: {address:#018X?}");
+
+            let offset = (address - self.ram_base) as usize;
+            self.memory.read_raw(offset)
+        } else {
+            error!(
+                "an attempt to read from unimplemented address space: {address:#018X}"
+            );
+            panic!(
+                "an attempt to read from unimplemented address space: {address:#018X}"
+            );
+        }
+    }
+    fn write_raw<MemValType: MemoryValue>(
+        &mut self,
+        address: XLen,
+        value: MemValType,
+    ) {
+        // TODO: test scaffolding, isolate later
+        if address == self.htif_to_host {
+            if self.initialized {
+                if value.to_u64() == 1 {
+                    info!("TEST PASSED");
+                    std::process::exit(ExitCode::Success as i32);
+                } else {
+                    error!("TEST FAILED");
+                    std::process::exit(value.to_u64() as i32);
+                }
+            }
+        }
+        if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
+            .contains(&address)
+        {
+            trace!("Writing memory at addr: {address:#018X?}");
+
+            let offset = (address - self.ram_base) as usize;
+            self.memory.write_raw(offset, value);
+        } else {
+            error!(
+                "an attempt to write to unimplemented address space: {address:#018X}"
+            );
+            panic!(
+                "an attempt to write to unimplemented address space: {address:#018X}"
+            );
+        }
     }
 }

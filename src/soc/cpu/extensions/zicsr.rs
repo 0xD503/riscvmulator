@@ -2,7 +2,8 @@ use log::trace;
 
 use crate::constants::arch::{RISCV_CSR_INITIAL_VALUE, XLen};
 use crate::soc::cpu::core::registers::{
-    RegisterFileInterface, RegisterInterface,
+    RawRegisterFileInterface, RawRegisterInterface, RegisterFileInterface,
+    RegisterInterface,
 };
 
 pub mod constants;
@@ -14,11 +15,7 @@ pub struct CSR {
     pub(in crate::soc::cpu) value: XLen,
 }
 
-impl CSR {
-    fn reset(&mut self) {
-        self.value = RISCV_CSR_INITIAL_VALUE;
-    }
-}
+impl CSR {}
 
 impl Default for CSR {
     fn default() -> Self {
@@ -47,6 +44,10 @@ impl RegisterInterface for CSR {
     }
     fn write(&mut self, value: XLen) {
         self.value = value;
+    }
+
+    fn reset(&mut self) {
+        self.value = RISCV_CSR_INITIAL_VALUE;
     }
 }
 
@@ -79,6 +80,29 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
         for register in self.registers.iter_mut() {
             register.reset();
         }
+    }
+}
+
+impl RawRegisterInterface for CSR {
+    fn read_raw(&self) -> XLen {
+        self.value
+    }
+    fn write_raw(&mut self, value: XLen) {
+        self.value = value;
+    }
+}
+
+impl<const REGS_NUM: usize> RawRegisterFileInterface for CSRFile<REGS_NUM> {
+    fn read_raw(&self, offset: usize) -> XLen {
+        trace!("Reading CSR #{offset:#?}...");
+
+        self.registers[offset].read()
+    }
+
+    fn write_raw(&mut self, offset: usize, value: XLen) {
+        trace!("Writing CSR #{offset:#?}...");
+
+        self.registers[offset].write(value);
     }
 }
 

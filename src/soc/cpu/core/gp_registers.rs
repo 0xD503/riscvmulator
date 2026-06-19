@@ -6,7 +6,8 @@ use self::constants::GPRegisterName;
 
 use crate::constants::arch::{RISCV_X0_ZERO_REGISTER_VALUE, XLen};
 use crate::soc::cpu::core::registers::{
-    RegisterFileInterface, RegisterInterface,
+    RawRegisterFileInterface, RawRegisterInterface, RegisterFileInterface,
+    RegisterInterface,
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -17,10 +18,6 @@ pub struct Register {
 impl Register {
     pub fn new(val: XLen) -> Self {
         Register { value: val }
-    }
-
-    pub fn reset(&mut self) {
-        self.value = RISCV_X0_ZERO_REGISTER_VALUE;
     }
 }
 
@@ -51,6 +48,10 @@ impl RegisterInterface for Register {
     }
     fn write(&mut self, value: XLen) {
         self.value = value;
+    }
+
+    fn reset(&mut self) {
+        self.value = RISCV_X0_ZERO_REGISTER_VALUE;
     }
 }
 
@@ -90,6 +91,27 @@ impl<const REGS_NUM: usize> RegisterFileInterface for RegisterFile<REGS_NUM> {
         for register in self.registers.iter_mut() {
             register.reset();
         }
+    }
+}
+
+impl RawRegisterInterface for Register {
+    fn read_raw(&self) -> XLen {
+        self.value
+    }
+    fn write_raw(&mut self, value: XLen) {
+        self.value = value;
+    }
+}
+
+impl<const REGS_NUM: usize> RawRegisterFileInterface
+    for RegisterFile<REGS_NUM>
+{
+    fn read_raw(&self, offset: usize) -> XLen {
+        self.registers[offset].read_raw()
+    }
+
+    fn write_raw(&mut self, offset: usize, value: XLen) {
+        self.registers[offset].write_raw(value);
     }
 }
 

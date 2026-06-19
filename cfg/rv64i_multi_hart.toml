@@ -1,0 +1,35 @@
+[emulator]
+## 0 means as fast as possible
+throttle_frequency = 0
+
+[emulator.logging]
+level = "info"
+style = "auto"
+
+[soc]
+harts_num = 4
+xtal_frequency_hz = 16384
+
+[soc.hart]
+pc_reset_value = 0x8000_0000
+
+extension_I = true
+extension_M = false
+extension_A = false
+extension_F = false
+extension_D = false
+extension_C = false
+extension_Zifencei = false
+extension_Zicsr = false
+
+[soc.bus]
+
+[soc.bus.memory]
+base_addr = 0x8000_0000
+size_bytes = 262144    ## 256 KB
+
+[[soc.bus.devices]]
+name = "uart"
+base_addr = 0x1000_0000
+size_bytes = 100
+irq_line = 10

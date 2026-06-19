@@ -1,11 +1,13 @@
 use crate::constants::arch::XLen;
 
-pub trait RegisterInterface {
+pub(crate) trait RegisterInterface {
     fn read(&self) -> XLen;
     fn write(&mut self, value: XLen);
+
+    fn reset(&mut self);
 }
 
-pub trait RegisterFileInterface {
+pub(crate) trait RegisterFileInterface {
     fn new() -> Self;
 
     fn read(&self, offset: usize) -> XLen;
@@ -14,4 +16,14 @@ pub trait RegisterFileInterface {
     fn length() -> usize;
 
     fn reset(&mut self);
+}
+
+pub(crate) trait RawRegisterInterface {
+    fn read_raw(&self) -> XLen;
+    fn write_raw(&mut self, value: XLen);
+}
+
+pub(crate) trait RawRegisterFileInterface {
+    fn read_raw(&self, offset: usize) -> XLen;
+    fn write_raw(&mut self, offset: usize, value: XLen);
 }

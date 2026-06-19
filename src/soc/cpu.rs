@@ -5,10 +5,18 @@ pub mod privileged;
 use log::trace;
 
 use self::core::Context;
-use self::core::registers::RegisterInterface;
+use self::core::registers::{RegisterFileInterface, RegisterInterface};
 
 use crate::config::SocCfg;
 use crate::constants::arch::{BusAddrType, XLen};
+use crate::constants::soc::INITIAL_INSTRUCTION;
+use crate::soc::cpu::core::ArchState;
+use crate::soc::cpu::core::decoder::Decoder;
+use crate::soc::cpu::core::decoder::constants::InstructionSize;
+use crate::soc::cpu::core::executor::Executor;
+use crate::soc::cpu::core::fetch_unit::FetchUnit;
+use crate::soc::cpu::core::gp_registers::{Register, RegisterFile};
+use crate::soc::cpu::extensions::zicsr::CSRFile;
 use crate::soc::memory_bus::SystemBus;
 
 #[derive(Clone)]
@@ -17,9 +25,32 @@ pub struct Hart {
 }
 
 impl Hart {
+    pub(in crate::soc) fn new(cfg: &SocCfg) -> Self {
+        Self::get_reset_instance(cfg)
+    }
+
     pub(in crate::soc) fn reset(&mut self, cfg: &SocCfg) {
         // TODO: init hart-id, DTB source
         self.context.reset(cfg);
+    }
+
+    fn get_reset_instance(cfg: &SocCfg) -> Self {
+        Self {
+            context: Context {
+                // TODO: init hart-id, DTB source
+                arch_state: ArchState {
+                    PC: Register::new(cfg.hart.pc_reset_value),
+                    gp_register_file: RegisterFile::new(),
+                    control_status_registers: CSRFile::new(),
+                },
+                fetch_unit: FetchUnit::new(
+                    INITIAL_INSTRUCTION,
+                    InstructionSize::I32,
+                ),
+                decoder: Decoder::new(),
+                executor: Executor::new(cfg.hart.pc_reset_value),
+            },
+        }
     }
 
     pub(crate) fn set_pc(&mut self, value: XLen) {

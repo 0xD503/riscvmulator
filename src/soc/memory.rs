@@ -13,6 +13,8 @@ use crate::constants::arch::{
 };
 use crate::constants::soc::MEM_RESET_VALUE;
 
+use super::peripherals::common::device::{Device, RawDevice};
+
 use self::constants::MEMORY_ARRAY_PADDING;
 
 #[allow(clippy::upper_case_acronyms)]
@@ -184,7 +186,21 @@ impl<AddrType> Memory<AddrType> {
         }
     }
 
-    pub fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
+    fn fill(&mut self, value: Byte) {
+        let byte_array_ptr = Arc::clone(&self.byte_array);
+        let mut byte_array = byte_array_ptr.write().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        byte_array.fill(value);
+    }
+
+    pub fn reset(&mut self) {
+        self.fill(MEM_RESET_VALUE);
+    }
+}
+
+impl<AddrType> Device for Memory<AddrType> {
+    fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
         trace!("Reading memory at offset: {offset:#018X?}");
 
         let byte_array_ptr = Arc::clone(&self.byte_array);
@@ -202,7 +218,7 @@ impl<AddrType> Memory<AddrType> {
         MemValType::from_le_bytes(bytes)
     }
 
-    pub fn write<MemValType: MemoryValue>(
+    fn write<MemValType: MemoryValue>(
         &mut self,
         offset: usize,
         value: MemValType,
@@ -222,16 +238,41 @@ impl<AddrType> Memory<AddrType> {
         byte_array[offset..offset + size_of::<MemValType>()]
             .copy_from_slice(bytes.as_ref());
     }
+}
 
-    fn fill(&mut self, value: Byte) {
+impl<AddrType> RawDevice for Memory<AddrType> {
+    fn read_raw<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
+        let byte_array_ptr = Arc::clone(&self.byte_array);
+        let byte_array = byte_array_ptr.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+
+        // bus makes bounds check, so we assume that `offset` is always correct
+        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
+
+        let bytes = byte_array[offset..offset + size_of::<MemValType>()]
+            .try_into()
+            .unwrap();
+        // TODO: notice, so far emulator only supports little-endian
+        MemValType::from_le_bytes(bytes)
+    }
+
+    fn write_raw<MemValType: MemoryValue>(
+        &mut self,
+        offset: usize,
+        value: MemValType,
+    ) {
         let byte_array_ptr = Arc::clone(&self.byte_array);
         let mut byte_array = byte_array_ptr.write().unwrap_or_else(|err| {
             todo!("Is it even possible???: {err}");
         });
-        byte_array.fill(value);
-    }
 
-    pub fn reset(&mut self) {
-        self.fill(MEM_RESET_VALUE);
+        // bus makes bounds check, so we assume that `offset` is always correct
+        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
+
+        // TODO: notice, so far emulator only supports little-endian
+        let bytes = value.to_le_bytes();
+        byte_array[offset..offset + size_of::<MemValType>()]
+            .copy_from_slice(bytes.as_ref());
     }
 }

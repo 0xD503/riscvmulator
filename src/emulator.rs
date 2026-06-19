@@ -23,8 +23,10 @@ impl Emulator {
     pub fn build_from_config(
         config: &Config,
     ) -> Result<Emulator, EmulatorError> {
-        let mut buildable_soc: SoC = SoC::new(&config.soc);
-        buildable_soc.reset(&config.soc);
+        let buildable_soc: SoC = SoC::new(&config.soc);
+        // TODO: set Hart regs and device state (HW bringup)
+        // buildable_soc.reset(&config.soc);
+        //
         info!("SoC was reset");
 
         Ok(Emulator {
@@ -55,7 +57,7 @@ impl Emulator {
                 // self.halted = false;
                 self.run_loop();
             } else {
-                break;
+                todo!("handle halted state");
             }
         }
     }

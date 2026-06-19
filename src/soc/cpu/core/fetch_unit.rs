@@ -29,10 +29,16 @@ impl FetchUnit {
     }
 
     pub fn reset(&mut self) {
-        self.instruction_size = InstructionSize::I32;
-        self.current_instruction = INITIAL_INSTRUCTION;
-        self.current_instruction_compressed =
-            INITIAL_INSTRUCTION as InstructionTypeCompressed;
+        *self = Self::get_reset_instance();
+    }
+
+    fn get_reset_instance() -> Self {
+        Self {
+            instruction_size: InstructionSize::I32,
+            current_instruction: INITIAL_INSTRUCTION,
+            current_instruction_compressed: INITIAL_INSTRUCTION
+                as InstructionTypeCompressed,
+        }
     }
 
     fn extract_quadrant(&self, instruction: InstructionType) -> OpcodeQuadrant {

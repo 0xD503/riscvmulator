@@ -41,3 +41,6 @@
 - [ ] add emulator throtling
 - [ ] implement `EBREAK`, add debug mode
 - [ ] add fuzzer
+- [ ] customize log string: add core num, PC value, cycle count
+- [ ] interactive commands: help/usage, license, load-elf, start, peek/poke
+- [ ] boot-state seeding: setting a0 = hartid, a1 = dtb, PC, and initial CSRs (mhartid, etc.)
