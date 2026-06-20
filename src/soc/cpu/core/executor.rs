@@ -17,7 +17,7 @@ use crate::soc::cpu::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
 use crate::soc::cpu::privileged::machine::{
     MCause_Code, MSTATUS_MPP_MASK, MSTATUS_MPP_OFFSET, MStatus_MPP,
 };
-use crate::soc::memory::MemoryValueType;
+use crate::soc::memory::{MemoryValue, MemoryValueType};
 
 use log::{error, trace};
 
@@ -298,8 +298,11 @@ impl Executor {
     fn instruction_addi(&mut self, decoder: &Decoder) {
         trace!("Executing ADDI...");
 
-        self.result = decoder.source_register_1
-            + decoder.immediate as SignedImmediate as SignedXLen as XLen;
+        // use wrapping operation in order to allow overruns
+        self.result = XLen::wrapping_add(
+            decoder.source_register_1,
+            decoder.immediate.sign_extend(),
+        );
     }
 
     fn instruction_slli(&mut self, decoder: &Decoder) {
@@ -395,8 +398,11 @@ impl Executor {
     fn instruction_store_word(&mut self, decoder: &Decoder) {
         trace!("Executing SW...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        // use wrapping operation in order to allow overruns
+        self.memory_address = XLen::wrapping_add(
+            decoder.source_register_1,
+            decoder.immediate.sign_extend(),
+        );
         self.value_to_store_u32 = decoder.source_register_2 as Word;
         self.memory_value_type = MemoryValueType::WORD;
     }
@@ -500,8 +506,9 @@ impl Executor {
         );
 
         if decoder.source_register_1 != decoder.source_register_2 {
-            self.branch_target_address = pc.read()
-                + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+            // use wrapping operation in order to allow overruns
+            self.branch_target_address =
+                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         } else {
             trace!("Skip BNE...");
@@ -630,9 +637,12 @@ impl Executor {
     fn instruction_add_immediate_word(&mut self, decoder: &Decoder) {
         trace!("Executing ADDIW...");
 
-        let result32 =
-            (decoder.source_register_1 as XLen32) + decoder.immediate;
-        self.result = result32 as SignedXLen32 as SignedXLen as XLen;
+        // use wrapping operation in order to allow overruns
+        let result32 = XLen32::wrapping_add(
+            decoder.source_register_1 as XLen32,
+            decoder.immediate,
+        );
+        self.result = result32.sign_extend();
     }
 
     fn instruction_shift_left_logical_immediate_word(
