@@ -2,7 +2,7 @@
 
 ## Development stage
 
-Project is under development; not production-ready.
+RV64I is complete, passes `rv64ui-p` tests. The rest extensions are under development.
 
 ## Specifications
 
@@ -12,7 +12,7 @@ Project is under development; not production-ready.
 
 ### Main features
 
-- [x] `RV32I`
+- [ ] `RV32I`
 - [x] `RV64I`
 - [ ] `M` extension (mul/div)
 - [ ] `A` extension (atomics)
