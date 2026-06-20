@@ -7,7 +7,8 @@ use crate::soc::cpu::core::registers::{
 };
 
 pub mod constants;
-use crate::soc::cpu::privileged::machine::MCause_Code;
+use crate::soc::cpu::privileged::machine::misa::{set_misa_raw, set_mstatus};
+use crate::soc::cpu::privileged::machine::{MCause_Code, MStatus_MPP, MXLen};
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone)]
@@ -80,6 +81,20 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
         for register in self.registers.iter_mut() {
             register.reset();
         }
+
+        // set Hart regs and device state (HW bringup)
+        self.bringup_hw_state();
+    }
+}
+
+impl<const REGS_NUM: usize> CSRFile<REGS_NUM> {
+    fn bringup_hw_state(&mut self) {
+        let mstatus_value: MXLen = MStatus_MPP::MACHINE as MXLen;
+        // set `MIE`, `MPRV`, `MBE` values to 0
+        // let misa_value: MXLen = ;
+
+        set_mstatus(self, mstatus_value);
+        // set_misa(self, misa_value);
     }
 }
 
@@ -94,14 +109,10 @@ impl RawRegisterInterface for CSR {
 
 impl<const REGS_NUM: usize> RawRegisterFileInterface for CSRFile<REGS_NUM> {
     fn read_raw(&self, offset: usize) -> XLen {
-        trace!("Reading CSR #{offset:#?}...");
-
         self.registers[offset].read()
     }
 
     fn write_raw(&mut self, offset: usize, value: XLen) {
-        trace!("Writing CSR #{offset:#?}...");
-
         self.registers[offset].write(value);
     }
 }

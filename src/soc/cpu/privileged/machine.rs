@@ -38,7 +38,59 @@ pub const MISA_EXTENSIONS_X_NON_STANDART: MXLen = 0x0080_0000;
 pub const MISA_EXTENSIONS_Y_RESERVED: MXLen = 0x0100_0000;
 pub const MISA_EXTENSIONS_Z_RESERVED: MXLen = 0x0200_0000;
 
-pub const MISA_MXL_OFFSET: usize = size_of::<MXLen>() - 2;
+pub const MISA_MXL_OFFSET: usize = (MXLen::BITS - 2) as usize;
+
+pub mod misa {
+    use super::MXLen;
+    // use crate::constants::arch::RISCV_NUM_OF_CSR;
+    use crate::soc::cpu::core::registers::{
+        RawRegisterFileInterface, RegisterFileInterface,
+    };
+    use crate::soc::cpu::extensions::zicsr::CSRFile;
+    use crate::soc::cpu::extensions::zicsr::constants::CSRRegisterName;
+
+    pub fn set_misa<const REGS_NUM: usize>(
+        csrs: &mut CSRFile<REGS_NUM>,
+        value: MXLen,
+    ) {
+        csrs.write(CSRRegisterName::misa as usize, value);
+    }
+
+    pub fn set_misa_raw<const REGS_NUM: usize>(
+        csrs: &mut CSRFile<REGS_NUM>,
+        value: MXLen,
+    ) {
+        csrs.write_raw(CSRRegisterName::misa as usize, value);
+    }
+
+    pub fn set_mstatus<const REGS_NUM: usize>(
+        csrs: &mut CSRFile<REGS_NUM>,
+        value: MXLen,
+    ) {
+        csrs.write(CSRRegisterName::mstatus as usize, value);
+    }
+
+    pub fn set_mstatus_raw<const REGS_NUM: usize>(
+        csrs: &mut CSRFile<REGS_NUM>,
+        value: MXLen,
+    ) {
+        csrs.write_raw(CSRRegisterName::mstatus as usize, value);
+    }
+
+    pub fn set_mstatush<const REGS_NUM: usize>(
+        csrs: &mut CSRFile<REGS_NUM>,
+        value: MXLen,
+    ) {
+        csrs.write(CSRRegisterName::mstatush as usize, value);
+    }
+
+    pub fn set_mstatush_raw<const REGS_NUM: usize>(
+        csrs: &mut CSRFile<REGS_NUM>,
+        value: MXLen,
+    ) {
+        csrs.write_raw(CSRRegisterName::mstatush as usize, value);
+    }
+}
 
 pub const MSTATUS_MPP_OFFSET: usize = 11;
 pub const MSTATUS_MPP_MASK: XLen = 0b11;
