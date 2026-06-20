@@ -24,10 +24,8 @@ impl Emulator {
         config: &Config,
     ) -> Result<Emulator, EmulatorError> {
         let buildable_soc: SoC = SoC::new(&config.soc);
-        // TODO: set Hart regs and device state (HW bringup)
-        // buildable_soc.reset(&config.soc);
-        //
-        info!("SoC was reset");
+
+        info!("SoC was created");
 
         Ok(Emulator {
             soc: buildable_soc,

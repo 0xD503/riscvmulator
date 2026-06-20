@@ -20,14 +20,7 @@ pub struct SoC {
 
 impl SoC {
     pub fn new(cfg: &SocCfg) -> Self {
-        Self {
-            harts: vec![Hart::new(cfg); cfg.harts_num as usize],
-            bus: SystemBus::new(
-                MEM_RESET_VALUE,
-                cfg.bus.memory.base_addr,
-                cfg.bus.memory.size_bytes,
-            ),
-        }
+        Self::get_reset_instance(cfg)
     }
 
     pub fn reset(&mut self, cfg: &SocCfg) {
@@ -38,6 +31,26 @@ impl SoC {
 
         // // fill memory with NOP's
         // self.bus.fill_with_nops();
+    }
+
+    fn get_reset_instance(cfg: &SocCfg) -> Self {
+        let soc = Self {
+            harts: vec![Hart::new(cfg); cfg.harts_num as usize],
+            bus: SystemBus::new(
+                MEM_RESET_VALUE,
+                cfg.bus.memory.base_addr,
+                cfg.bus.memory.size_bytes,
+            ),
+        };
+        // TODO: set Hart regs and device state (HW bringup)
+        // buildable_soc.reset(&config.soc);
+        soc.reset_hw_state(cfg);
+
+        soc
+    }
+
+    fn reset_hw_state(&self, cfg: &SocCfg) {
+        //
     }
 
     pub fn step(&mut self) {
