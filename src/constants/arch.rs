@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 //
-use crate::soc::cpu::core::decoder::constants::Opcode;
-use crate::soc::cpu::privileged::machine::{MXLen, SignedMXLen, UnsignedMXLen};
+use crate::soc::hart::core::decoder::constants::Opcode;
+use crate::soc::hart::privileged::machine::{
+    MXLen, SignedMXLen, UnsignedMXLen,
+};
 
 // XLEN is never greater than MXLEN, but XLEN might be smaller than MXLEN in
 // less-privileged modes.

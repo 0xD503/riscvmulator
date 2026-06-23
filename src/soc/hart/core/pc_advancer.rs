@@ -1,8 +1,8 @@
 // use super::fetch_unit::FetchUnit;
 
 use crate::constants::arch::XLen;
-use crate::soc::cpu::Hart;
-use crate::soc::cpu::core::registers::RegisterInterface;
+use crate::soc::hart::Hart;
+use crate::soc::hart::core::registers::RegisterInterface;
 
 use log::trace;
 
@@ -19,7 +19,7 @@ impl Hart {
             && !self.context.decoder.zicsr.need_to_call_trap
     }
 
-    pub(in crate::soc::cpu) fn advance_pc(&mut self) {
+    pub(in crate::soc::hart) fn advance_pc(&mut self) {
         if self.is_need_to_advance_pc() {
             trace!("Advancing PC...");
 

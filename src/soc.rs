@@ -1,11 +1,11 @@
-pub mod cpu;
+pub mod hart;
 pub mod memory;
 pub mod memory_bus;
 mod peripherals;
 
 use crate::config::SocCfg;
 
-use self::cpu::Hart;
+use self::hart::Hart;
 use self::memory_bus::{Bus, SystemBus};
 
 use super::constants::arch::BusAddrType;

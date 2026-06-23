@@ -1,21 +1,21 @@
 use log::trace;
 
 use crate::constants::arch::{RISCV_CSR_INITIAL_VALUE, XLen};
-use crate::soc::cpu::core::registers::{
+use crate::soc::hart::core::registers::{
     RawRegisterFileInterface, RawRegisterInterface, RegisterFileInterface,
     RegisterInterface,
 };
 
 pub mod constants;
-use crate::soc::cpu::privileged::machine::misa::{
+use crate::soc::hart::privileged::machine::misa::{
     set_mhartid_raw, set_misa_raw, set_mstatus, set_mstatus_raw,
 };
-use crate::soc::cpu::privileged::machine::{MCause_Code, MStatus_MPP, MXLen};
+use crate::soc::hart::privileged::machine::{MCause_Code, MStatus_MPP, MXLen};
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone)]
 pub struct CSR {
-    pub(in crate::soc::cpu) value: XLen,
+    pub(in crate::soc::hart) value: XLen,
 }
 
 impl CSR {}
@@ -30,7 +30,7 @@ impl Default for CSR {
 
 #[derive(Clone)]
 pub struct CSRFile<const REGS_NUM: usize> {
-    pub(in crate::soc::cpu) registers: [CSR; REGS_NUM],
+    pub(in crate::soc::hart) registers: [CSR; REGS_NUM],
 }
 
 impl<const REGS_NUM: usize> Default for CSRFile<REGS_NUM> {

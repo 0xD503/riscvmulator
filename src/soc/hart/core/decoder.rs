@@ -10,13 +10,13 @@ use self::constants::{
 use super::executor::constants::ExecutableCommand;
 
 use crate::constants::arch::*;
-use crate::soc::cpu::core::decoder::constants::InstructionSize;
-use crate::soc::cpu::core::fetch_unit::FetchUnit;
-use crate::soc::cpu::core::gp_registers::{
+use crate::soc::hart::core::decoder::constants::InstructionSize;
+use crate::soc::hart::core::fetch_unit::FetchUnit;
+use crate::soc::hart::core::gp_registers::{
     RegisterFile, constants::GPRegisterName,
 };
-use crate::soc::cpu::core::registers::RegisterFileInterface;
-use crate::soc::cpu::extensions::zicsr::DecoderZicsrContext;
+use crate::soc::hart::core::registers::RegisterFileInterface;
+use crate::soc::hart::extensions::zicsr::DecoderZicsrContext;
 
 use log::{debug, error, trace};
 

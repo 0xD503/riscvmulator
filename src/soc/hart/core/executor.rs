@@ -12,9 +12,9 @@ use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, SignedImmediate, SignedXLen,
     SignedXLen32, UnsignedXLen, Word, XLen, XLen32,
 };
-use crate::soc::cpu::extensions::zicsr::constants::CSRRegisterName;
-use crate::soc::cpu::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
-use crate::soc::cpu::privileged::machine::{
+use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
+use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
+use crate::soc::hart::privileged::machine::{
     MCause_Code, MSTATUS_MPP_MASK, MSTATUS_MPP_OFFSET, MStatus_MPP,
 };
 use crate::soc::memory::{MemoryValue, MemoryValueType};
@@ -238,7 +238,7 @@ impl Executor {
         }
     }
 
-    pub(in crate::soc::cpu) fn execute(
+    pub(in crate::soc::hart) fn execute(
         &mut self,
         decoder: &Decoder,
         arch_state: &ArchState,

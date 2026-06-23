@@ -1,6 +1,6 @@
 use crate::constants::arch::{BusAddrType, Byte, DoubleWord, HalfWord, Word};
-use crate::soc::cpu::core::decoder::Decoder;
-use crate::soc::cpu::core::executor::Executor;
+use crate::soc::hart::core::decoder::Decoder;
+use crate::soc::hart::core::executor::Executor;
 use crate::soc::memory::{MemoryValue, MemoryValueType};
 use crate::soc::memory_bus::{Bus, SystemBus};
 

@@ -15,8 +15,8 @@ use super::extensions::zicsr::CSRFile;
 
 use crate::config::SocCfg;
 use crate::constants::arch::{RISCV_NUM_OF_CSR, RISCV_NUM_OF_REGISTERS};
-use crate::soc::cpu::core::fetch_unit::FetchUnit;
-use crate::soc::cpu::core::registers::{
+use crate::soc::hart::core::fetch_unit::FetchUnit;
+use crate::soc::hart::core::registers::{
     RawRegisterInterface, RegisterFileInterface,
 };
 

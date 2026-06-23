@@ -1,10 +1,10 @@
 // use super::
 
 use crate::constants::arch::XLen;
-use crate::soc::cpu::Hart;
-use crate::soc::cpu::core::registers::RegisterFileInterface;
-use crate::soc::cpu::extensions::zicsr::constants::CSRRegisterName;
-use crate::soc::cpu::privileged::machine::MCause_Code;
+use crate::soc::hart::Hart;
+use crate::soc::hart::core::registers::RegisterFileInterface;
+use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
+use crate::soc::hart::privileged::machine::MCause_Code;
 
 use log::{error, trace};
 
@@ -119,7 +119,7 @@ impl Hart {
             .write(register_offset, self.context.executor.zicsr.csr_value);
     }
 
-    pub(in crate::soc::cpu) fn write_back(&mut self) {
+    pub(in crate::soc::hart) fn write_back(&mut self) {
         // check if write to general purpose register is necessary
         if self.context.decoder.need_to_write_back {
             self.write_back_to_reg();

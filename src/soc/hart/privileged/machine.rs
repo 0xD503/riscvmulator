@@ -44,11 +44,11 @@ pub mod misa {
     use super::MXLen;
     use crate::constants::arch::XLen;
     // use crate::constants::arch::RISCV_NUM_OF_CSR;
-    use crate::soc::cpu::core::registers::{
+    use crate::soc::hart::core::registers::{
         RawRegisterFileInterface, RegisterFileInterface,
     };
-    use crate::soc::cpu::extensions::zicsr::CSRFile;
-    use crate::soc::cpu::extensions::zicsr::constants::CSRRegisterName;
+    use crate::soc::hart::extensions::zicsr::CSRFile;
+    use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
 
     pub fn set_misa<const REGS_NUM: usize>(
         csrs: &mut CSRFile<REGS_NUM>,

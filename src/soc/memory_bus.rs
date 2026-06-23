@@ -5,7 +5,7 @@ use crate::globals::exit_codes::ExitCode;
 use crate::soc::memory::{Memory, MemoryValue};
 use crate::soc::peripherals::common::device::RawDevice;
 
-use super::cpu::core::decoder::constants::Opcode;
+use super::hart::core::decoder::constants::Opcode;
 use super::peripherals::common::device::Device;
 
 // pub const HTIF_TO_HOST: XLen = 0x80001000;
@@ -83,14 +83,14 @@ impl<AddrType: std::ops::Sub> SystemBus<AddrType> {
         self.htif_to_host = 0x8000_1000;
     }
 
-    pub fn fill_with_nops(&mut self) {
-        self.memory_reset();
-        for addr in
-            (self.ram_base..self.ram_end).step_by(size_of::<InstructionType>())
-        {
-            self.write_raw(addr, Opcode::OP_IMM as Byte);
-        }
-    }
+    // pub fn fill_with_nops(&mut self) {
+    //     self.memory_reset();
+    //     for addr in
+    //         (self.ram_base..self.ram_end).step_by(size_of::<InstructionType>())
+    //     {
+    //         self.write_raw(addr, Opcode::OP_IMM as Byte);
+    //     }
+    // }
 
     // fn compute_offset_within_device(
     //     addr: AddrType,

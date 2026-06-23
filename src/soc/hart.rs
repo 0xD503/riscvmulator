@@ -10,13 +10,13 @@ use self::core::registers::{RegisterFileInterface, RegisterInterface};
 use crate::config::SocCfg;
 use crate::constants::arch::{BusAddrType, XLen};
 use crate::constants::soc::INITIAL_INSTRUCTION;
-use crate::soc::cpu::core::ArchState;
-use crate::soc::cpu::core::decoder::Decoder;
-use crate::soc::cpu::core::decoder::constants::InstructionSize;
-use crate::soc::cpu::core::executor::Executor;
-use crate::soc::cpu::core::fetch_unit::FetchUnit;
-use crate::soc::cpu::core::gp_registers::{Register, RegisterFile};
-use crate::soc::cpu::extensions::zicsr::CSRFile;
+use crate::soc::hart::core::ArchState;
+use crate::soc::hart::core::decoder::Decoder;
+use crate::soc::hart::core::decoder::constants::InstructionSize;
+use crate::soc::hart::core::executor::Executor;
+use crate::soc::hart::core::fetch_unit::FetchUnit;
+use crate::soc::hart::core::gp_registers::{Register, RegisterFile};
+use crate::soc::hart::extensions::zicsr::CSRFile;
 use crate::soc::memory_bus::SystemBus;
 
 #[derive(Clone)]

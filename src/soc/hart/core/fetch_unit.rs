@@ -1,12 +1,12 @@
 use crate::constants::arch::{BusAddrType, HalfWord, InstructionType, XLen};
 use crate::constants::soc::INITIAL_INSTRUCTION;
 use crate::soc::Bus;
-use crate::soc::cpu::core::decoder::constants::{
+use crate::soc::hart::core::decoder::constants::{
     InstructionSize, OPCODE_QUADRANT_MASK, OpcodeQuadrant,
 };
-use crate::soc::cpu::core::gp_registers::Register;
-use crate::soc::cpu::core::registers::RegisterInterface;
-use crate::soc::cpu::extensions::compressed::constants::InstructionTypeCompressed;
+use crate::soc::hart::core::gp_registers::Register;
+use crate::soc::hart::core::registers::RegisterInterface;
+use crate::soc::hart::extensions::compressed::constants::InstructionTypeCompressed;
 use crate::soc::memory_bus::SystemBus;
 
 use log::trace;
@@ -45,7 +45,7 @@ impl FetchUnit {
         OpcodeQuadrant::from(instruction & OPCODE_QUADRANT_MASK)
     }
 
-    pub(in crate::soc::cpu) fn fetch(
+    pub(in crate::soc::hart) fn fetch(
         &mut self,
         bus: &SystemBus<BusAddrType>,
         pc: &Register,
