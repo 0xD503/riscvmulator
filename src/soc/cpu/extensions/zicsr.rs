@@ -7,7 +7,9 @@ use crate::soc::cpu::core::registers::{
 };
 
 pub mod constants;
-use crate::soc::cpu::privileged::machine::misa::{set_misa_raw, set_mstatus};
+use crate::soc::cpu::privileged::machine::misa::{
+    set_mhartid_raw, set_misa_raw, set_mstatus, set_mstatus_raw,
+};
 use crate::soc::cpu::privileged::machine::{MCause_Code, MStatus_MPP, MXLen};
 
 #[allow(clippy::upper_case_acronyms)]
@@ -81,20 +83,21 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
         for register in self.registers.iter_mut() {
             register.reset();
         }
-
-        // set Hart regs and device state (HW bringup)
-        self.bringup_hw_state();
     }
 }
 
 impl<const REGS_NUM: usize> CSRFile<REGS_NUM> {
-    fn bringup_hw_state(&mut self) {
+    pub fn bringup_hw_state(&mut self, hartid: usize) {
+        self.reset();
+
         let mstatus_value: MXLen = MStatus_MPP::MACHINE as MXLen;
         // set `MIE`, `MPRV`, `MBE` values to 0
         // let misa_value: MXLen = ;
 
-        set_mstatus(self, mstatus_value);
-        // set_misa(self, misa_value);
+        set_mstatus_raw(self, mstatus_value);
+        // set_misa_raw(self, misa_value);
+
+        set_mhartid_raw(self, hartid);
     }
 }
 

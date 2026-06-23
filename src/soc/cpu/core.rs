@@ -29,10 +29,10 @@ pub struct ArchState {
 }
 
 impl ArchState {
-    pub(crate) fn reset(&mut self, cfg: &SocCfg) {
+    pub(crate) fn reset(&mut self, cfg: &SocCfg, hartid: usize) {
         self.gp_register_file.reset();
         self.PC.write_raw(cfg.hart.pc_reset_value);
-        self.control_status_registers.reset();
+        self.control_status_registers.bringup_hw_state(hartid);
     }
 }
 
@@ -45,10 +45,10 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn reset(&mut self, cfg: &SocCfg) {
+    pub fn reset(&mut self, cfg: &SocCfg, hartid: usize) {
         self.fetch_unit.reset();
         self.decoder.reset();
         self.executor.reset(cfg.hart.pc_reset_value);
-        self.arch_state.reset(cfg);
+        self.arch_state.reset(cfg, hartid);
     }
 }

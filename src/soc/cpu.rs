@@ -29,9 +29,9 @@ impl Hart {
         Self::get_reset_instance(cfg)
     }
 
-    pub(in crate::soc) fn reset(&mut self, cfg: &SocCfg) {
+    pub(in crate::soc) fn reset(&mut self, cfg: &SocCfg, hartid: usize) {
         // TODO: init hart-id, DTB source
-        self.context.reset(cfg);
+        self.context.reset(cfg, hartid);
     }
 
     fn get_reset_instance(cfg: &SocCfg) -> Self {

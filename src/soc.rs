@@ -29,8 +29,8 @@ impl SoC {
     }
 
     pub fn reset(&mut self, cfg: &SocCfg) {
-        for hart in self.harts.iter_mut() {
-            hart.reset(cfg);
+        for (hard_id, hart) in self.harts.iter_mut().enumerate() {
+            hart.reset(cfg, hard_id);
         }
         self.bus.reset();
 

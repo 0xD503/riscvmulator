@@ -55,7 +55,7 @@
   - [ ] `MML`, `MMWP`, and `RLB` fields of the `mseccfg` register are set to 0, unless the platform mandates a different reset value.
   - [ ] `mcause` values after reset have implementation-specific interpretation, but the value 0 should be returned on implementations that do not distinguish different reset conditions. Implementations that distinguish different reset conditions should only use 0 to indicate the most complete reset.
   - [ ] `USEED` and `SSEED` fields of the `mseccfg` CSR must have defined reset values
+  - [ ] `mhartid` init (for multicore support)
 - [ ] simple FW (in embedded Rust) reset init:
   - [ ] core parking
   - [ ] stack init
-  - [ ] `mhartid` init (for multicore support)

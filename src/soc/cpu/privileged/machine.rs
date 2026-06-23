@@ -42,6 +42,7 @@ pub const MISA_MXL_OFFSET: usize = (MXLen::BITS - 2) as usize;
 
 pub mod misa {
     use super::MXLen;
+    use crate::constants::arch::XLen;
     // use crate::constants::arch::RISCV_NUM_OF_CSR;
     use crate::soc::cpu::core::registers::{
         RawRegisterFileInterface, RegisterFileInterface,
@@ -89,6 +90,20 @@ pub mod misa {
         value: MXLen,
     ) {
         csrs.write_raw(CSRRegisterName::mstatush as usize, value);
+    }
+
+    pub fn set_mhartid<const REGS_NUM: usize>(
+        csrs: &mut CSRFile<REGS_NUM>,
+        id: usize,
+    ) {
+        csrs.write(CSRRegisterName::mhartid as usize, id as XLen);
+    }
+
+    pub fn set_mhartid_raw<const REGS_NUM: usize>(
+        csrs: &mut CSRFile<REGS_NUM>,
+        id: usize,
+    ) {
+        csrs.write_raw(CSRRegisterName::mhartid as usize, id as XLen);
     }
 }
 
