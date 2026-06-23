@@ -1,21 +1,27 @@
 pub mod hart;
 pub mod memory;
 pub mod memory_bus;
+
 mod peripherals;
+
+use std::sync::Barrier;
+use std::thread;
 
 use crate::config::SocCfg;
 
-use self::hart::Hart;
-use self::memory_bus::{Bus, SystemBus};
-
 use super::constants::arch::BusAddrType;
 use super::constants::soc::MEM_RESET_VALUE;
+
+use self::hart::Hart;
+use self::memory_bus::{Bus, SystemBus};
 
 pub struct SoC {
     pub(crate) harts: Vec<Hart>,
     // memory and memory mapped IO
     // von Neumann architechture, so common bus is used for instructions/data
     pub(crate) bus: SystemBus<BusAddrType>,
+
+    start_trigger: Barrier,
 }
 
 impl SoC {
@@ -24,6 +30,10 @@ impl SoC {
 
         // Power-on reset
         soc.reset(cfg);
+
+        // it doesn't run actually, just puts them waitin on a barrier until
+        // real run trigger
+        // soc
 
         soc
     }
@@ -46,6 +56,8 @@ impl SoC {
                 cfg.bus.memory.base_addr,
                 cfg.bus.memory.size_bytes,
             ),
+            // +1 is for triggering thread
+            start_trigger: Barrier::new(cfg.harts_num as usize + 1),
         }
     }
 
@@ -54,6 +66,32 @@ impl SoC {
         for hart in self.harts.iter_mut() {
             hart.step(&mut self.bus);
         }
+    }
+
+    fn run(&mut self) {
+        self.start_trigger.wait();
+
+        loop {
+            self.step();
+        }
+    }
+
+    fn spawn_core_threads(&mut self, harts_num: u32) {
+        // thread::Builder::name(self, "core {i}")
+        let bus = &self.bus;
+        let start_trigger = &self.start_trigger;
+        thread::scope(move |scope| {
+            for hart in self.harts.iter_mut() {
+                scope.spawn(|| {
+                    start_trigger.wait();
+
+                    loop {
+                        hart.step(bus);
+                    }
+                });
+                // s.spawn(self.run());
+            }
+        });
     }
 
     // testing facilities
