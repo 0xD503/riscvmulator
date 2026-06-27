@@ -50,20 +50,20 @@ impl SoC {
         }
     }
 
-    pub fn step(&mut self) {
-        // TODO should be multithreaded
-        for hart in self.harts.iter_mut() {
-            hart.step(&mut self.bus);
-        }
-    }
+    // pub fn step(&mut self) {
+    //     // TODO should be multithreaded
+    //     for hart in self.harts.iter_mut() {
+    //         hart.step(&mut self.bus);
+    //     }
+    // }
 
-    fn run(&mut self) {
-        // self.start_trigger.wait();
+    // fn run(&mut self) {
+    //     // self.start_trigger.wait();
 
-        loop {
-            self.step();
-        }
-    }
+    //     loop {
+    //         self.step();
+    //     }
+    // }
 
     // testing facilities
     // TODO: conditional compilation for test facilities

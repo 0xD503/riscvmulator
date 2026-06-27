@@ -82,33 +82,6 @@ impl Emulator {
                 hart
             }));
         }
-        //
-        // let bus = &self.bus;
-        // let start_trigger = &self.start_trigger;
-        // println!("GREPME SPAWNING...");
-        // // let wait_until_start_trigger = &self.wait_until_start_trigger;
-        // thread::scope(|scope| {
-        //     println!("GREPME In scope...");
-        //     for hart in self.harts.iter_mut() {
-        //         println!("GREPME SPAWNING i...");
-        //         scope.spawn(|| {
-        //             println!("GREPME within spawn i...");
-        //             // on spawn wait signal to start actual execution cycle
-        //             start_trigger.wait();
-        //             println!("GREPME spawn i started!");
-        //             // wait_until_start_trigger();
-
-        //             loop {
-        //                 hart.step(bus);
-        //             }
-        //         });
-        //     }
-        //     println!("GREPME leaving scope...");
-
-        //     // // start trigger
-        //     // self.wait_until_start_trigger();
-        // });
-        // println!("GREPME left scope...");
     }
 
     fn wait_until_start_trigger(&self) {
@@ -120,6 +93,16 @@ impl Emulator {
     }
 
     pub fn run(&mut self) {
+        self.run_loop();
+    }
+
+    fn interactive_mode(&self) {
+        info!("Emulator is running in interactive mode");
+        todo!("interactive mode");
+        //
+    }
+
+    fn run_loop(&mut self) {
         let mut started = false;
 
         loop {
@@ -127,7 +110,8 @@ impl Emulator {
                 self.interactive_mode();
             } else if !self.halted.load(atomic::Ordering::Relaxed) {
                 if !started {
-                    // it doesn't run actually, just puts them waitin on a barrier until
+                    // it doesn't run actually, it takes ownership of hart
+                    // threads from SoC, puts them waitin on a barrier until
                     // real run trigger
                     self.spawn_hart_threads();
 
@@ -153,18 +137,6 @@ impl Emulator {
             .collect();
 
         // info!("Emulator stopped");
-    }
-
-    fn interactive_mode(&self) {
-        info!("Emulator is running in interactive mode");
-        todo!("interactive mode");
-        //
-    }
-
-    fn run_loop(&mut self) {
-        while !self.halted.load(atomic::Ordering::Relaxed) {
-            self.soc.step();
-        }
     }
 
     // fn on_halted(&self) {
