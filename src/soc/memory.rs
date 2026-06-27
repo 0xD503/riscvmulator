@@ -187,9 +187,10 @@ impl<AddrType> Memory<AddrType> {
     }
 
     fn fill(&self, value: Byte) {
-        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
+        let mut byte_array = self
+            .byte_array
+            .write()
+            .expect("sibling hart panicked while holding lock to memory");
         byte_array.fill(value);
     }
 

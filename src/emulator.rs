@@ -119,13 +119,12 @@ impl Emulator {
                     self.trigger_start();
                     started = true;
                 }
-                // self.halted = false;
-                // self.run_loop();
             } else if self.halted.load(atomic::Ordering::Relaxed) {
+                if self.run_loop_stopped {
+                    // info!("Emulator stopped");
+                    break;
+                }
                 todo!("handle halted state");
-            } else if self.run_loop_stopped {
-                // info!("Emulator stopped");
-                break;
             }
         }
 

@@ -35,8 +35,7 @@ impl SoC {
         for (hard_id, hart) in self.harts.iter_mut().enumerate() {
             hart.reset(cfg, hard_id);
         }
-        let bus = Arc::clone(&self.bus);
-        bus.reset();
+        self.bus.reset();
     }
 
     fn get_reset_instance(cfg: &SocCfg) -> Self {
@@ -68,13 +67,11 @@ impl SoC {
     // testing facilities
     // TODO: conditional compilation for test facilities
     pub fn ready_for_testing(&mut self) {
-        let bus = Arc::clone(&self.bus);
-        bus.set_ready_for_testing();
+        self.bus.set_ready_for_testing();
     }
 
     // TODO: conditional compilation for test facilities
     pub fn set_htif(&mut self, addr: BusAddrType) {
-        let bus = Arc::clone(&self.bus);
-        bus.set_htif(addr);
+        self.bus.set_htif(addr);
     }
 }
