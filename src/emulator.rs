@@ -1,22 +1,29 @@
 mod elf_loader;
 
 use std::fmt::Display;
+use std::sync::atomic::{self, AtomicBool};
+use std::sync::{Arc, Barrier};
+use std::thread::{self, JoinHandle};
 use std::{error::Error, fmt::Formatter};
 
 use log::info;
 
 use crate::globals::exit_codes::ExitCode;
+use crate::soc::hart::Hart;
 use crate::{config::Config, soc::SoC};
 
 use self::elf_loader::{ElfData, ElfError, load_elf};
 
 pub struct Emulator {
     soc: SoC,
-    // config: Config,
-    halted: bool,
-    // elf_loaded: bool,
+
+    // control loop stuff
+    hart_join_handles: Vec<JoinHandle<Hart>>,
+    start_trigger: Arc<Barrier>,
+
+    halted: Arc<AtomicBool>,
     in_interactive_mode: bool,
-    // run_state: RunState,
+    run_loop_stopped: bool, // run_state: RunState,
 }
 
 impl Emulator {
@@ -29,10 +36,18 @@ impl Emulator {
 
         Ok(Emulator {
             soc: buildable_soc,
-            // config: config,
-            halted: true,
-            // elf_loaded: false,
+
+            hart_join_handles: Vec::with_capacity(
+                config.soc.harts_num as usize,
+            ),
+            // +1 is for triggering thread
+            start_trigger: Arc::new(Barrier::new(
+                config.soc.harts_num as usize + 1,
+            )),
+
+            halted: Arc::new(AtomicBool::new(true)),
             in_interactive_mode: true,
+            run_loop_stopped: false,
         })
     }
 
@@ -40,11 +55,68 @@ impl Emulator {
         let load_result = load_elf(path.into(), &mut self.soc);
         if load_result.is_ok() {
             self.in_interactive_mode = false;
-            self.halted = false;
+            self.halted.store(false, atomic::Ordering::Relaxed);
             // self.elf_loaded = true;
         }
 
         load_result
+    }
+
+    pub(super) fn spawn_hart_threads(&mut self) {
+        // `drain(..)` returns iterator to all items of vector and passes
+        // ownership for each item on iteration
+        for mut hart in self.soc.harts.drain(..) {
+            let start_trigger = Arc::clone(&self.start_trigger);
+            let bus = Arc::clone(&self.soc.bus);
+            let halted = Arc::clone(&self.halted);
+            // thread::Builder::name(self, "core {i}")
+            self.hart_join_handles.push(thread::spawn(move || {
+                start_trigger.wait();
+
+                while !halted.load(atomic::Ordering::Relaxed) {
+                    hart.step(&bus);
+                }
+                // self.run();
+
+                // return hart ownership back to original owner (SoC)
+                hart
+            }));
+        }
+        //
+        // let bus = &self.bus;
+        // let start_trigger = &self.start_trigger;
+        // println!("GREPME SPAWNING...");
+        // // let wait_until_start_trigger = &self.wait_until_start_trigger;
+        // thread::scope(|scope| {
+        //     println!("GREPME In scope...");
+        //     for hart in self.harts.iter_mut() {
+        //         println!("GREPME SPAWNING i...");
+        //         scope.spawn(|| {
+        //             println!("GREPME within spawn i...");
+        //             // on spawn wait signal to start actual execution cycle
+        //             start_trigger.wait();
+        //             println!("GREPME spawn i started!");
+        //             // wait_until_start_trigger();
+
+        //             loop {
+        //                 hart.step(bus);
+        //             }
+        //         });
+        //     }
+        //     println!("GREPME leaving scope...");
+
+        //     // // start trigger
+        //     // self.wait_until_start_trigger();
+        // });
+        // println!("GREPME left scope...");
+    }
+
+    fn wait_until_start_trigger(&self) {
+        self.start_trigger.wait();
+    }
+
+    fn trigger_start(&self) {
+        self.wait_until_start_trigger();
     }
 
     pub fn run(&mut self) {
@@ -53,34 +125,44 @@ impl Emulator {
         loop {
             if self.in_interactive_mode {
                 self.interactive_mode();
-            } else if !self.halted {
+            } else if !self.halted.load(atomic::Ordering::Relaxed) {
                 if !started {
                     // it doesn't run actually, just puts them waitin on a barrier until
                     // real run trigger
-                    println!("GREPME BEFORE SPAWNING");
-                    self.soc.spawn_hart_threads();
+                    self.spawn_hart_threads();
 
                     // start trigger
-                    println!("GREPME BEFORE STARTING");
-                    self.soc.trigger_start();
+                    self.trigger_start();
                     started = true;
                 }
                 // self.halted = false;
                 // self.run_loop();
-            } else {
+            } else if self.halted.load(atomic::Ordering::Relaxed) {
                 todo!("handle halted state");
+            } else if self.run_loop_stopped {
+                // info!("Emulator stopped");
+                break;
             }
         }
+
+        // give ownership of harts back to SoC
+        self.soc.harts = self
+            .hart_join_handles
+            .drain(..)
+            .map(|hart_thread| hart_thread.join().unwrap())
+            .collect();
+
+        // info!("Emulator stopped");
     }
 
     fn interactive_mode(&self) {
-        info!("CPU is running in interactive mode");
+        info!("Emulator is running in interactive mode");
         todo!("interactive mode");
         //
     }
 
     fn run_loop(&mut self) {
-        while !self.halted {
+        while !self.halted.load(atomic::Ordering::Relaxed) {
             self.soc.step();
         }
     }

@@ -92,7 +92,7 @@ impl Hart {
     //     //, fetch_unit: &FetchUnit
     // }
 
-    pub(in crate::soc) fn step(&mut self, bus: &SystemBus<BusAddrType>) {
+    pub(crate) fn step(&mut self, bus: &SystemBus<BusAddrType>) {
         trace!("Current PC: {:#018X}", self.context.arch_state.PC.read());
 
         self.fetch(bus);
