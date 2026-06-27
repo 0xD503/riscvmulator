@@ -1,13 +1,16 @@
+mod constants;
 mod elf_loader;
 
 use std::fmt::Display;
 use std::sync::atomic::{self, AtomicBool};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Barrier};
 use std::thread::{self, JoinHandle};
 use std::{error::Error, fmt::Formatter};
 
 use log::info;
 
+use crate::emulator::constants::EmulatorEvent;
 use crate::globals::exit_codes::ExitCode;
 use crate::soc::hart::Hart;
 use crate::{config::Config, soc::SoC};
@@ -24,6 +27,9 @@ pub struct Emulator {
     halted: Arc<AtomicBool>,
     in_interactive_mode: bool,
     run_loop_stopped: bool, // run_state: RunState,
+
+    event_sender: Sender<EmulatorEvent>,
+    event_receiver: Receiver<EmulatorEvent>,
 }
 
 impl Emulator {
@@ -33,6 +39,8 @@ impl Emulator {
         let buildable_soc: SoC = SoC::new(&config.soc);
 
         info!("SoC was created");
+
+        let (sender, receiver) = mpsc::channel::<EmulatorEvent>();
 
         Ok(Emulator {
             soc: buildable_soc,
@@ -48,6 +56,9 @@ impl Emulator {
             halted: Arc::new(AtomicBool::new(true)),
             in_interactive_mode: true,
             run_loop_stopped: false,
+
+            event_sender: sender,
+            event_receiver: receiver,
         })
     }
 
@@ -96,12 +107,6 @@ impl Emulator {
         self.run_loop();
     }
 
-    fn interactive_mode(&self) {
-        info!("Emulator is running in interactive mode");
-        todo!("interactive mode");
-        //
-    }
-
     fn run_loop(&mut self) {
         let mut started = false;
 
@@ -136,6 +141,12 @@ impl Emulator {
             .collect();
 
         // info!("Emulator stopped");
+    }
+
+    fn interactive_mode(&self) {
+        info!("Emulator is running in interactive mode");
+        todo!("interactive mode");
+        //
     }
 
     // fn on_halted(&self) {
