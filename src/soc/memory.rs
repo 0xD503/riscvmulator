@@ -3,7 +3,7 @@ mod constants;
 use std::marker::PhantomData;
 use std::mem::size_of;
 // use std::sync::Mutex;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 use log::trace;
 
@@ -144,7 +144,7 @@ impl MemoryValue for DoubleWord {
 //     type Bytes = [Byte; size_of::<Self>()];
 
 //     fn from_le_bytes(bytes: &[Byte]) -> Self {
-//         Self::from_le_bytes(bytes.try_into().unwrap())
+//         Self::from_le_bytbyte_array_ptres(bytes.try_into().unwrap())
 //     }
 
 //     fn to_le_bytes(&self) -> Self::Bytes {
@@ -170,7 +170,7 @@ impl MemoryValue for DoubleWord {
 pub struct Memory<AddrType> {
     // TODO: not sure what is better: `RwLock` vs `Mutex`
     // because `RwLock` may cause writer starvation
-    byte_array: Arc<RwLock<Vec<Byte>>>,
+    byte_array: RwLock<Vec<Byte>>,
 
     _phantom_marker: PhantomData<AddrType>,
 }
@@ -178,23 +178,22 @@ pub struct Memory<AddrType> {
 impl<AddrType> Memory<AddrType> {
     pub fn new(fill_value: Byte, size: usize) -> Self {
         Self {
-            byte_array: Arc::new(RwLock::new(vec![
+            byte_array: RwLock::new(vec![
                 fill_value;
                 size + MEMORY_ARRAY_PADDING
-            ])),
+            ]),
             _phantom_marker: Default::default(),
         }
     }
 
-    fn fill(&mut self, value: Byte) {
-        let byte_array_ptr = Arc::clone(&self.byte_array);
-        let mut byte_array = byte_array_ptr.write().unwrap_or_else(|err| {
+    fn fill(&self, value: Byte) {
+        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
             todo!("Is it even possible???: {err}");
         });
         byte_array.fill(value);
     }
 
-    pub fn reset(&mut self) {
+    pub fn reset(&self) {
         self.fill(MEM_RESET_VALUE);
     }
 }
@@ -203,8 +202,7 @@ impl<AddrType> Device for Memory<AddrType> {
     fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
         trace!("Reading memory at offset: {offset:#018X?}");
 
-        let byte_array_ptr = Arc::clone(&self.byte_array);
-        let byte_array = byte_array_ptr.read().unwrap_or_else(|err| {
+        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
             todo!("Is it even possible???: {err}");
         });
 
@@ -221,8 +219,7 @@ impl<AddrType> Device for Memory<AddrType> {
     fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType) {
         trace!("Writing memory at offset: {offset:#018X?}");
 
-        let byte_array_ptr = Arc::clone(&self.byte_array);
-        let mut byte_array = byte_array_ptr.write().unwrap_or_else(|err| {
+        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
             todo!("Is it even possible???: {err}");
         });
 
@@ -238,8 +235,7 @@ impl<AddrType> Device for Memory<AddrType> {
 
 impl<AddrType> RawDevice for Memory<AddrType> {
     fn read_raw<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
-        let byte_array_ptr = Arc::clone(&self.byte_array);
-        let byte_array = byte_array_ptr.read().unwrap_or_else(|err| {
+        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
             todo!("Is it even possible???: {err}");
         });
 
@@ -258,8 +254,7 @@ impl<AddrType> RawDevice for Memory<AddrType> {
         offset: usize,
         value: MemValType,
     ) {
-        let byte_array_ptr = Arc::clone(&self.byte_array);
-        let mut byte_array = byte_array_ptr.write().unwrap_or_else(|err| {
+        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
             todo!("Is it even possible???: {err}");
         });
 

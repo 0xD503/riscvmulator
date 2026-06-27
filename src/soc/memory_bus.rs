@@ -1,6 +1,8 @@
+use std::sync::atomic::{self, AtomicBool};
+
 use log::{error, info, trace};
 
-use crate::constants::arch::{Byte, XLen};
+use crate::constants::arch::{AtomicXLen, Byte, XLen};
 use crate::globals::exit_codes::ExitCode;
 use crate::soc::memory::{Memory, MemoryValue};
 use crate::soc::peripherals::common::device::RawDevice;
@@ -59,8 +61,8 @@ pub struct SystemBus<AddrType> {
     ram_end: XLen,
 
     // testing facilities
-    initialized: bool,
-    htif_to_host: XLen,
+    initialized: AtomicBool,
+    htif_to_host_addr: AtomicXLen,
 }
 
 impl<AddrType: std::ops::Sub> SystemBus<AddrType> {
@@ -70,16 +72,17 @@ impl<AddrType: std::ops::Sub> SystemBus<AddrType> {
             memory: Memory::new(fill_value, ram_size),
             ram_end: ram_base + ram_size as XLen,
 
-            initialized: false,
-            htif_to_host: 0x8000_1000,
+            initialized: AtomicBool::new(false),
+            htif_to_host_addr: AtomicXLen::new(0x8000_1000),
         }
     }
 
-    pub fn reset(&mut self) {
+    pub fn reset(&self) {
         self.memory.reset();
 
-        self.initialized = false;
-        self.htif_to_host = 0x8000_1000;
+        self.initialized.store(false, atomic::Ordering::Relaxed);
+        self.htif_to_host_addr
+            .store(0x8000_1000, atomic::Ordering::Relaxed);
     }
 
     // pub fn fill_with_nops(&mut self) {
@@ -99,12 +102,13 @@ impl<AddrType: std::ops::Sub> SystemBus<AddrType> {
     // }
 
     // testing facilities
-    pub fn ready_for_testing(&mut self) {
-        self.initialized = true;
+    pub fn set_ready_for_testing(&self) {
+        self.initialized.store(true, atomic::Ordering::Relaxed);
     }
 
-    pub fn set_htif(&mut self, addr: XLen) {
-        self.htif_to_host = addr;
+    pub fn set_htif(&self, addr: XLen) {
+        self.htif_to_host_addr
+            .store(addr, atomic::Ordering::Relaxed);
     }
 }
 
@@ -128,8 +132,8 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
     }
     fn write<MemValType: MemoryValue>(&self, address: XLen, value: MemValType) {
         // TODO: test scaffolding, isolate later
-        if address == self.htif_to_host {
-            if self.initialized {
+        if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
+            if self.initialized.load(atomic::Ordering::Relaxed) {
                 if value.to_u64() == 1 {
                     info!("TEST PASSED");
                     std::process::exit(ExitCode::Success as i32);
@@ -206,8 +210,8 @@ impl<AddrType> RawBus<XLen> for SystemBus<AddrType> {
         value: MemValType,
     ) {
         // TODO: test scaffolding, isolate later
-        if address == self.htif_to_host {
-            if self.initialized {
+        if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
+            if self.initialized.load(atomic::Ordering::Relaxed) {
                 if value.to_u64() == 1 {
                     info!("TEST PASSED");
                     std::process::exit(ExitCode::Success as i32);

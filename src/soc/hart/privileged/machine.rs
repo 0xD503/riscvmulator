@@ -1,11 +1,14 @@
 // TODO: disallow dead code
 #![allow(dead_code)]
 
+use std::sync::atomic::AtomicU64;
+
 use log::error;
 
 use crate::constants::arch::XLen;
 
 pub type MXLen = u64;
+pub type AtomicMXLen = AtomicU64;
 pub type SignedMXLen = i64;
 pub type UnsignedMXLen = u64;
 

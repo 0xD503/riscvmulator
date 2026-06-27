@@ -48,12 +48,25 @@ impl Emulator {
     }
 
     pub fn run(&mut self) {
+        let mut started = false;
+
         loop {
             if self.in_interactive_mode {
                 self.interactive_mode();
             } else if !self.halted {
+                if !started {
+                    // it doesn't run actually, just puts them waitin on a barrier until
+                    // real run trigger
+                    println!("GREPME BEFORE SPAWNING");
+                    self.soc.spawn_hart_threads();
+
+                    // start trigger
+                    println!("GREPME BEFORE STARTING");
+                    self.soc.wait_until_start_trigger();
+                    started = true;
+                }
                 // self.halted = false;
-                self.run_loop();
+                // self.run_loop();
             } else {
                 todo!("handle halted state");
             }

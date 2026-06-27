@@ -28,6 +28,8 @@
 - [ ] add benchmarks (compare with Spike)
 - [ ] separate code into crates
 - [ ] scripts/commands for building `riscv-tests` and `riscv-arch-test`
+- [ ] fix project build profiles: `debug`, `release`, `release with debinfo`, `release size optimized`, etc
+- [ ] make `just` commands usable: pass arguments, customize with arguments
 
 ## Refactor
 

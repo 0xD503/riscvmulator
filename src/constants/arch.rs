@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 //
 use crate::soc::hart::core::decoder::constants::Opcode;
 use crate::soc::hart::privileged::machine::{
-    MXLen, SignedMXLen, UnsignedMXLen,
+    AtomicMXLen, MXLen, SignedMXLen, UnsignedMXLen,
 };
 
 // XLEN is never greater than MXLEN, but XLEN might be smaller than MXLEN in
@@ -11,6 +11,7 @@ use crate::soc::hart::privileged::machine::{
 const _: () = assert!(size_of::<MXLen>() >= size_of::<XLen>());
 
 pub type XLen = MXLen;
+pub type AtomicXLen = AtomicMXLen;
 pub type SignedXLen = SignedMXLen;
 pub type UnsignedXLen = UnsignedMXLen;
 pub type XLen32 = u32;

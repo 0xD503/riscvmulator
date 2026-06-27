@@ -4,7 +4,7 @@ pub mod memory_bus;
 
 mod peripherals;
 
-use std::sync::Barrier;
+use std::sync::{Arc, Barrier};
 use std::thread;
 
 use crate::config::SocCfg;
@@ -19,9 +19,10 @@ pub struct SoC {
     pub(crate) harts: Vec<Hart>,
     // memory and memory mapped IO
     // von Neumann architechture, so common bus is used for instructions/data
-    pub(crate) bus: SystemBus<BusAddrType>,
+    pub(crate) bus: Arc<SystemBus<BusAddrType>>,
 
-    start_trigger: Barrier,
+    // not related to CPU/memory/IO devices stuff
+    start_trigger: Arc<Barrier>,
 }
 
 impl SoC {
@@ -31,10 +32,6 @@ impl SoC {
         // Power-on reset
         soc.reset(cfg);
 
-        // it doesn't run actually, just puts them waitin on a barrier until
-        // real run trigger
-        // soc
-
         soc
     }
 
@@ -42,7 +39,8 @@ impl SoC {
         for (hard_id, hart) in self.harts.iter_mut().enumerate() {
             hart.reset(cfg, hard_id);
         }
-        self.bus.reset();
+        let bus = Arc::clone(&self.bus);
+        bus.reset();
 
         // // fill memory with NOP's
         // self.bus.fill_with_nops();
@@ -51,13 +49,18 @@ impl SoC {
     fn get_reset_instance(cfg: &SocCfg) -> Self {
         Self {
             harts: vec![Hart::new(cfg); cfg.harts_num as usize],
-            bus: SystemBus::new(
+            bus: Arc::new(SystemBus::new(
                 MEM_RESET_VALUE,
                 cfg.bus.memory.base_addr,
                 cfg.bus.memory.size_bytes,
-            ),
+            )),
+            // bus: SystemBus::new(
+            //     MEM_RESET_VALUE,
+            //     cfg.bus.memory.base_addr,
+            //     cfg.bus.memory.size_bytes,
+            // ),
             // +1 is for triggering thread
-            start_trigger: Barrier::new(cfg.harts_num as usize + 1),
+            start_trigger: Arc::new(Barrier::new(cfg.harts_num as usize + 1)),
         }
     }
 
@@ -76,33 +79,50 @@ impl SoC {
         }
     }
 
-    fn spawn_core_threads(&mut self) {
+    pub(super) fn spawn_hart_threads(&mut self) {
         // thread::Builder::name(self, "core {i}")
         let bus = &self.bus;
         let start_trigger = &self.start_trigger;
+        println!("GREPME SPAWNING...");
+        // let wait_until_start_trigger = &self.wait_until_start_trigger;
         thread::scope(|scope| {
+            println!("GREPME In scope...");
             for hart in self.harts.iter_mut() {
+                println!("GREPME SPAWNING i...");
                 scope.spawn(|| {
+                    println!("GREPME within spawn i...");
                     // on spawn wait signal to start actual execution cycle
                     start_trigger.wait();
+                    println!("GREPME spawn i started!");
+                    // wait_until_start_trigger();
 
                     loop {
                         hart.step(bus);
                     }
                 });
-                // s.spawn(self.run());
             }
+            println!("GREPME leaving scope...");
+
+            // // start trigger
+            // self.wait_until_start_trigger();
         });
+        println!("GREPME left scope...");
+    }
+
+    pub(super) fn wait_until_start_trigger(&self) {
+        self.start_trigger.wait();
     }
 
     // testing facilities
     // TODO: conditional compilation for test facilities
     pub fn ready_for_testing(&mut self) {
-        self.bus.ready_for_testing();
+        let bus = Arc::clone(&self.bus);
+        bus.set_ready_for_testing();
     }
 
     // TODO: conditional compilation for test facilities
     pub fn set_htif(&mut self, addr: BusAddrType) {
-        self.bus.set_htif(addr);
+        let bus = Arc::clone(&self.bus);
+        bus.set_htif(addr);
     }
 }
