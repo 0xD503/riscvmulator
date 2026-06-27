@@ -10,21 +10,21 @@ impl Executor {
     // memop handlers
     fn read_memory_signed<ValType: MemoryValue>(
         &mut self,
-        bus: &mut SystemBus<BusAddrType>,
+        bus: &SystemBus<BusAddrType>,
     ) {
         self.result = bus.read::<ValType>(self.memory_address).sign_extend();
     }
 
     fn read_memory_unsigned<ValType: MemoryValue>(
         &mut self,
-        bus: &mut SystemBus<BusAddrType>,
+        bus: &SystemBus<BusAddrType>,
     ) {
         self.result = bus.read::<ValType>(self.memory_address).zero_extend();
     }
 
     pub fn memory_operation(
         &mut self,
-        bus: &mut SystemBus<BusAddrType>,
+        bus: &SystemBus<BusAddrType>,
         decoder: &Decoder,
     ) {
         if decoder.need_to_read_memory {

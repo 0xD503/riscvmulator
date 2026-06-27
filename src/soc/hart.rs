@@ -78,7 +78,7 @@ impl Hart {
         );
     }
 
-    fn memory_operation(&mut self, bus: &mut SystemBus<BusAddrType>) {
+    fn memory_operation(&mut self, bus: &SystemBus<BusAddrType>) {
         self.context
             .executor
             .memory_operation(bus, &self.context.decoder);
@@ -92,7 +92,7 @@ impl Hart {
     //     //, fetch_unit: &FetchUnit
     // }
 
-    pub(in crate::soc) fn step(&mut self, bus: &mut SystemBus<BusAddrType>) {
+    pub(in crate::soc) fn step(&mut self, bus: &SystemBus<BusAddrType>) {
         trace!("Current PC: {:#018X}", self.context.arch_state.PC.read());
 
         self.fetch(bus);

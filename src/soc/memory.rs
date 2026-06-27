@@ -218,11 +218,7 @@ impl<AddrType> Device for Memory<AddrType> {
         MemValType::from_le_bytes(bytes)
     }
 
-    fn write<MemValType: MemoryValue>(
-        &mut self,
-        offset: usize,
-        value: MemValType,
-    ) {
+    fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType) {
         trace!("Writing memory at offset: {offset:#018X?}");
 
         let byte_array_ptr = Arc::clone(&self.byte_array);
@@ -258,7 +254,7 @@ impl<AddrType> RawDevice for Memory<AddrType> {
     }
 
     fn write_raw<MemValType: MemoryValue>(
-        &mut self,
+        &self,
         offset: usize,
         value: MemValType,
     ) {

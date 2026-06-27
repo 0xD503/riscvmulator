@@ -76,13 +76,14 @@ impl SoC {
         }
     }
 
-    fn spawn_core_threads(&mut self, harts_num: u32) {
+    fn spawn_core_threads(&mut self) {
         // thread::Builder::name(self, "core {i}")
         let bus = &self.bus;
         let start_trigger = &self.start_trigger;
-        thread::scope(move |scope| {
+        thread::scope(|scope| {
             for hart in self.harts.iter_mut() {
                 scope.spawn(|| {
+                    // on spawn wait signal to start actual execution cycle
                     start_trigger.wait();
 
                     loop {

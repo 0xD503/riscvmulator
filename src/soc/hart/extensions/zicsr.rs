@@ -8,7 +8,7 @@ use crate::soc::hart::core::registers::{
 
 pub mod constants;
 use crate::soc::hart::privileged::machine::misa::{
-    set_mhartid_raw, set_misa_raw, set_mstatus, set_mstatus_raw,
+    set_mhartid_raw, set_misa_raw, set_mstatus_raw,
 };
 use crate::soc::hart::privileged::machine::{MCause_Code, MStatus_MPP, MXLen};
 

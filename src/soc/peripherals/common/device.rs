@@ -2,11 +2,7 @@ use crate::soc::memory::MemoryValue;
 
 pub trait Device {
     fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType;
-    fn write<MemValType: MemoryValue>(
-        &mut self,
-        offset: usize,
-        value: MemValType,
-    );
+    fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType);
 
     // fn base_addr() -> BusAddrType;
     // fn mem_space_size() -> usize;
@@ -16,7 +12,7 @@ pub trait Device {
 pub trait RawDevice {
     fn read_raw<MemValType: MemoryValue>(&self, offset: usize) -> MemValType;
     fn write_raw<MemValType: MemoryValue>(
-        &mut self,
+        &self,
         offset: usize,
         value: MemValType,
     );

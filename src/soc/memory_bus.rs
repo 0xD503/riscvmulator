@@ -1,25 +1,24 @@
 use log::{error, info, trace};
 
-use crate::constants::arch::{Byte, InstructionType, XLen};
+use crate::constants::arch::{Byte, XLen};
 use crate::globals::exit_codes::ExitCode;
 use crate::soc::memory::{Memory, MemoryValue};
 use crate::soc::peripherals::common::device::RawDevice;
 
-use super::hart::core::decoder::constants::Opcode;
 use super::peripherals::common::device::Device;
 
 // pub const HTIF_TO_HOST: XLen = 0x80001000;
 // // pub const HTIF_FROM_HOST: XLen = 0x80001004;
 
 pub trait Bus<AddrType> {
-    fn memory_reset(&mut self);
+    // fn memory_reset(&mut self);
 
     // data read/write
     fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
     // fn read_data(&self, address: XLen, size: usize) -> Vec<Byte>;
 
     fn write<MemValType: MemoryValue>(
-        &mut self,
+        &self,
         address: AddrType,
         value: MemValType,
     );
@@ -41,7 +40,7 @@ pub trait RawBus<AddrType> {
     // fn read_data(&self, address: XLen, size: usize) -> Vec<Byte>;
 
     fn write_raw<MemValType: MemoryValue>(
-        &mut self,
+        &self,
         address: AddrType,
         value: MemValType,
     );
@@ -127,11 +126,7 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
             );
         }
     }
-    fn write<MemValType: MemoryValue>(
-        &mut self,
-        address: XLen,
-        value: MemValType,
-    ) {
+    fn write<MemValType: MemoryValue>(&self, address: XLen, value: MemValType) {
         // TODO: test scaffolding, isolate later
         if address == self.htif_to_host {
             if self.initialized {
@@ -182,9 +177,9 @@ impl<AddrType> Bus<XLen> for SystemBus<AddrType> {
         }
     }
 
-    fn memory_reset(&mut self) {
-        self.memory.reset();
-    }
+    // fn memory_reset(&mut self) {
+    //     self.memory.reset();
+    // }
 }
 
 impl<AddrType> RawBus<XLen> for SystemBus<AddrType> {
@@ -206,7 +201,7 @@ impl<AddrType> RawBus<XLen> for SystemBus<AddrType> {
         }
     }
     fn write_raw<MemValType: MemoryValue>(
-        &mut self,
+        &self,
         address: XLen,
         value: MemValType,
     ) {
