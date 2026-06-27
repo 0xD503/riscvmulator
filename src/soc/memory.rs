@@ -12,6 +12,7 @@ use crate::constants::arch::{
     SignedWord, SignedXLen, Word, XLen,
 };
 use crate::constants::soc::MEM_RESET_VALUE;
+use crate::soc::memory::constants::MEMORY_SHARD_SIZE;
 
 use super::peripherals::common::device::{Device, RawDevice};
 
@@ -170,28 +171,39 @@ impl MemoryValue for DoubleWord {
 pub struct Memory<AddrType> {
     // TODO: not sure what is better: `RwLock` vs `Mutex`
     // because `RwLock` may cause writer starvation
-    byte_array: RwLock<Vec<Byte>>,
+    // byte_array: RwLock<Vec<Byte>>,
+    byte_array: Vec<RwLock<[Byte; MEMORY_SHARD_SIZE]>>,
 
     _phantom_marker: PhantomData<AddrType>,
 }
 
 impl<AddrType> Memory<AddrType> {
-    pub fn new(fill_value: Byte, size: usize) -> Self {
+    pub fn new(fill_value: Byte, size_bytes: usize) -> Self {
         Self {
-            byte_array: RwLock::new(vec![
-                fill_value;
-                size + MEMORY_ARRAY_PADDING
-            ]),
+            // byte_array: RwLock::new(vec![
+            //     fill_value;
+            //     size + MEMORY_ARRAY_PADDING
+            // ]),
+            byte_array: (0..(size_bytes.div_ceil(MEMORY_SHARD_SIZE)
+                + MEMORY_ARRAY_PADDING))
+                .map(|_| RwLock::new([fill_value; MEMORY_SHARD_SIZE]))
+                .collect(),
             _phantom_marker: Default::default(),
         }
     }
 
     fn fill(&self, value: Byte) {
-        let mut byte_array = self
-            .byte_array
-            .write()
-            .expect("sibling hart panicked while holding lock to memory");
-        byte_array.fill(value);
+        for (shard_idx, mem_shard) in self.byte_array.iter().enumerate() {
+            let mut mem_shard_array = mem_shard
+                .write()
+                .unwrap_or_else(|err| panic!("sibling hart panicked while holding lock to memory, shard index: {shard_idx}, error: {err}"));
+            mem_shard_array.fill(value);
+        }
+        // let mut byte_array = self
+        //     .byte_array
+        //     .write()
+        //     .expect("sibling hart panicked while holding lock to memory");
+        // byte_array.fill(value);
     }
 
     pub fn reset(&self) {
@@ -203,14 +215,21 @@ impl<AddrType> Device for Memory<AddrType> {
     fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
         trace!("Reading memory at offset: {offset:#018X?}");
 
-        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
+        let mem_shard_idx = offset / MEMORY_SHARD_SIZE;
+        let mem_shard_array =
+            self.byte_array[mem_shard_idx].read().unwrap_or_else(|err| {
+                panic!("sibling hart panicked while holding lock to memory, shard index: {mem_shard_idx}, error: {err}");
+            });
 
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
+        debug_assert!(
+            offset + size_of::<MemValType>()
+                <= (mem_shard_array.len() * self.byte_array.len())
+        );
 
-        let bytes = byte_array[offset..offset + size_of::<MemValType>()]
+        let shard_offset = offset % MEMORY_SHARD_SIZE;
+        let bytes = mem_shard_array
+            [shard_offset..shard_offset + size_of::<MemValType>()]
             .try_into()
             .unwrap();
         // TODO: notice, so far emulator only supports little-endian
@@ -220,30 +239,44 @@ impl<AddrType> Device for Memory<AddrType> {
     fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType) {
         trace!("Writing memory at offset: {offset:#018X?}");
 
-        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
+        let mem_shard_idx = offset / MEMORY_SHARD_SIZE;
+        let mut mem_shard_array = self.byte_array[mem_shard_idx]
+            .write()
+            .unwrap_or_else(|err| {
+                panic!("sibling hart panicked while holding lock to memory, shard index: {mem_shard_idx}, error: {err}");
+            });
 
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
+        debug_assert!(
+            offset + size_of::<MemValType>()
+                <= (mem_shard_array.len() * self.byte_array.len())
+        );
 
+        let shard_offset = offset % MEMORY_SHARD_SIZE;
         // TODO: notice, so far emulator only supports little-endian
         let bytes = value.to_le_bytes();
-        byte_array[offset..offset + size_of::<MemValType>()]
+        mem_shard_array[shard_offset..shard_offset + size_of::<MemValType>()]
             .copy_from_slice(bytes.as_ref());
     }
 }
 
 impl<AddrType> RawDevice for Memory<AddrType> {
     fn read_raw<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
-        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
+        let mem_shard_idx = offset / MEMORY_SHARD_SIZE;
+        let mem_shard_array =
+            self.byte_array[mem_shard_idx].read().unwrap_or_else(|err| {
+                panic!("sibling hart panicked while holding lock to memory, shard index: {mem_shard_idx}, error: {err}");
+            });
 
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
+        debug_assert!(
+            offset + size_of::<MemValType>()
+                <= (mem_shard_array.len() * self.byte_array.len())
+        );
 
-        let bytes = byte_array[offset..offset + size_of::<MemValType>()]
+        let shard_offset = offset % MEMORY_SHARD_SIZE;
+        let bytes = mem_shard_array
+            [shard_offset..shard_offset + size_of::<MemValType>()]
             .try_into()
             .unwrap();
         // TODO: notice, so far emulator only supports little-endian
@@ -255,16 +288,23 @@ impl<AddrType> RawDevice for Memory<AddrType> {
         offset: usize,
         value: MemValType,
     ) {
-        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
+        let mem_shard_idx = offset / MEMORY_SHARD_SIZE;
+        let mut mem_shard_array = self.byte_array[mem_shard_idx]
+            .write()
+            .unwrap_or_else(|err| {
+                panic!("sibling hart panicked while holding lock to memory, shard index: {mem_shard_idx}, error: {err}");
+            });
 
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
+        debug_assert!(
+            offset + size_of::<MemValType>()
+                <= (mem_shard_array.len() * self.byte_array.len())
+        );
 
+        let shard_offset = offset % MEMORY_SHARD_SIZE;
         // TODO: notice, so far emulator only supports little-endian
         let bytes = value.to_le_bytes();
-        byte_array[offset..offset + size_of::<MemValType>()]
+        mem_shard_array[shard_offset..shard_offset + size_of::<MemValType>()]
             .copy_from_slice(bytes.as_ref());
     }
 }
