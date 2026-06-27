@@ -5,7 +5,7 @@ pub mod memory_bus;
 mod peripherals;
 
 use std::sync::{Arc, Barrier};
-use std::thread;
+use std::thread::{self, JoinHandle};
 
 use crate::config::SocCfg;
 
@@ -17,11 +17,13 @@ use self::memory_bus::{Bus, SystemBus};
 
 pub struct SoC {
     pub(crate) harts: Vec<Hart>,
+    // pub(crate) harts: Vec<JoinHandle<Hart>>,
     // memory and memory mapped IO
     // von Neumann architechture, so common bus is used for instructions/data
     pub(crate) bus: Arc<SystemBus<BusAddrType>>,
 
     // not related to CPU/memory/IO devices stuff
+    hart_join_handles: Vec<JoinHandle<()>>,
     start_trigger: Arc<Barrier>,
 }
 
@@ -59,6 +61,9 @@ impl SoC {
             //     cfg.bus.memory.base_addr,
             //     cfg.bus.memory.size_bytes,
             // ),
+
+            // non-SoC related stuff
+            hart_join_handles: Vec::with_capacity(cfg.harts_num as usize),
             // +1 is for triggering thread
             start_trigger: Arc::new(Barrier::new(cfg.harts_num as usize + 1)),
         }
@@ -80,37 +85,56 @@ impl SoC {
     }
 
     pub(super) fn spawn_hart_threads(&mut self) {
-        // thread::Builder::name(self, "core {i}")
-        let bus = &self.bus;
-        let start_trigger = &self.start_trigger;
-        println!("GREPME SPAWNING...");
-        // let wait_until_start_trigger = &self.wait_until_start_trigger;
-        thread::scope(|scope| {
-            println!("GREPME In scope...");
-            for hart in self.harts.iter_mut() {
-                println!("GREPME SPAWNING i...");
-                scope.spawn(|| {
-                    println!("GREPME within spawn i...");
-                    // on spawn wait signal to start actual execution cycle
-                    start_trigger.wait();
-                    println!("GREPME spawn i started!");
-                    // wait_until_start_trigger();
+        // `drain(..)` returns iterator to all items of vector and passes
+        // ownership for each item on iteration
+        for mut hart in self.harts.drain(..) {
+            let start_trigger = Arc::clone(&self.start_trigger);
+            let bus = Arc::clone(&self.bus);
+            // thread::Builder::name(self, "core {i}")
+            self.hart_join_handles.push(thread::spawn(move || {
+                start_trigger.wait();
 
-                    loop {
-                        hart.step(bus);
-                    }
-                });
-            }
-            println!("GREPME leaving scope...");
+                loop {
+                    hart.step(&bus);
+                }
+                // self.run();
+            }));
+        }
+        //
+        // let bus = &self.bus;
+        // let start_trigger = &self.start_trigger;
+        // println!("GREPME SPAWNING...");
+        // // let wait_until_start_trigger = &self.wait_until_start_trigger;
+        // thread::scope(|scope| {
+        //     println!("GREPME In scope...");
+        //     for hart in self.harts.iter_mut() {
+        //         println!("GREPME SPAWNING i...");
+        //         scope.spawn(|| {
+        //             println!("GREPME within spawn i...");
+        //             // on spawn wait signal to start actual execution cycle
+        //             start_trigger.wait();
+        //             println!("GREPME spawn i started!");
+        //             // wait_until_start_trigger();
 
-            // // start trigger
-            // self.wait_until_start_trigger();
-        });
-        println!("GREPME left scope...");
+        //             loop {
+        //                 hart.step(bus);
+        //             }
+        //         });
+        //     }
+        //     println!("GREPME leaving scope...");
+
+        //     // // start trigger
+        //     // self.wait_until_start_trigger();
+        // });
+        // println!("GREPME left scope...");
     }
 
-    pub(super) fn wait_until_start_trigger(&self) {
+    fn wait_until_start_trigger(&self) {
         self.start_trigger.wait();
+    }
+
+    pub(super) fn trigger_start(&self) {
+        self.wait_until_start_trigger();
     }
 
     // testing facilities

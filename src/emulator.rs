@@ -62,7 +62,7 @@ impl Emulator {
 
                     // start trigger
                     println!("GREPME BEFORE STARTING");
-                    self.soc.wait_until_start_trigger();
+                    self.soc.trigger_start();
                     started = true;
                 }
                 // self.halted = false;
