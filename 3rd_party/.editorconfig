@@ -1,0 +1,2 @@
+## don't apply EditroConfig rules to 3rd party modules
+root = true
