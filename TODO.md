@@ -8,7 +8,7 @@
 ## Tech debt
 
 - [ ] add UTs
-- [ ] add benchmarks
+- [ ] add benchmarks (compare with Spike)
 - [ ] add docs
 - [ ] add build profiles
 - [ ] profile bottlenecks
@@ -24,8 +24,6 @@
 - [ ] comments should be 80-cut as well as code
 - [ ] un'`pub` everything that shouldn't be `pub`
 - [ ] `.editorconfig`???
-- [ ] add unit tests
-- [ ] add benchmarks (compare with Spike)
 - [ ] separate code into crates
 - [ ] scripts/commands for building `riscv-tests` and `riscv-arch-test`
 - [ ] fix project build profiles: `debug`, `release`, `release with debinfo`, `release size optimized`, etc
@@ -33,8 +31,7 @@
 
 ## Refactor
 
-- [ ] use jump table for command execution
-- [ ] add reset method to `Register`
+- [ ] ~~use jump table for command execution~~ not needed, it compiles itself
 
 ## Features
 
