@@ -28,8 +28,8 @@ pub struct Emulator {
     in_interactive_mode: bool,
     run_loop_stopped: bool, // run_state: RunState,
 
-    event_sender: Sender<EmulatorEvent>,
-    event_receiver: Receiver<EmulatorEvent>,
+    emulator_event_sender: Sender<EmulatorEvent>,
+    emulator_event_receiver: Receiver<EmulatorEvent>,
 }
 
 impl Emulator {
@@ -57,8 +57,8 @@ impl Emulator {
             in_interactive_mode: true,
             run_loop_stopped: false,
 
-            event_sender: sender,
-            event_receiver: receiver,
+            emulator_event_sender: sender,
+            emulator_event_receiver: receiver,
         })
     }
 
