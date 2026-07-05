@@ -5,7 +5,7 @@ ARG DEV_CONTAINER_NAME=builder
 ARG RELEASE_CONTAINER_NAME=runner
 
 ## use fixed `major`/`minor`, but latest `patch` version
-FROM rust:1.95-slim-${DISTRO_RELEASE_VER} AS ${DEV_CONTAINER_NAME}
+FROM rust:1.96-slim-${DISTRO_RELEASE_VER} AS ${DEV_CONTAINER_NAME}
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
