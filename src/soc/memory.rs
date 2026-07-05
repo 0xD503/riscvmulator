@@ -200,133 +200,73 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
     pub fn reset(&self) {
         self.fill(MEM_RESET_VALUE);
     }
+
+    fn read_impl<MemoryValType: MemoryValue>(
+        &self,
+        offset: usize,
+    ) -> MemoryValType {
+        trace!("Reading memory at offset: {offset:#018X?}");
+
+        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+
+        // bus makes bounds check, so we assume that `offset` is always correct
+        debug_assert!(offset + size_of::<MemoryValType>() <= byte_array.len());
+
+        let bytes = byte_array[offset..offset + size_of::<MemoryValType>()]
+            .try_into()
+            .unwrap();
+        // TODO: notice, so far emulator only supports little-endian
+        MemoryValType::from_le_bytes(bytes)
+    }
+
+    fn write_impl<MemoryValType: MemoryValue>(
+        &self,
+        offset: usize,
+        value: MemoryValType,
+    ) {
+        trace!("Writing memory at offset: {offset:#018X?}");
+
+        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+
+        // bus makes bounds check, so we assume that `offset` is always correct
+        debug_assert!(offset + size_of::<MemoryValType>() <= byte_array.len());
+
+        // TODO: notice, so far emulator only supports little-endian
+        let bytes = value.to_le_bytes();
+        byte_array[offset..offset + size_of::<MemoryValType>()]
+            .copy_from_slice(bytes.as_ref());
+    }
 }
 
 impl<AddrType: Send + Sync> Device for Memory<AddrType> {
     fn read_u8(&self, offset: usize) -> u8 {
-        trace!("Reading memory at offset: {offset:#018X?}");
-
-        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<u8>() <= byte_array.len());
-
-        let bytes = byte_array[offset..offset + size_of::<u8>()]
-            .try_into()
-            .unwrap();
-        // TODO: notice, so far emulator only supports little-endian
-        u8::from_le_bytes(bytes)
+        self.read_impl(offset)
     }
     fn read_u16(&self, offset: usize) -> u16 {
-        trace!("Reading memory at offset: {offset:#018X?}");
-
-        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<u16>() <= byte_array.len());
-
-        let bytes = byte_array[offset..offset + size_of::<u16>()]
-            .try_into()
-            .unwrap();
-        // TODO: notice, so far emulator only supports little-endian
-        u16::from_le_bytes(bytes)
+        self.read_impl(offset)
     }
     fn read_u32(&self, offset: usize) -> u32 {
-        trace!("Reading memory at offset: {offset:#018X?}");
-
-        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<u32>() <= byte_array.len());
-
-        let bytes = byte_array[offset..offset + size_of::<u32>()]
-            .try_into()
-            .unwrap();
-        // TODO: notice, so far emulator only supports little-endian
-        u32::from_le_bytes(bytes)
+        self.read_impl(offset)
     }
     fn read_u64(&self, offset: usize) -> u64 {
-        trace!("Reading memory at offset: {offset:#018X?}");
-
-        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<u64>() <= byte_array.len());
-
-        let bytes = byte_array[offset..offset + size_of::<u64>()]
-            .try_into()
-            .unwrap();
-        // TODO: notice, so far emulator only supports little-endian
-        u64::from_le_bytes(bytes)
+        self.read_impl(offset)
     }
 
     fn write_u8(&self, offset: usize, value: u8) {
-        trace!("Writing memory at offset: {offset:#018X?}");
-
-        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<u8>() <= byte_array.len());
-
-        // TODO: notice, so far emulator only supports little-endian
-        let bytes = value.to_le_bytes();
-        byte_array[offset..offset + size_of::<u8>()]
-            .copy_from_slice(bytes.as_ref());
+        self.write_impl(offset, value);
     }
     fn write_u16(&self, offset: usize, value: u16) {
-        trace!("Writing memory at offset: {offset:#018X?}");
-
-        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<u16>() <= byte_array.len());
-
-        // TODO: notice, so far emulator only supports little-endian
-        let bytes = value.to_le_bytes();
-        byte_array[offset..offset + size_of::<u16>()]
-            .copy_from_slice(bytes.as_ref());
+        self.write_impl(offset, value);
     }
     fn write_u32(&self, offset: usize, value: u32) {
-        trace!("Writing memory at offset: {offset:#018X?}");
-
-        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<u32>() <= byte_array.len());
-
-        // TODO: notice, so far emulator only supports little-endian
-        let bytes = value.to_le_bytes();
-        byte_array[offset..offset + size_of::<u32>()]
-            .copy_from_slice(bytes.as_ref());
+        self.write_impl(offset, value);
     }
     fn write_u64(&self, offset: usize, value: u64) {
-        trace!("Writing memory at offset: {offset:#018X?}");
-
-        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<u64>() <= byte_array.len());
-
-        // TODO: notice, so far emulator only supports little-endian
-        let bytes = value.to_le_bytes();
-        byte_array[offset..offset + size_of::<u64>()]
-            .copy_from_slice(bytes.as_ref());
+        self.write_impl(offset, value);
     }
 
     // fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
