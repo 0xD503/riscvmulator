@@ -64,6 +64,8 @@ RUN touch src/main.rs && cargo build --${BUILD_TYPE}
 ## mark "inside dev container" for the justfile's RUN_IN_CONTAINER detection
 ENV IN_DEV_CONTAINER=1
 
+## make cargo registry to be owned by user
+RUN chown -R ${DEV_UID}:${DEV_GID} /usr/local/cargo
 ## switch to dev user
 USER ${DEV_USERNAME}
 
