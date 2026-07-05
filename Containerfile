@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install --assume-yes \
     binutils-riscv64-linux-gnu binutils-riscv64-unknown-elf \
     picolibc-riscv64-unknown-elf newlib-source \
     #gdb-riscv64-linux-gnu \
-    mold make \
+    wild mold make \
     git \
     less patch \
     python3 \
