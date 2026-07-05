@@ -63,7 +63,7 @@ pub(crate) fn load_elf(
     for phdr in phdrs {
         let mut start_addr = phdr.p_paddr;
         for offset in phdr.p_offset..phdr.p_offset + phdr.p_filesz {
-            soc.bus.write(
+            soc.bus.write_u8(
                 {
                     let tmp = start_addr;
                     start_addr += 1;

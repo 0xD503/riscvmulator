@@ -1,4 +1,4 @@
-use crate::constants::arch::{BusAddrType, HalfWord, InstructionType, XLen};
+use crate::constants::arch::{BusAddrType, InstructionType, XLen};
 use crate::constants::soc::INITIAL_INSTRUCTION;
 use crate::soc::Bus;
 use crate::soc::hart::core::decoder::constants::{
@@ -83,16 +83,17 @@ impl FetchUnit {
         // second way
         //
         // we may have a compressed instruction, so we need to check quadrant
-        let current_instruction = bus.instruction_read::<HalfWord>(pc.read());
+        let current_instruction: InstructionTypeCompressed =
+            bus.instruction_read(pc.read());
         let quadrant =
             self.extract_quadrant(current_instruction as InstructionType);
         match quadrant {
             OpcodeQuadrant::Quadrant11 => {
+                // non-compressed instruction, read more batches
                 self.current_instruction =
                     current_instruction as InstructionType;
-                self.current_instruction |= (bus.instruction_read::<HalfWord>(
-                    pc.read() + InstructionSize::I16 as XLen,
-                )
+                self.current_instruction |= (bus
+                    .instruction_read(pc.read() + InstructionSize::I16 as XLen)
                     as InstructionType)
                     << InstructionTypeCompressed::BITS;
                 self.instruction_size = InstructionSize::I32;
