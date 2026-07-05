@@ -138,6 +138,11 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
 
             let offset = (address - self.ram_base) as usize;
             self.memory.read_u8(offset)
+        // } else {
+        //     let hit = self.devices
+        // }
+        // // } else if let hit =  {
+        // //     //
         } else {
             error!(
                 "an attempt to read from unimplemented address space: {address:#018X}"
