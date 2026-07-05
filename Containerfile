@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install --assume-yes \
     binutils-riscv64-linux-gnu binutils-riscv64-unknown-elf \
     picolibc-riscv64-unknown-elf newlib-source \
     #gdb-riscv64-linux-gnu \
-    wild mold make \
+    clang lld mold make \
     git \
     less patch \
     python3 \
@@ -31,9 +31,11 @@ RUN apt-get update && apt-get install --assume-yes \
     tmux emacs-nox ripgrep fd-find fzf htop lldb \
     ## some options for perverts
     vim gdb \
+    ## clean apt cache and install some crates
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt \
-    && cargo install just
+    && cargo install just \
+    && cargo install --locked wild-linker
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
     && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME}
