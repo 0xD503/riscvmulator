@@ -28,10 +28,26 @@ pub trait Bus<AddrType> {
     fn read_u32(&self, address: AddrType) -> Result<u32, DeviceIOError>;
     fn read_u64(&self, address: AddrType) -> Result<u64, DeviceIOError>;
 
-    fn write_u8(&self, address: AddrType, value: u8);
-    fn write_u16(&self, address: AddrType, value: u16);
-    fn write_u32(&self, address: AddrType, value: u32);
-    fn write_u64(&self, address: AddrType, value: u64);
+    fn write_u8(
+        &self,
+        address: AddrType,
+        value: u8,
+    ) -> Result<(), DeviceIOError>;
+    fn write_u16(
+        &self,
+        address: AddrType,
+        value: u16,
+    ) -> Result<(), DeviceIOError>;
+    fn write_u32(
+        &self,
+        address: AddrType,
+        value: u32,
+    ) -> Result<(), DeviceIOError>;
+    fn write_u64(
+        &self,
+        address: AddrType,
+        value: u64,
+    ) -> Result<(), DeviceIOError>;
 
     // fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
     // fn write<MemValType: MemoryValue>(
@@ -189,7 +205,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         }
     }
 
-    fn write_u8(&self, address: XLen, value: u8) {
+    fn write_u8(&self, address: XLen, value: u8) -> Result<(), DeviceIOError> {
         // TODO: test scaffolding, isolate later
         if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
             if self.initialized.load(atomic::Ordering::Relaxed) {
@@ -209,16 +225,18 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
 
             let offset = (address - self.ram_base) as usize;
             self.memory.write_u8(offset, value);
+            Ok(())
         } else {
-            error!(
-                "an attempt to write to unimplemented address space: {address:#018X}"
-            );
-            panic!(
-                "an attempt to write to unimplemented address space: {address:#018X}"
-            );
+            trace!("Writing to MMIO at addr: {address:#018X?}");
+
+            self.devices.write_u8(address, value)
         }
     }
-    fn write_u16(&self, address: XLen, value: u16) {
+    fn write_u16(
+        &self,
+        address: XLen,
+        value: u16,
+    ) -> Result<(), DeviceIOError> {
         // TODO: test scaffolding, isolate later
         if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
             if self.initialized.load(atomic::Ordering::Relaxed) {
@@ -238,16 +256,18 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
 
             let offset = (address - self.ram_base) as usize;
             self.memory.write_u16(offset, value);
+            Ok(())
         } else {
-            error!(
-                "an attempt to write to unimplemented address space: {address:#018X}"
-            );
-            panic!(
-                "an attempt to write to unimplemented address space: {address:#018X}"
-            );
+            trace!("Writing to MMIO at addr: {address:#018X?}");
+
+            self.devices.write_u16(address, value)
         }
     }
-    fn write_u32(&self, address: XLen, value: u32) {
+    fn write_u32(
+        &self,
+        address: XLen,
+        value: u32,
+    ) -> Result<(), DeviceIOError> {
         // TODO: test scaffolding, isolate later
         if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
             if self.initialized.load(atomic::Ordering::Relaxed) {
@@ -267,16 +287,18 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
 
             let offset = (address - self.ram_base) as usize;
             self.memory.write_u32(offset, value);
+            Ok(())
         } else {
-            error!(
-                "an attempt to write to unimplemented address space: {address:#018X}"
-            );
-            panic!(
-                "an attempt to write to unimplemented address space: {address:#018X}"
-            );
+            trace!("Writing to MMIO at addr: {address:#018X?}");
+
+            self.devices.write_u32(address, value)
         }
     }
-    fn write_u64(&self, address: XLen, value: u64) {
+    fn write_u64(
+        &self,
+        address: XLen,
+        value: u64,
+    ) -> Result<(), DeviceIOError> {
         // TODO: test scaffolding, isolate later
         if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
             if self.initialized.load(atomic::Ordering::Relaxed) {
@@ -296,13 +318,11 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
 
             let offset = (address - self.ram_base) as usize;
             self.memory.write_u64(offset, value);
+            Ok(())
         } else {
-            error!(
-                "an attempt to write to unimplemented address space: {address:#018X}"
-            );
-            panic!(
-                "an attempt to write to unimplemented address space: {address:#018X}"
-            );
+            trace!("Writing to MMIO at addr: {address:#018X?}");
+
+            self.devices.write_u64(address, value)
         }
     }
 

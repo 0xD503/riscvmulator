@@ -118,6 +118,114 @@ impl<AddrType> Devices<AddrType> {
 
         result
     }
+
+    pub fn write_u8(&self, addr: XLen, value: u8) -> Result<(), DeviceIOError> {
+        let result;
+
+        let device_tree = self.tree.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        let closest_dev = device_tree.range(..=addr).next_back();
+
+        if let Some(device_entry) = closest_dev {
+            let device = device_entry.1;
+            let device_addr_range = device.base_addr()..device.end_addr();
+            if device_addr_range.contains(&addr) {
+                let offset = (addr - device.base_addr()) as usize;
+                result = device.write_u8(offset, value);
+            } else {
+                result = Err(DeviceIOError::Write(addr))
+            }
+        } else {
+            result = Err(DeviceIOError::Write(addr))
+        }
+
+        result
+    }
+
+    pub fn write_u16(
+        &self,
+        addr: XLen,
+        value: u16,
+    ) -> Result<(), DeviceIOError> {
+        let result;
+
+        let device_tree = self.tree.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        let closest_dev = device_tree.range(..=addr).next_back();
+
+        if let Some(device_entry) = closest_dev {
+            let device = device_entry.1;
+            let device_addr_range = device.base_addr()..device.end_addr();
+            if device_addr_range.contains(&addr) {
+                let offset = (addr - device.base_addr()) as usize;
+                result = device.write_u16(offset, value);
+            } else {
+                result = Err(DeviceIOError::Write(addr))
+            }
+        } else {
+            result = Err(DeviceIOError::Write(addr))
+        }
+
+        result
+    }
+
+    pub fn write_u32(
+        &self,
+        addr: XLen,
+        value: u32,
+    ) -> Result<(), DeviceIOError> {
+        let result;
+
+        let device_tree = self.tree.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        let closest_dev = device_tree.range(..=addr).next_back();
+
+        if let Some(device_entry) = closest_dev {
+            let device = device_entry.1;
+            let device_addr_range = device.base_addr()..device.end_addr();
+            if device_addr_range.contains(&addr) {
+                let offset = (addr - device.base_addr()) as usize;
+                result = device.write_u32(offset, value);
+            } else {
+                result = Err(DeviceIOError::Write(addr))
+            }
+        } else {
+            result = Err(DeviceIOError::Write(addr))
+        }
+
+        result
+    }
+
+    pub fn write_u64(
+        &self,
+        addr: XLen,
+        value: u64,
+    ) -> Result<(), DeviceIOError> {
+        let result;
+
+        let device_tree = self.tree.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        let closest_dev = device_tree.range(..=addr).next_back();
+
+        if let Some(device_entry) = closest_dev {
+            let device = device_entry.1;
+            let device_addr_range = device.base_addr()..device.end_addr();
+            if device_addr_range.contains(&addr) {
+                let offset = (addr - device.base_addr()) as usize;
+                result = device.write_u64(offset, value);
+            } else {
+                result = Err(DeviceIOError::Write(addr))
+            }
+        } else {
+            result = Err(DeviceIOError::Write(addr))
+        }
+
+        result
+    }
 }
 
 // impl<AddrType> Device for Device<AddrType> {
@@ -126,6 +234,7 @@ impl<AddrType> Devices<AddrType> {
 
 pub enum DeviceIOError {
     Read(XLen),
+    Write(XLen),
 }
 
 impl DeviceIOError {
@@ -150,10 +259,13 @@ pub trait Device: Send + Sync {
     fn read_u32(&self, offset: usize) -> Result<u32, DeviceIOError>;
     fn read_u64(&self, offset: usize) -> Result<u64, DeviceIOError>;
 
-    fn write_u8(&self, offset: usize, value: u8);
-    fn write_u16(&self, offset: usize, value: u16);
-    fn write_u32(&self, offset: usize, value: u32);
-    fn write_u64(&self, offset: usize, value: u64);
+    fn write_u8(&self, offset: usize, value: u8) -> Result<(), DeviceIOError>;
+    fn write_u16(&self, offset: usize, value: u16)
+    -> Result<(), DeviceIOError>;
+    fn write_u32(&self, offset: usize, value: u32)
+    -> Result<(), DeviceIOError>;
+    fn write_u64(&self, offset: usize, value: u64)
+    -> Result<(), DeviceIOError>;
 
     fn base_addr(&self) -> BusAddrType;
     fn mem_space_size(&self) -> usize;
