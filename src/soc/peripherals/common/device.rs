@@ -1,11 +1,15 @@
 use std::{collections::BTreeMap, marker::PhantomData, sync::RwLock};
 
-use crate::{constants::arch::XLen, soc::memory::MemoryValue};
+use crate::{
+    constants::arch::{BusAddrType, XLen},
+    globals::exit_codes::ExitCode,
+    soc::memory::MemoryValue,
+};
 
 pub struct Devices<AddrType> {
     // TODO: not sure what is better: `RwLock` vs `Mutex`
     // because `RwLock` may cause writer starvation
-    tree: RwLock<BTreeMap<XLen, Box<dyn Device>>>,
+    pub(crate) tree: RwLock<BTreeMap<XLen, Box<dyn Device>>>,
 
     _phantom_marker: PhantomData<AddrType>,
 }
@@ -21,6 +25,115 @@ impl<AddrType> Devices<AddrType> {
             _phantom_marker: Default::default(),
         }
     }
+
+    pub fn read_u8(&self, addr: XLen) -> Result<u8, DeviceIOError> {
+        let result;
+
+        let device_tree = self.tree.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        let closest_dev = device_tree.range(..=addr).next_back();
+
+        if let Some(device_entry) = closest_dev {
+            let device = device_entry.1;
+            let device_addr_range = device.base_addr()..device.end_addr();
+            if device_addr_range.contains(&addr) {
+                let offset = (addr - device.base_addr()) as usize;
+                result = device.read_u8(offset);
+            } else {
+                result = Err(DeviceIOError::Read(addr))
+            }
+        } else {
+            result = Err(DeviceIOError::Read(addr))
+        }
+
+        result
+    }
+    pub fn read_u16(&self, addr: XLen) -> Result<u16, DeviceIOError> {
+        let result;
+
+        let device_tree = self.tree.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        let closest_dev = device_tree.range(..=addr).next_back();
+
+        if let Some(device_entry) = closest_dev {
+            let device = device_entry.1;
+            let device_addr_range = device.base_addr()..device.end_addr();
+            if device_addr_range.contains(&addr) {
+                let offset = (addr - device.base_addr()) as usize;
+                result = device.read_u16(offset);
+            } else {
+                result = Err(DeviceIOError::Read(addr))
+            }
+        } else {
+            result = Err(DeviceIOError::Read(addr))
+        }
+
+        result
+    }
+    pub fn read_u32(&self, addr: XLen) -> Result<u32, DeviceIOError> {
+        let result;
+
+        let device_tree = self.tree.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        let closest_dev = device_tree.range(..=addr).next_back();
+
+        if let Some(device_entry) = closest_dev {
+            let device = device_entry.1;
+            let device_addr_range = device.base_addr()..device.end_addr();
+            if device_addr_range.contains(&addr) {
+                let offset = (addr - device.base_addr()) as usize;
+                result = device.read_u32(offset);
+            } else {
+                result = Err(DeviceIOError::Read(addr))
+            }
+        } else {
+            result = Err(DeviceIOError::Read(addr))
+        }
+
+        result
+    }
+    pub fn read_u64(&self, addr: XLen) -> Result<u64, DeviceIOError> {
+        let result;
+
+        let device_tree = self.tree.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        let closest_dev = device_tree.range(..=addr).next_back();
+
+        if let Some(device_entry) = closest_dev {
+            let device = device_entry.1;
+            let device_addr_range = device.base_addr()..device.end_addr();
+            if device_addr_range.contains(&addr) {
+                let offset = (addr - device.base_addr()) as usize;
+                result = device.read_u64(offset);
+            } else {
+                result = Err(DeviceIOError::Read(addr))
+            }
+        } else {
+            result = Err(DeviceIOError::Read(addr))
+        }
+
+        result
+    }
+}
+
+// impl<AddrType> Device for Device<AddrType> {
+//     //
+// }
+
+pub enum DeviceIOError {
+    Read(XLen),
+}
+
+impl DeviceIOError {
+    // pub fn exit_code(&self) -> i32 {
+    //     match self {
+    //         Self::Read(_) => ExitCode::DeviceReadError as i32,
+    //     }
+    // }
 }
 
 pub trait Device: Send + Sync {
@@ -32,19 +145,22 @@ pub trait Device: Send + Sync {
     // fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType;
     // fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType);
 
-    fn read_u8(&self, offset: usize) -> u8;
-    fn read_u16(&self, offset: usize) -> u16;
-    fn read_u32(&self, offset: usize) -> u32;
-    fn read_u64(&self, offset: usize) -> u64;
+    fn read_u8(&self, offset: usize) -> Result<u8, DeviceIOError>;
+    fn read_u16(&self, offset: usize) -> Result<u16, DeviceIOError>;
+    fn read_u32(&self, offset: usize) -> Result<u32, DeviceIOError>;
+    fn read_u64(&self, offset: usize) -> Result<u64, DeviceIOError>;
 
     fn write_u8(&self, offset: usize, value: u8);
     fn write_u16(&self, offset: usize, value: u16);
     fn write_u32(&self, offset: usize, value: u32);
     fn write_u64(&self, offset: usize, value: u64);
 
-    // fn base_addr() -> BusAddrType;
-    // fn mem_space_size() -> usize;
-    // fn end_addr() -> BusAddrType;
+    fn base_addr(&self) -> BusAddrType;
+    fn mem_space_size(&self) -> usize;
+    fn end_addr(&self) -> BusAddrType {
+        // non-inclusive end addr
+        self.base_addr() + self.mem_space_size() as BusAddrType
+    }
 }
 
 pub trait RawDevice {

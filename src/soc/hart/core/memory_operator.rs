@@ -3,6 +3,7 @@ use crate::soc::hart::core::decoder::Decoder;
 use crate::soc::hart::core::executor::Executor;
 use crate::soc::memory::{MemoryValue, MemoryValueType};
 use crate::soc::memory_bus::{Bus, SystemBus};
+use crate::soc::peripherals::common::device::DeviceIOError;
 
 use log::{error, trace};
 
@@ -13,27 +14,82 @@ impl Executor {
     // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
 
     // memop handlers
+
+    fn handle_memory_read<const SIGNED: bool, ValType: MemoryValue>(
+        &mut self,
+        mem_read_result: &Result<ValType, DeviceIOError>,
+    ) {
+        if let Ok(non_extended_value) = mem_read_result {
+            if SIGNED {
+                self.result = non_extended_value.sign_extend();
+            } else {
+                self.result = non_extended_value.zero_extend();
+            }
+        } else {
+            // info!("");
+
+            //
+
+            todo!("handle trap");
+        }
+    }
+    // fn handle_memory_read_signed<ValType: MemoryValue>(
+    //     &mut self,
+    //     mem_read_result: &Result<ValType, DeviceIOError>,
+    // ) {
+    //     if let Ok(non_extended_value) = mem_read_result {
+    //         self.result = non_extended_value.sign_extend();
+    //     } else {
+    //         // info!("");
+
+    //         //
+
+    //         todo!("handle trap");
+    //     }
+    // }
+    // fn handle_memory_read_unsigned<ValType: MemoryValue>(
+    //     &mut self,
+    //     mem_read_result: &Result<ValType, DeviceIOError>,
+    // ) {
+    //     if let Ok(non_extended_value) = mem_read_result {
+    //         self.result = non_extended_value.zero_extend();
+    //     } else {
+    //         // info!("");
+
+    //         //
+
+    //         todo!("handle trap");
+    //     }
+    // }
+
     fn read_memory_signed_byte(&mut self, bus: &SystemBus<BusAddrType>) {
-        self.result = bus.read_u8(self.memory_address).sign_extend();
+        let mem_read_result = bus.read_u8(self.memory_address);
+        self.handle_memory_read::<true, _>(&mem_read_result);
     }
     fn read_memory_signed_half_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        self.result = bus.read_u16(self.memory_address).sign_extend();
+        let mem_read_result = bus.read_u16(self.memory_address);
+        self.handle_memory_read::<true, _>(&mem_read_result);
     }
     fn read_memory_signed_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        self.result = bus.read_u32(self.memory_address).sign_extend();
+        let mem_read_result = bus.read_u32(self.memory_address);
+        self.handle_memory_read::<true, _>(&mem_read_result);
     }
     fn read_memory_signed_double_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        self.result = bus.read_u64(self.memory_address).sign_extend();
+        let mem_read_result = bus.read_u64(self.memory_address);
+        self.handle_memory_read::<true, _>(&mem_read_result);
     }
 
     fn read_memory_unsigned_byte(&mut self, bus: &SystemBus<BusAddrType>) {
-        self.result = bus.read_u8(self.memory_address).zero_extend();
+        let mem_read_result = bus.read_u8(self.memory_address);
+        self.handle_memory_read::<false, _>(&mem_read_result);
     }
     fn read_memory_unsigned_half_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        self.result = bus.read_u16(self.memory_address).zero_extend();
+        let mem_read_result = bus.read_u16(self.memory_address);
+        self.handle_memory_read::<false, _>(&mem_read_result);
     }
     fn read_memory_unsigned_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        self.result = bus.read_u32(self.memory_address).zero_extend();
+        let mem_read_result = bus.read_u32(self.memory_address);
+        self.handle_memory_read::<false, _>(&mem_read_result);
     }
     // fn read_memory_unsigned_u64(&mut self, bus: &SystemBus<BusAddrType>) {
     //     self.result = bus.read_u64(self.memory_address).zero_extend();

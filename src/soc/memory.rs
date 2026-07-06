@@ -13,7 +13,7 @@ use crate::constants::arch::{
 };
 use crate::constants::soc::MEM_RESET_VALUE;
 
-use super::peripherals::common::device::{Device, RawDevice};
+use super::peripherals::common::device::RawDevice;
 
 use self::constants::MEMORY_ARRAY_PADDING;
 
@@ -166,6 +166,23 @@ impl MemoryValue for DoubleWord {
 //     }
 // }
 
+pub trait MemoryDevice: Send + Sync {
+    // we cannot make `read()`/`write()` methods to be generic because of the
+    // `dyn` traits compatibility requirement. So we declare methods for each
+    // type. Read more at:
+    // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
+
+    fn read_u8(&self, offset: usize) -> u8;
+    fn read_u16(&self, offset: usize) -> u16;
+    fn read_u32(&self, offset: usize) -> u32;
+    fn read_u64(&self, offset: usize) -> u64;
+
+    fn write_u8(&self, offset: usize, value: u8);
+    fn write_u16(&self, offset: usize, value: u16);
+    fn write_u32(&self, offset: usize, value: u32);
+    fn write_u64(&self, offset: usize, value: u64);
+}
+
 #[derive(Default)]
 pub struct Memory<AddrType>
 where
@@ -242,7 +259,7 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
     }
 }
 
-impl<AddrType: Send + Sync> Device for Memory<AddrType> {
+impl<AddrType: Send + Sync> MemoryDevice for Memory<AddrType> {
     fn read_u8(&self, offset: usize) -> u8 {
         self.read_impl(offset)
     }
