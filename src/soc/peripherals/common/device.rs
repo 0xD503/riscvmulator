@@ -36,7 +36,8 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range = device.base_addr()..device.end_addr();
+            let device_addr_range = device.base_addr()
+                ..=(device.end_addr() - size_of::<u8>() as XLen);
             if device_addr_range.contains(&addr) {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.read_u8(offset);
@@ -59,7 +60,8 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range = device.base_addr()..device.end_addr();
+            let device_addr_range = device.base_addr()
+                ..=(device.end_addr() - size_of::<u16>() as XLen);
             if device_addr_range.contains(&addr) {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.read_u16(offset);
@@ -82,7 +84,8 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range = device.base_addr()..device.end_addr();
+            let device_addr_range = device.base_addr()
+                ..=(device.end_addr() - size_of::<u32>() as XLen);
             if device_addr_range.contains(&addr) {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.read_u32(offset);
@@ -105,7 +108,8 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range = device.base_addr()..device.end_addr();
+            let device_addr_range = device.base_addr()
+                ..=(device.end_addr() - size_of::<u64>() as XLen);
             if device_addr_range.contains(&addr) {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.read_u64(offset);
@@ -129,7 +133,8 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range = device.base_addr()..device.end_addr();
+            let device_addr_range = device.base_addr()
+                ..=(device.end_addr() - size_of::<u8>() as XLen);
             if device_addr_range.contains(&addr) {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.write_u8(offset, value);
@@ -157,7 +162,8 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range = device.base_addr()..device.end_addr();
+            let device_addr_range = device.base_addr()
+                ..=(device.end_addr() - size_of::<u16>() as XLen);
             if device_addr_range.contains(&addr) {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.write_u16(offset, value);
@@ -185,7 +191,8 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range = device.base_addr()..device.end_addr();
+            let device_addr_range = device.base_addr()
+                ..=(device.end_addr() - size_of::<u32>() as XLen);
             if device_addr_range.contains(&addr) {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.write_u32(offset, value);
@@ -213,7 +220,8 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range = device.base_addr()..device.end_addr();
+            let device_addr_range = device.base_addr()
+                ..=(device.end_addr() - size_of::<u64>() as XLen);
             if device_addr_range.contains(&addr) {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.write_u64(offset, value);
