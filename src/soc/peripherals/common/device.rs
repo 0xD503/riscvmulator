@@ -1,4 +1,9 @@
-use std::{collections::BTreeMap, marker::PhantomData, sync::RwLock};
+use std::{
+    collections::BTreeMap,
+    fmt::{self, Formatter},
+    marker::PhantomData,
+    sync::RwLock,
+};
 
 use crate::{
     constants::arch::{BusAddrType, XLen},
@@ -251,6 +256,19 @@ impl DeviceIOError {
     //         Self::Read(_) => ExitCode::DeviceReadError as i32,
     //     }
     // }
+}
+
+impl fmt::Display for DeviceIOError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        match self {
+            Self::Read(addr) => {
+                writeln!(formatter, "failed to read device at addr: {addr}")
+            }
+            Self::Write(addr) => {
+                writeln!(formatter, "failed to write device at addr: {addr}")
+            }
+        }
+    }
 }
 
 pub trait Device: Send + Sync {

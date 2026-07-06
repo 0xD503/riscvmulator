@@ -10,8 +10,6 @@ use crate::soc::peripherals::common::device::{
     DeviceIOError, Devices, RawDevice,
 };
 
-use super::peripherals::common::device::Device;
-
 // pub const HTIF_TO_HOST: XLen = 0x80001000;
 // // pub const HTIF_FROM_HOST: XLen = 0x80001004;
 

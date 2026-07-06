@@ -5,7 +5,7 @@ use crate::soc::memory::{MemoryValue, MemoryValueType};
 use crate::soc::memory_bus::{Bus, SystemBus};
 use crate::soc::peripherals::common::device::DeviceIOError;
 
-use log::{error, trace};
+use log::{error, info, trace};
 
 impl Executor {
     // we cannot make `read()`/`write()` methods to be generic because of the
@@ -142,18 +142,29 @@ impl Executor {
         } else if decoder.need_to_write_memory {
             trace!("Executing memory write...");
 
+            let result;
             match self.memory_value_type {
                 MemoryValueType::DOUBLE_WORD => {
-                    bus.write_u64(self.memory_address, self.value_to_store_u64);
+                    result = bus.write_u64(
+                        self.memory_address,
+                        self.value_to_store_u64,
+                    );
                 }
                 MemoryValueType::WORD => {
-                    bus.write_u32(self.memory_address, self.value_to_store_u32);
+                    result = bus.write_u32(
+                        self.memory_address,
+                        self.value_to_store_u32,
+                    );
                 }
                 MemoryValueType::HALF_WORD => {
-                    bus.write_u16(self.memory_address, self.value_to_store_u16);
+                    result = bus.write_u16(
+                        self.memory_address,
+                        self.value_to_store_u16,
+                    );
                 }
                 MemoryValueType::BYTE => {
-                    bus.write_u8(self.memory_address, self.value_to_store_u8);
+                    result = bus
+                        .write_u8(self.memory_address, self.value_to_store_u8);
                 }
 
                 MemoryValueType::UNSIGNED_WORD
@@ -162,6 +173,11 @@ impl Executor {
                     error!("unreachable!");
                     unreachable!("unreachable!");
                 }
+            }
+
+            if let Err(err) = result {
+                // info!("ISA exception, {err}");
+                todo!("handle trap {err}");
             }
         }
     }
