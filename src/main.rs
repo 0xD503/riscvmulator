@@ -15,8 +15,8 @@ fn main() {
             std::process::exit(err.exit_code());
         });
 
-    if let Some(elf_file) = emu_config.emulator.input_file {
-        if let Err(err) = emulator.load_elf(elf_file) {
+    if let Some(elf_path) = emu_config.input_elf_path() {
+        if let Err(err) = emulator.load_elf(elf_path) {
             match err {
                 _ => {
                     error!("{err}");
