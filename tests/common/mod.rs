@@ -1,15 +1,15 @@
 use riscvmulator::{config::Config, emulator::Emulator};
 
-fn init_test() {
+fn test_setup() {
     //
 }
 
-fn deinit_test() {
+fn test_teardown() {
     //
 }
 
 pub fn run_test(test_path: &'static str) {
-    init_test();
+    test_setup();
 
     let mut emu_config = Config::default();
     emu_config.set_elf_path(test_path.to_string());
@@ -25,5 +25,5 @@ pub fn run_test(test_path: &'static str) {
 
     emulator.run();
 
-    deinit_test();
+    test_teardown();
 }

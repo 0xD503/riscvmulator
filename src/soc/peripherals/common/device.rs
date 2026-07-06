@@ -7,7 +7,6 @@ use std::{
 
 use crate::{
     constants::arch::{BusAddrType, XLen},
-    globals::exit_codes::ExitCode,
     soc::memory::MemoryValue,
 };
 

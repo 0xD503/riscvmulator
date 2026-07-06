@@ -14,7 +14,7 @@ pub enum ExitCode {
     ElfParseHeader = 6,
     SegmentsLoad = 7,
     StringTable = 8,
-
-    DeviceReadError = 9,
-    DeviceWriteError = 10,
+    //
+    // DeviceReadError = 9,
+    // DeviceWriteError = 10,
 }

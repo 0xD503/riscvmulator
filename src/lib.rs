@@ -10,3 +10,7 @@ mod debug;
 pub mod config;
 pub mod emulator;
 pub mod init;
+
+// public re-exports
+pub use constants::arch::BusAddrType;
+pub use soc::peripherals::common::device::{Device, DeviceIOError};

@@ -1,4 +1,5 @@
 mod common;
+mod peripherals;
 
 use common::run_test;
 

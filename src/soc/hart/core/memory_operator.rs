@@ -5,7 +5,7 @@ use crate::soc::memory::{MemoryValue, MemoryValueType};
 use crate::soc::memory_bus::{Bus, SystemBus};
 use crate::soc::peripherals::common::device::DeviceIOError;
 
-use log::{error, info, trace};
+use log::{error, trace};
 
 impl Executor {
     // we cannot make `read()`/`write()` methods to be generic because of the
