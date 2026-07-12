@@ -6,12 +6,14 @@ use std::sync::atomic::{self, AtomicBool};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Barrier};
 use std::thread::{self, JoinHandle};
+use std::time::Duration;
 use std::{error::Error, fmt::Formatter};
 
 use log::info;
 
 use crate::emulator::constants::EmulatorEvent;
 use crate::globals::exit_codes::ExitCode;
+use crate::hooks::PeriodicHook;
 use crate::soc::hart::Hart;
 use crate::{config::Config, soc::SoC};
 
@@ -30,6 +32,9 @@ pub struct Emulator {
 
     emulator_event_sender: Sender<EmulatorEvent>,
     emulator_event_receiver: Receiver<EmulatorEvent>,
+
+    hooks: Vec<PeriodicHook>, //
+    hooks_join_handles: Vec<JoinHandle<()>>,
 }
 
 impl Emulator {
@@ -59,6 +64,9 @@ impl Emulator {
 
             emulator_event_sender: sender,
             emulator_event_receiver: receiver,
+
+            hooks: Default::default(),
+            hooks_join_handles: Vec::with_capacity(1),
         })
     }
 
@@ -73,7 +81,11 @@ impl Emulator {
         load_result
     }
 
-    pub(super) fn spawn_hart_threads(&mut self) {
+    pub fn add_periodic_hook(&mut self, hook: PeriodicHook) {
+        self.hooks.push(hook);
+    }
+
+    fn spawn_hart_threads(&mut self) {
         // `drain(..)` returns iterator to all items of vector and passes
         // ownership for each item on iteration
         for mut hart in self.soc.harts.drain(..) {
@@ -93,6 +105,16 @@ impl Emulator {
                 hart
             }));
         }
+    }
+
+    fn spawn_hooks_executors(&mut self) {
+        self.hooks_join_handles.push(thread::spawn(move || {
+            // for hook in &mut self.hooks {
+            //     // hook(???);
+            // }
+
+            thread::sleep(Duration::from_millis(10));
+        }));
     }
 
     fn wait_until_start_trigger(&self) {
@@ -122,6 +144,10 @@ impl Emulator {
 
                     // start trigger
                     self.trigger_start();
+
+                    // start periodical hooks executor thread
+                    //
+
                     started = true;
                 }
             } else if self.halted.load(atomic::Ordering::Relaxed) {
@@ -139,6 +165,7 @@ impl Emulator {
             .drain(..)
             .map(|hart_thread| hart_thread.join().unwrap())
             .collect();
+        // self.hooks_join_handles.
 
         // info!("Emulator stopped");
     }

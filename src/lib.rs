@@ -1,5 +1,6 @@
 mod constants;
 mod globals;
+mod hooks;
 mod logger;
 mod parse_args;
 mod soc;
@@ -12,5 +13,6 @@ pub mod emulator;
 pub mod init;
 
 // public re-exports
-pub use constants::arch::BusAddrType;
+pub use constants::arch::{BusAddrType, XLen};
+pub use soc::memory::MemoryValue;
 pub use soc::peripherals::common::device::{Device, DeviceIOError};

@@ -30,6 +30,23 @@ impl<AddrType> Devices<AddrType> {
         }
     }
 
+    fn attach_device(&mut self, device: Box<dyn Device>) {
+        let mut dev_tree = self.tree.write().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+        let base_addr = device.base_addr();
+
+        if dev_tree.contains_key(&base_addr) {
+            todo!("handle already existing device error");
+        }
+        // TODO: make some checks for interleaving/existing ranges
+        dev_tree.insert(base_addr, device);
+    }
+
+    fn detach_device(&mut self, device: Box<dyn Device>) {
+        todo!("later");
+    }
+
     pub fn read_u8(&self, addr: XLen) -> Result<u8, DeviceIOError> {
         let result;
 
