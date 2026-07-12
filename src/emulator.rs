@@ -4,16 +4,16 @@ mod elf_loader;
 use std::fmt::Display;
 use std::sync::atomic::{self, AtomicBool};
 use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::{Arc, Barrier};
+use std::sync::{Arc, Barrier, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use std::{error::Error, fmt::Formatter};
 
 use log::info;
 
-use crate::emulator::constants::EmulatorEvent;
+use crate::emulator::constants::{EmulatorEvent, PERIODICAL_HOOKS_PERIOD_MS};
 use crate::globals::exit_codes::ExitCode;
-use crate::hooks::PeriodicHook;
+use crate::hooks::{HookArgs, PeriodicalTask};
 use crate::soc::hart::Hart;
 use crate::{config::Config, soc::SoC};
 
@@ -33,8 +33,8 @@ pub struct Emulator {
     emulator_event_sender: Sender<EmulatorEvent>,
     emulator_event_receiver: Receiver<EmulatorEvent>,
 
-    hooks: Vec<PeriodicHook>, //
-    hooks_join_handles: Vec<JoinHandle<()>>,
+    periodical_tasks: Arc<Mutex<Vec<PeriodicalTask>>>, //
+    periodical_tasks_join_handles: Vec<JoinHandle<()>>,
 }
 
 impl Emulator {
@@ -65,8 +65,8 @@ impl Emulator {
             emulator_event_sender: sender,
             emulator_event_receiver: receiver,
 
-            hooks: Default::default(),
-            hooks_join_handles: Vec::with_capacity(1),
+            periodical_tasks: Default::default(),
+            periodical_tasks_join_handles: Vec::with_capacity(1),
         })
     }
 
@@ -81,8 +81,8 @@ impl Emulator {
         load_result
     }
 
-    pub fn add_periodic_hook(&mut self, hook: PeriodicHook) {
-        self.hooks.push(hook);
+    pub fn add_periodic_hook(&mut self, hook: PeriodicalTask) {
+        self.periodical_tasks.lock().unwrap().push(hook);
     }
 
     fn spawn_hart_threads(&mut self) {
@@ -108,13 +108,24 @@ impl Emulator {
     }
 
     fn spawn_hooks_executors(&mut self) {
-        self.hooks_join_handles.push(thread::spawn(move || {
-            // for hook in &mut self.hooks {
-            //     // hook(???);
-            // }
+        let hooks = Arc::clone(&self.periodical_tasks);
+        self.periodical_tasks_join_handles
+            .push(thread::spawn(move || {
+                // let hooks = self.hooks.lock().unwrap_or_else(|err| {
+                //     todo!("Is it even possible???: {err}");
+                // });
+                // let mut hook_guard_lock = hooks.lock().unwrap();
+                for hook in hooks.lock().unwrap().iter_mut() {
+                    // for hook in
+                    // for hook in self.hooks.iter_mut() {
+                    let args = HookArgs {};
+                    let exit_status = hook(&args);
+                }
 
-            thread::sleep(Duration::from_millis(10));
-        }));
+                thread::sleep(Duration::from_millis(
+                    PERIODICAL_HOOKS_PERIOD_MS,
+                ));
+            }));
     }
 
     fn wait_until_start_trigger(&self) {
@@ -146,7 +157,7 @@ impl Emulator {
                     self.trigger_start();
 
                     // start periodical hooks executor thread
-                    //
+                    self.spawn_hooks_executors();
 
                     started = true;
                 }
@@ -165,7 +176,10 @@ impl Emulator {
             .drain(..)
             .map(|hart_thread| hart_thread.join().unwrap())
             .collect();
-        // self.hooks_join_handles.
+        // join hook threads
+        self.periodical_tasks_join_handles
+            .drain(..)
+            .for_each(|thread| thread.join().unwrap());
 
         // info!("Emulator stopped");
     }
