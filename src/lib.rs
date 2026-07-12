@@ -16,4 +16,5 @@ pub mod init;
 pub use constants::arch::{BusAddrType, XLen};
 pub use hooks::PeriodicalTaskArgs;
 pub use soc::memory::MemoryValue;
+pub use soc::memory_bus::Bus;
 pub use soc::peripherals::common::device::{Device, DeviceIOError};

@@ -1,4 +1,6 @@
-use riscvmulator::{PeriodicalTaskArgs, config::Config, emulator::Emulator};
+use riscvmulator::{
+    Bus, PeriodicalTaskArgs, config::Config, emulator::Emulator,
+};
 
 fn test_setup() {
     //
@@ -25,9 +27,9 @@ pub fn run_test(test_path: &'static str) {
     let tohost_addr = elf_data.tohost_addr;
     emulator.add_periodical_task(Box::new(move |args| {
         match args.bus.read_u32(tohost_addr) {
-            Ok(_) => {
-                //
-            }
+            Ok(0 | 1) => Some(0),
+            Ok(code) => Some(code as i32),
+            _ => None,
         }
     }));
 
