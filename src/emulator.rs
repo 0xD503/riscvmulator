@@ -11,9 +11,9 @@ use std::{error::Error, fmt::Formatter};
 
 use log::info;
 
-use crate::emulator::constants::{EmulatorEvent, PERIODICAL_HOOKS_PERIOD_MS};
+use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
 use crate::globals::exit_codes::ExitCode;
-use crate::hooks::{HookArgs, PeriodicalTask};
+use crate::hooks::{PeriodicalTask, PeriodicalTaskArgs};
 use crate::soc::hart::Hart;
 use crate::{config::Config, soc::SoC};
 
@@ -28,13 +28,13 @@ pub struct Emulator {
 
     halted: Arc<AtomicBool>,
     in_interactive_mode: bool,
-    run_loop_stopped: bool, // run_state: RunState,
+    run_loop_stopped: Arc<AtomicBool>, // run_state: RunState,
 
     emulator_event_sender: Sender<EmulatorEvent>,
     emulator_event_receiver: Receiver<EmulatorEvent>,
 
     periodical_tasks: Arc<Mutex<Vec<PeriodicalTask>>>, //
-    periodical_tasks_join_handles: Vec<JoinHandle<()>>,
+    periodical_tasks_join_handles: Vec<JoinHandle<i32>>,
 }
 
 impl Emulator {
@@ -60,13 +60,13 @@ impl Emulator {
 
             halted: Arc::new(AtomicBool::new(true)),
             in_interactive_mode: true,
-            run_loop_stopped: false,
+            run_loop_stopped: Arc::new(AtomicBool::new(false)),
 
             emulator_event_sender: sender,
             emulator_event_receiver: receiver,
 
             periodical_tasks: Default::default(),
-            periodical_tasks_join_handles: Vec::with_capacity(1),
+            periodical_tasks_join_handles: Vec::with_capacity(10),
         })
     }
 
@@ -81,8 +81,8 @@ impl Emulator {
         load_result
     }
 
-    pub fn add_periodic_hook(&mut self, hook: PeriodicalTask) {
-        self.periodical_tasks.lock().unwrap().push(hook);
+    pub fn add_periodical_task(&mut self, task: PeriodicalTask) {
+        self.periodical_tasks.lock().unwrap().push(task);
     }
 
     fn spawn_hart_threads(&mut self) {
@@ -108,23 +108,24 @@ impl Emulator {
     }
 
     fn spawn_hooks_executors(&mut self) {
-        let hooks = Arc::clone(&self.periodical_tasks);
+        let tasks = Arc::clone(&self.periodical_tasks);
+        let halted = Arc::clone(&self.halted);
+        let run_loop_stopped = Arc::clone(&self.run_loop_stopped);
+        let args =
+            PeriodicalTaskArgs::new(Arc::clone(&self.soc.bus) /*, 0 */);
         self.periodical_tasks_join_handles
             .push(thread::spawn(move || {
-                // let hooks = self.hooks.lock().unwrap_or_else(|err| {
-                //     todo!("Is it even possible???: {err}");
-                // });
-                // let mut hook_guard_lock = hooks.lock().unwrap();
-                for hook in hooks.lock().unwrap().iter_mut() {
-                    // for hook in
-                    // for hook in self.hooks.iter_mut() {
-                    let args = HookArgs {};
-                    let exit_status = hook(&args);
+                let mut exit_status = Some(ExitCode::Success as i32);
+                for task in tasks.lock().unwrap().iter_mut() {
+                    // let args = PeriodicalTaskArgs {};
+                    exit_status = task(&args);
                 }
 
                 thread::sleep(Duration::from_millis(
-                    PERIODICAL_HOOKS_PERIOD_MS,
+                    PERIODICAL_TASKS_PERIOD_MS,
                 ));
+
+                exit_status.unwrap()
             }));
     }
 
@@ -156,13 +157,13 @@ impl Emulator {
                     // start trigger
                     self.trigger_start();
 
-                    // start periodical hooks executor thread
+                    // start periodical tasks and hooks executor thread
                     self.spawn_hooks_executors();
 
                     started = true;
                 }
             } else if self.halted.load(atomic::Ordering::Relaxed) {
-                if self.run_loop_stopped {
+                if self.run_loop_stopped.load(atomic::Ordering::Relaxed) {
                     // info!("Emulator stopped");
                     break;
                 }
@@ -176,10 +177,12 @@ impl Emulator {
             .drain(..)
             .map(|hart_thread| hart_thread.join().unwrap())
             .collect();
-        // join hook threads
+        // join tasks/hook threads
         self.periodical_tasks_join_handles
             .drain(..)
-            .for_each(|thread| thread.join().unwrap());
+            .for_each(|thread| {
+                thread.join().unwrap();
+            });
 
         // info!("Emulator stopped");
     }

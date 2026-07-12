@@ -261,6 +261,7 @@ impl<AddrType> Devices<AddrType> {
 //     //
 // }
 
+#[derive(Debug)]
 pub enum DeviceIOError {
     Read(XLen),
     Write(XLen),

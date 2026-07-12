@@ -1,3 +1,4 @@
+use crate::BusAddrType;
 use crate::constants::arch::XLen;
 use crate::soc::SoC;
 use crate::soc::memory_bus::Bus;
@@ -16,6 +17,7 @@ use crate::globals::exit_codes::ExitCode;
 pub struct ElfData {
     pub e_entry: XLen,
     pub p_hdrs: Vec<ProgramHeader>,
+    pub tohost_addr: BusAddrType,
 }
 
 pub(crate) fn load_elf(
@@ -32,6 +34,7 @@ pub(crate) fn load_elf(
                 _ => ElfError::ParseHeader(err),
             },
         )?;
+    let mut tohost_addr = 0x8000_1000;
 
     let all_load_phdrs = file.segments().ok_or(ElfError::SegmentsLoad)?;
     let all_load_phdrs: Vec<_> = all_load_phdrs
@@ -54,6 +57,7 @@ pub(crate) fn load_elf(
                     _ => ElfError::StringTable(err),
                 })?;
             if sym_name == "tohost" {
+                tohost_addr = sym.st_value;
                 soc.set_htif(sym.st_value);
             }
         }
@@ -63,14 +67,16 @@ pub(crate) fn load_elf(
     for phdr in phdrs {
         let mut start_addr = phdr.p_paddr;
         for offset in phdr.p_offset..phdr.p_offset + phdr.p_filesz {
-            soc.bus.write_u8(
-                {
-                    let tmp = start_addr;
-                    start_addr += 1;
-                    tmp
-                },
-                content[offset as usize],
-            );
+            soc.bus
+                .write_u8(
+                    {
+                        let tmp = start_addr;
+                        start_addr += 1;
+                        tmp
+                    },
+                    content[offset as usize],
+                )
+                .unwrap();
         }
     }
     for hart in soc.harts.iter_mut() {
@@ -80,6 +86,7 @@ pub(crate) fn load_elf(
     Ok(ElfData {
         e_entry: file.ehdr.e_entry,
         p_hdrs: all_load_phdrs,
+        tohost_addr,
     })
 }
 

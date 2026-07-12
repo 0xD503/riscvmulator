@@ -17,4 +17,6 @@ pub enum ExitCode {
     //
     // DeviceReadError = 9,
     // DeviceWriteError = 10,
+    //
+    HookStopSignal = 11,
 }
