@@ -4,6 +4,8 @@ use log::{error, trace};
 
 use riscvmulator::{BusAddrType, Device, DeviceIOError, MemoryValue, XLen};
 
+pub const HTIF_SUCCESS: u32 = 1;
+
 pub struct HTIF {
     memory_map: RwLock<Vec<u8>>,
     base_addr: BusAddrType,

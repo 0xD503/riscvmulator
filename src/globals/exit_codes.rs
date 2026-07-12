@@ -6,17 +6,19 @@
 pub enum ExitCode {
     Success = 0,
     Error = 1,
-    ConfigRead = 2,
-    ConfigBuild = 3,
-    ConfigValidation = 4,
 
-    ElfRead = 5,
-    ElfParseHeader = 6,
-    SegmentsLoad = 7,
-    StringTable = 8,
+    // exit codes from application/protocol-specific exit-code space
+    ConfigRead = 90,
+    ConfigBuild = 91,
+    ConfigValidation = 92,
+
+    ElfRead = 93,
+    ElfParseHeader = 94,
+    SegmentsLoad = 95,
+    StringTable = 96,
     //
-    // DeviceReadError = 9,
-    // DeviceWriteError = 10,
+    // DeviceReadError = 97,
+    // DeviceWriteError = 98,
     //
-    HookStopSignal = 11,
+    // HookStopSignal = 99,
 }

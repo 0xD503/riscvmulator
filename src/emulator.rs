@@ -2,7 +2,8 @@ mod constants;
 mod elf_loader;
 
 use std::fmt::Display;
-use std::sync::atomic::{self, AtomicBool};
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Barrier, Mutex};
 use std::thread::{self, JoinHandle};
@@ -13,7 +14,7 @@ use log::info;
 
 use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
 use crate::globals::exit_codes::ExitCode;
-use crate::hooks::{PeriodicalTask, PeriodicalTaskArgs};
+use crate::hooks::{HookAction, PeriodicalTask, PeriodicalTaskArgs};
 use crate::soc::hart::Hart;
 use crate::{config::Config, soc::SoC};
 
@@ -34,7 +35,7 @@ pub struct Emulator {
     emulator_event_receiver: Receiver<EmulatorEvent>,
 
     periodical_tasks: Arc<Mutex<Vec<PeriodicalTask>>>, //
-    periodical_tasks_join_handles: Vec<JoinHandle<i32>>,
+    periodical_tasks_join_handles: Vec<JoinHandle<ExitCode>>,
 }
 
 impl Emulator {
@@ -74,7 +75,7 @@ impl Emulator {
         let load_result = load_elf(path.into(), &mut self.soc);
         if load_result.is_ok() {
             self.in_interactive_mode = false;
-            self.halted.store(false, atomic::Ordering::Relaxed);
+            self.halted.store(false, Ordering::Relaxed);
             // self.elf_loaded = true;
         }
 
@@ -96,7 +97,7 @@ impl Emulator {
             self.hart_join_handles.push(thread::spawn(move || {
                 start_trigger.wait();
 
-                while !halted.load(atomic::Ordering::Relaxed) {
+                while !halted.load(Ordering::Relaxed) {
                     hart.step(&bus);
                 }
                 // self.run();
@@ -111,21 +112,39 @@ impl Emulator {
         let tasks = Arc::clone(&self.periodical_tasks);
         let halted = Arc::clone(&self.halted);
         let run_loop_stopped = Arc::clone(&self.run_loop_stopped);
-        let args =
-            PeriodicalTaskArgs::new(Arc::clone(&self.soc.bus) /*, 0 */);
+        let args = PeriodicalTaskArgs::new(Arc::clone(&self.soc.bus));
         self.periodical_tasks_join_handles
             .push(thread::spawn(move || {
-                let mut exit_status = Some(ExitCode::Success as i32);
-                for task in tasks.lock().unwrap().iter_mut() {
-                    // let args = PeriodicalTaskArgs {};
-                    exit_status = task(&args);
+                let mut exit_code = ExitCode::Success;
+                let mut need_to_stop_hooks = false;
+
+                while !halted.load(Ordering::Relaxed) {
+                    for task in tasks.lock().unwrap().iter_mut() {
+                        let hook_action = task(&args);
+
+                        match hook_action {
+                            // TODO: refactor so hook actions send events to `mpsc` channel
+                            HookAction::Stop(status_code) => {
+                                halted.store(true, Ordering::Relaxed);
+                                run_loop_stopped.store(true, Ordering::Relaxed);
+                                exit_code = status_code;
+                                need_to_stop_hooks = true;
+                            }
+
+                            HookAction::None => continue,
+                        }
+                    }
+
+                    if need_to_stop_hooks {
+                        break;
+                    }
+
+                    thread::sleep(Duration::from_millis(
+                        PERIODICAL_TASKS_PERIOD_MS,
+                    ));
                 }
 
-                thread::sleep(Duration::from_millis(
-                    PERIODICAL_TASKS_PERIOD_MS,
-                ));
-
-                exit_status.unwrap()
+                exit_code
             }));
     }
 
@@ -137,17 +156,18 @@ impl Emulator {
         self.wait_until_start_trigger();
     }
 
-    pub fn run(&mut self) {
-        self.run_loop();
+    pub fn run(&mut self) -> ExitCode {
+        self.run_loop()
     }
 
-    fn run_loop(&mut self) {
+    fn run_loop(&mut self) -> ExitCode {
         let mut started = false;
+        let exit_code;
 
         loop {
             if self.in_interactive_mode {
                 self.interactive_mode();
-            } else if !self.halted.load(atomic::Ordering::Relaxed) {
+            } else if !self.halted.load(Ordering::Relaxed) {
                 if !started {
                     // it doesn't run actually, it takes ownership of hart
                     // threads from SoC, puts them waitin on a barrier until
@@ -162,8 +182,8 @@ impl Emulator {
 
                     started = true;
                 }
-            } else if self.halted.load(atomic::Ordering::Relaxed) {
-                if self.run_loop_stopped.load(atomic::Ordering::Relaxed) {
+            } else if self.halted.load(Ordering::Relaxed) {
+                if self.run_loop_stopped.load(Ordering::Relaxed) {
                     // info!("Emulator stopped");
                     break;
                 }
@@ -183,6 +203,10 @@ impl Emulator {
             .for_each(|thread| {
                 thread.join().unwrap();
             });
+
+        // for exit_code in self.periodical_tasks_join_handles {
+
+        // }
 
         // info!("Emulator stopped");
     }

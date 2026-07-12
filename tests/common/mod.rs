@@ -1,6 +1,8 @@
-use riscvmulator::{
-    Bus, PeriodicalTaskArgs, config::Config, emulator::Emulator,
-};
+use std::process::ExitCode;
+
+use riscvmulator::{Bus, HookAction, config::Config, emulator::Emulator};
+
+use crate::peripherals::htif::HTIF_SUCCESS;
 
 fn test_setup() {
     //
@@ -15,7 +17,6 @@ pub fn run_test(test_path: &'static str) {
 
     let mut emu_config = Config::default();
     emu_config.set_input_elf_path(test_path.to_string());
-    // emu_config.
 
     let mut emulator = Emulator::build_from_config(&emu_config)
         .expect("failed to init emulator");
@@ -27,15 +28,17 @@ pub fn run_test(test_path: &'static str) {
     let tohost_addr = elf_data.tohost_addr;
     emulator.add_periodical_task(Box::new(move |args| {
         match args.bus.read_u32(tohost_addr) {
-            Ok(0 | 1) => Some(0),
-            Ok(code) => Some(code as i32),
-            _ => None,
+            Ok(HTIF_SUCCESS) => HookAction::Stop(ExitCode::SUCCESS),
+            // riscv-tests HTIF returns number of failed test case on failure
+            Ok(code) if code != 0 => HookAction::Stop(ExitCode::FAILURE),
+
+            _ => HookAction::None,
         }
     }));
 
     emulator.ready_for_testing();
 
-    emulator.run();
+    assert_eq!(emulator.run(), ExitCode::SUCCESS);
 
     test_teardown();
 }
