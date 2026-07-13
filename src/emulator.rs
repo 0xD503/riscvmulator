@@ -10,6 +10,7 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use std::{error::Error, fmt::Formatter};
 
+use log::error;
 use log::info;
 
 use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
@@ -162,8 +163,33 @@ impl Emulator {
 
     fn run_loop(&mut self) -> ExitCode {
         let mut started = false;
-        let exit_code;
+        let mut exit_code = ExitCode::Success;
 
+        // loop {
+        //     let event = self.emulator_event_receiver.recv();
+        //     if let Ok(received_event) = event {
+        //         match received_event {
+        //             EmulatorEvent::Start => {
+        //                 //
+        //             }
+        //             EmulatorEvent::Halt => {
+        //                 //
+        //             }
+        //             EmulatorEvent::Stop(status_code) => {
+        //                 //
+        //                 self.halted.store(true, Ordering::Relaxed);
+        //                 self.run_loop_stopped.store(true, Ordering::Relaxed);
+        //                 exit_code = status_code;
+        //                 // need_to_stop_hooks = true;
+        //                 break;
+        //             }
+        //         }
+        //     } else {
+        //         error!("Event receiver stopped: {}", event.unwrap_err());
+        //         exit_code = ExitCode::Error;
+        //         break;
+        //     }
+        // }
         loop {
             if self.in_interactive_mode {
                 self.interactive_mode();
@@ -195,13 +221,20 @@ impl Emulator {
         self.soc.harts = self
             .hart_join_handles
             .drain(..)
-            .map(|hart_thread| hart_thread.join().unwrap())
+            .map(|hart_thread| {
+                hart_thread.join().unwrap_or_else(|err| {
+                    todo!("Is it even possible???: {err:#?}");
+                })
+            })
             .collect();
         // join tasks/hook threads
         self.periodical_tasks_join_handles
             .drain(..)
+            // .iter_mut()
             .for_each(|thread| {
-                thread.join().unwrap();
+                let exit_status_code = thread.join().unwrap_or_else(|err| {
+                    todo!("Is it even possible???: {err:#?}");
+                });
             });
 
         // for exit_code in self.periodical_tasks_join_handles {
@@ -209,6 +242,8 @@ impl Emulator {
         // }
 
         // info!("Emulator stopped");
+        //
+        exit_code
     }
 
     fn interactive_mode(&self) {

@@ -9,7 +9,6 @@ pub(crate) type PeriodicalTask =
 
 pub struct PeriodicalTaskArgs {
     pub bus: Arc<SystemBus<BusAddrType>>,
-    // addr: BusAddrType,
 }
 
 pub enum HookAction {
@@ -19,9 +18,7 @@ pub enum HookAction {
 }
 
 impl PeriodicalTaskArgs {
-    pub fn new(
-        bus: Arc<SystemBus<BusAddrType>>, /*, addr: BusAddrType*/
-    ) -> Self {
-        PeriodicalTaskArgs { bus, /*, addr*/ }
+    pub fn new(bus: Arc<SystemBus<BusAddrType>>) -> Self {
+        PeriodicalTaskArgs { bus }
     }
 }

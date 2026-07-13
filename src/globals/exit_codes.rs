@@ -3,6 +3,7 @@
 // pub const EXIT_ERROR: i32 = 2;
 // pub const EXIT_ERROR: i32 = 3;
 
+#[derive(Debug, PartialEq)]
 pub enum ExitCode {
     Success = 0,
     Error = 1,
@@ -22,3 +23,7 @@ pub enum ExitCode {
     //
     // HookStopSignal = 99,
 }
+
+// impl PartialOrd for ExitCode {
+//     //
+// }

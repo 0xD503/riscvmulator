@@ -21,6 +21,7 @@
 - [ ] separate code into crates
 - [ ] scripts/commands for building `riscv-tests` and `riscv-arch-test`
 - [ ] make `just` commands usable: pass arguments, customize with arguments
+- [ ] add cargo-deny list
 
 ## Refactor
 
@@ -28,6 +29,8 @@
 
 ## Features
 
+- [ ] XTAL frequency
+- [ ] throttle frequency
 - [ ] generate exception if address is misaligned
 - [ ] HALT into interactive mode by `Ctrl+C`
 - [ ] add emulator throtling

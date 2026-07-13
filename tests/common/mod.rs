@@ -1,6 +1,8 @@
-use std::process::ExitCode;
+// use std::process::ExitCode;
 
-use riscvmulator::{Bus, HookAction, config::Config, emulator::Emulator};
+use riscvmulator::{
+    Bus, ExitCode, HookAction, config::Config, emulator::Emulator,
+};
 
 use crate::peripherals::htif::HTIF_SUCCESS;
 
@@ -28,9 +30,9 @@ pub fn run_test(test_path: &'static str) {
     let tohost_addr = elf_data.tohost_addr;
     emulator.add_periodical_task(Box::new(move |args| {
         match args.bus.read_u32(tohost_addr) {
-            Ok(HTIF_SUCCESS) => HookAction::Stop(ExitCode::SUCCESS),
+            Ok(HTIF_SUCCESS) => HookAction::Stop(ExitCode::Success),
             // riscv-tests HTIF returns number of failed test case on failure
-            Ok(code) if code != 0 => HookAction::Stop(ExitCode::FAILURE),
+            Ok(code) if code != 0 => HookAction::Stop(ExitCode::Error),
 
             _ => HookAction::None,
         }
@@ -38,7 +40,7 @@ pub fn run_test(test_path: &'static str) {
 
     emulator.ready_for_testing();
 
-    assert_eq!(emulator.run(), ExitCode::SUCCESS);
+    assert_eq!(emulator.run(), ExitCode::Success);
 
     test_teardown();
 }
