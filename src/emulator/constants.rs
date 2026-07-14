@@ -1,12 +1,9 @@
-use std::sync::mpsc::SendError;
-
 use crate::globals::exit_codes::ExitCode;
 
-pub const PERIODICAL_TASKS_PERIOD_MS: u64 = 100;
+pub const PERIODICAL_TASKS_PERIOD_MS: u64 = 200;
 
 #[derive(Debug)]
 pub enum EmulatorEvent {
-    // #[default]
     Start,
     Halt,
     Stop(ExitCode),

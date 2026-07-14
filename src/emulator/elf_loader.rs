@@ -58,7 +58,7 @@ pub(crate) fn load_elf(
                 })?;
             if sym_name == "tohost" {
                 tohost_addr = sym.st_value;
-                soc.set_htif(sym.st_value);
+                // soc.set_htif(sym.st_value);
             }
         }
     }

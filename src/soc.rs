@@ -64,14 +64,14 @@ impl SoC {
     //     }
     // }
 
-    // testing facilities
-    // TODO: conditional compilation for test facilities
-    pub fn ready_for_testing(&mut self) {
-        self.bus.set_ready_for_testing();
-    }
+    // // testing facilities
+    // // TODO: conditional compilation for test facilities
+    // pub fn ready_for_testing(&mut self) {
+    //     self.bus.set_ready_for_testing();
+    // }
 
-    // TODO: conditional compilation for test facilities
-    pub fn set_htif(&mut self, addr: BusAddrType) {
-        self.bus.set_htif(addr);
-    }
+    // // TODO: conditional compilation for test facilities
+    // pub fn set_htif(&mut self, addr: BusAddrType) {
+    //     self.bus.set_htif(addr);
+    // }
 }

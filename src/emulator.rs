@@ -302,10 +302,10 @@ impl Emulator {
     //     todo!("unimplemented halted state handling");
     // }
 
-    // TODO: remove testing facilities
-    pub fn ready_for_testing(&mut self) {
-        self.soc.ready_for_testing();
-    }
+    // // TODO: remove testing facilities
+    // pub fn ready_for_testing(&mut self) {
+    //     self.soc.ready_for_testing();
+    // }
 }
 
 #[derive(Debug)]

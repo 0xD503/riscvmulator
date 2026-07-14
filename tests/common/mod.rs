@@ -39,8 +39,6 @@ pub fn run_test(test_path: &'static str) {
         }
     }));
 
-    emulator.ready_for_testing();
-
     assert_eq!(emulator.run(), ExitCode::Success);
 
     test_teardown();

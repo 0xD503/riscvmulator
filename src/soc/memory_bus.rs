@@ -1,9 +1,6 @@
-use std::sync::atomic::{self, AtomicBool};
+use log::{error, trace};
 
-use log::{error, info, trace};
-
-use crate::constants::arch::{AtomicXLen, Byte, XLen};
-use crate::globals::exit_codes::ExitCode;
+use crate::constants::arch::{Byte, XLen};
 use crate::soc::hart::extensions::compressed::constants::InstructionTypeCompressed;
 use crate::soc::memory::{Memory, MemoryDevice, MemoryValue};
 use crate::soc::peripherals::common::device::{
@@ -90,10 +87,9 @@ pub struct SystemBus<AddrType: Send + Sync> {
     ram_end: XLen,
 
     devices: Devices<AddrType>,
-
-    // testing facilities
-    initialized: AtomicBool,
-    htif_to_host_addr: AtomicXLen,
+    // // testing facilities
+    // initialized: AtomicBool,
+    // htif_to_host_addr: AtomicXLen,
 }
 
 impl<AddrType: Send + Sync> SystemBus<AddrType> {
@@ -104,18 +100,17 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
             ram_end: ram_base + ram_size as XLen,
 
             devices: Devices::new(),
-
-            initialized: AtomicBool::new(false),
-            htif_to_host_addr: AtomicXLen::new(0x8000_1000),
+            // initialized: AtomicBool::new(false),
+            // htif_to_host_addr: AtomicXLen::new(0x8000_1000),
         }
     }
 
     pub fn reset(&self) {
         self.memory.reset();
 
-        self.initialized.store(false, atomic::Ordering::Relaxed);
-        self.htif_to_host_addr
-            .store(0x8000_1000, atomic::Ordering::Relaxed);
+        // self.initialized.store(false, atomic::Ordering::Relaxed);
+        // self.htif_to_host_addr
+        //     .store(0x8000_1000, atomic::Ordering::Relaxed);
     }
 
     // pub fn fill_with_nops(&mut self) {
@@ -134,15 +129,15 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
     //     (addr - base_addr) as usize
     // }
 
-    // testing facilities
-    pub fn set_ready_for_testing(&self) {
-        self.initialized.store(true, atomic::Ordering::Relaxed);
-    }
+    // // testing facilities
+    // pub fn set_ready_for_testing(&self) {
+    //     self.initialized.store(true, atomic::Ordering::Relaxed);
+    // }
 
-    pub fn set_htif(&self, addr: XLen) {
-        self.htif_to_host_addr
-            .store(addr, atomic::Ordering::Relaxed);
-    }
+    // pub fn set_htif(&self, addr: XLen) {
+    //     self.htif_to_host_addr
+    //         .store(addr, atomic::Ordering::Relaxed);
+    // }
 }
 
 impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {

@@ -22,6 +22,8 @@
 - [ ] scripts/commands for building `riscv-tests` and `riscv-arch-test`
 - [ ] make `just` commands usable: pass arguments, customize with arguments
 - [ ] add cargo-deny list
+- [ ] clean out of stale commented out code/comments
+- [ ] get rid of heap allocations outside of initialization/deinitializations
 
 ## Refactor
 
