@@ -4,6 +4,7 @@ mod elf_loader;
 use std::fmt::Display;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
+use std::sync::mpsc::SendError;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Barrier, Mutex};
 use std::thread::{self, JoinHandle};
@@ -32,11 +33,11 @@ pub struct Emulator {
     in_interactive_mode: bool,
     run_loop_stopped: Arc<AtomicBool>, // run_state: RunState,
 
-    emulator_event_sender: Sender<EmulatorEvent>,
+    emulator_event_sender: Arc<Sender<EmulatorEvent>>,
     emulator_event_receiver: Receiver<EmulatorEvent>,
 
     periodical_tasks: Arc<Mutex<Vec<PeriodicalTask>>>, //
-    periodical_tasks_join_handles: Vec<JoinHandle<ExitCode>>,
+    periodical_tasks_join_handles: Vec<JoinHandle<()>>,
 }
 
 impl Emulator {
@@ -64,7 +65,7 @@ impl Emulator {
             in_interactive_mode: true,
             run_loop_stopped: Arc::new(AtomicBool::new(false)),
 
-            emulator_event_sender: sender,
+            emulator_event_sender: Arc::new(sender),
             emulator_event_receiver: receiver,
 
             periodical_tasks: Default::default(),
@@ -85,6 +86,23 @@ impl Emulator {
 
     pub fn add_periodical_task(&mut self, task: PeriodicalTask) {
         self.periodical_tasks.lock().unwrap().push(task);
+    }
+
+    pub fn run(&mut self) -> ExitCode {
+        self.run_loop()
+    }
+
+    pub fn loop_prepare_non_interactive(
+        &mut self,
+    ) -> Result<(), SendError<EmulatorEvent>> {
+        self.emulator_event_sender.send(EmulatorEvent::Start)
+    }
+
+    pub fn loop_prepare_interactive(
+        &mut self,
+    ) -> Result<(), SendError<EmulatorEvent>> {
+        self.emulator_event_sender
+            .send(EmulatorEvent::InteractiveMode)
     }
 
     fn spawn_hart_threads(&mut self) {
@@ -114,9 +132,10 @@ impl Emulator {
         let halted = Arc::clone(&self.halted);
         let run_loop_stopped = Arc::clone(&self.run_loop_stopped);
         let args = PeriodicalTaskArgs::new(Arc::clone(&self.soc.bus));
+        let event_sender = Arc::clone(&self.emulator_event_sender);
         self.periodical_tasks_join_handles
             .push(thread::spawn(move || {
-                let mut exit_code = ExitCode::Success;
+                // let exit_code;// = ExitCode::Success;
                 let mut need_to_stop_hooks = false;
 
                 while !halted.load(Ordering::Relaxed) {
@@ -126,9 +145,15 @@ impl Emulator {
                         match hook_action {
                             // TODO: refactor so hook actions send events to `mpsc` channel
                             HookAction::Stop(status_code) => {
-                                halted.store(true, Ordering::Relaxed);
-                                run_loop_stopped.store(true, Ordering::Relaxed);
-                                exit_code = status_code;
+                                if let Err(err) = event_sender
+                                    .send(EmulatorEvent::Stop(status_code))
+                                {
+                                    error!("event receiver died before senders extinction: {err}");
+                                    todo!("decide what to do or make sure it won't happen");
+                                }
+                                // halted.store(true, Ordering::Relaxed);
+                                // run_loop_stopped.store(true, Ordering::Relaxed);
+                                // exit_code = status_code;
                                 need_to_stop_hooks = true;
                             }
 
@@ -145,7 +170,7 @@ impl Emulator {
                     ));
                 }
 
-                exit_code
+                // exit_code
             }));
     }
 
@@ -157,66 +182,101 @@ impl Emulator {
         self.wait_until_start_trigger();
     }
 
-    pub fn run(&mut self) -> ExitCode {
-        self.run_loop()
-    }
-
     fn run_loop(&mut self) -> ExitCode {
-        let mut started = false;
-        let mut exit_code = ExitCode::Success;
+        // let mut started = false;
+        let exit_code;
 
-        // loop {
-        //     let event = self.emulator_event_receiver.recv();
-        //     if let Ok(received_event) = event {
-        //         match received_event {
-        //             EmulatorEvent::Start => {
-        //                 //
-        //             }
-        //             EmulatorEvent::Halt => {
-        //                 //
-        //             }
-        //             EmulatorEvent::Stop(status_code) => {
-        //                 //
-        //                 self.halted.store(true, Ordering::Relaxed);
-        //                 self.run_loop_stopped.store(true, Ordering::Relaxed);
-        //                 exit_code = status_code;
-        //                 // need_to_stop_hooks = true;
-        //                 break;
-        //             }
-        //         }
-        //     } else {
-        //         error!("Event receiver stopped: {}", event.unwrap_err());
-        //         exit_code = ExitCode::Error;
-        //         break;
-        //     }
-        // }
         loop {
-            if self.in_interactive_mode {
-                self.interactive_mode();
-            } else if !self.halted.load(Ordering::Relaxed) {
-                if !started {
-                    // it doesn't run actually, it takes ownership of hart
-                    // threads from SoC, puts them waitin on a barrier until
-                    // real run trigger
-                    self.spawn_hart_threads();
-
-                    // start trigger
-                    self.trigger_start();
-
-                    // start periodical tasks and hooks executor thread
-                    self.spawn_hooks_executors();
-
-                    started = true;
+            let event = self.emulator_event_receiver.recv();
+            if let Ok(received_event) = event {
+                match received_event {
+                    EmulatorEvent::Start => {
+                        self.loop_start();
+                        // todo!("remove event???")
+                        // started = true;
+                    }
+                    EmulatorEvent::Halt => {
+                        self.halted.store(true, Ordering::Relaxed);
+                        todo!();
+                    }
+                    EmulatorEvent::Stop(status_code) => {
+                        self.loop_stop();
+                        exit_code = status_code;
+                        break;
+                    }
+                    EmulatorEvent::InteractiveMode => {
+                        self.interactive_mode();
+                    }
                 }
-            } else if self.halted.load(Ordering::Relaxed) {
-                if self.run_loop_stopped.load(Ordering::Relaxed) {
-                    // info!("Emulator stopped");
-                    break;
-                }
-                todo!("handle halted state");
+            } else {
+                error!("Event receiver stopped: {}", event.unwrap_err());
+                exit_code = ExitCode::Error;
+                break;
             }
         }
+        // loop {
+        //     if self.in_interactive_mode {
+        //         self.interactive_mode();
+        //     } else if !self.halted.load(Ordering::Relaxed) {
+        //         if !started {
+        //             // it doesn't run actually, it takes ownership of hart
+        //             // threads from SoC, puts them waitin on a barrier until
+        //             // real run trigger
+        //             self.spawn_hart_threads();
 
+        //             // start trigger
+        //             self.trigger_start();
+
+        //             // start periodical tasks and hooks executor thread
+        //             self.spawn_hooks_executors();
+
+        //             started = true;
+        //         }
+        //     } else if self.halted.load(Ordering::Relaxed) {
+        //         if self.run_loop_stopped.load(Ordering::Relaxed) {
+        //             // info!("Emulator stopped");
+        //             break;
+        //         }
+        //         todo!("handle halted state");
+        //     }
+        // }
+
+        self.loop_tear_down();
+
+        // for exit_code in self.periodical_tasks_join_handles {
+
+        // }
+
+        // info!("Emulator stopped");
+        //
+        exit_code
+    }
+
+    fn loop_start(&mut self) {
+        // it doesn't run actually, it takes ownership of hart
+        // threads from SoC, puts them waitin on a barrier until
+        // real run trigger
+        self.spawn_hart_threads();
+
+        // start periodical tasks and hooks executor thread
+        self.spawn_hooks_executors();
+
+        // start trigger
+        self.trigger_start();
+    }
+
+    fn loop_stop(&mut self) {
+        self.halted.store(true, Ordering::Relaxed);
+        self.run_loop_stopped.store(true, Ordering::Relaxed);
+    }
+
+    fn interactive_mode(&self) {
+        info!("Emulator is running in interactive mode");
+        todo!("interactive mode");
+        //
+    }
+
+    fn loop_tear_down(&mut self) {
         // give ownership of harts back to SoC
         self.soc.harts = self
             .hart_join_handles
@@ -232,24 +292,10 @@ impl Emulator {
             .drain(..)
             // .iter_mut()
             .for_each(|thread| {
-                let exit_status_code = thread.join().unwrap_or_else(|err| {
+                thread.join().unwrap_or_else(|err| {
                     todo!("Is it even possible???: {err:#?}");
                 });
             });
-
-        // for exit_code in self.periodical_tasks_join_handles {
-
-        // }
-
-        // info!("Emulator stopped");
-        //
-        exit_code
-    }
-
-    fn interactive_mode(&self) {
-        info!("Emulator is running in interactive mode");
-        todo!("interactive mode");
-        //
     }
 
     // fn on_halted(&self) {

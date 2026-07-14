@@ -1,5 +1,3 @@
-// use std::process::ExitCode;
-
 use riscvmulator::{
     Bus, ExitCode, HookAction, config::Config, emulator::Emulator,
 };
@@ -26,6 +24,9 @@ pub fn run_test(test_path: &'static str) {
     let elf_data = emulator
         .load_elf(emu_config.input_elf_path().unwrap())
         .expect("failed to load ELF file");
+    emulator
+        .loop_prepare_non_interactive()
+        .expect("failed to prepare emulator to non-interactive mode");
 
     let tohost_addr = elf_data.tohost_addr;
     emulator.add_periodical_task(Box::new(move |args| {

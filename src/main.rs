@@ -1,5 +1,6 @@
 use log::error;
 
+use riscvmulator::ExitCode;
 use riscvmulator::emulator::Emulator;
 use riscvmulator::init::init;
 
@@ -23,6 +24,17 @@ fn main() {
                     std::process::exit(err.exit_code());
                 }
             }
+        }
+        if let Err(_) = emulator.loop_prepare_non_interactive() {
+            error!("failed to prepare emulator to non-interactive mode");
+            // TODO: use `err.exit_code()` when impelment it
+            std::process::exit(ExitCode::EmulatorModePrepFailure as i32);
+        }
+    } else {
+        if let Err(_) = emulator.loop_prepare_interactive() {
+            error!("failed to prepare emulator to interactive mode");
+            // TODO: use `err.exit_code()` when impelment it
+            std::process::exit(ExitCode::EmulatorModePrepFailure as i32);
         }
     }
 

@@ -22,6 +22,8 @@ pub enum ExitCode {
     // DeviceWriteError = 98,
     //
     // HookStopSignal = 99,
+    //
+    EmulatorModePrepFailure = 110,
 }
 
 // impl PartialOrd for ExitCode {
