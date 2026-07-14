@@ -2,7 +2,17 @@
 
 ## Following action
 
+- implement device framework
+    - ??
+- separate project into crates
+    - ??
+- implement extensions framework
+    - ??
 - implement M extension
+- implement A extension
+- implement F extension
+- implement D extension
+- implement C extension
 
 ## Fixes
 
