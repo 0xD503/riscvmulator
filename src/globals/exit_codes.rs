@@ -1,7 +1,4 @@
-// pub const EXIT_SUCCESS: i32 = 0;
-// pub const EXIT_ERROR: i32 = 1;
-// pub const EXIT_ERROR: i32 = 2;
-// pub const EXIT_ERROR: i32 = 3;
+// use std::process::Termination;
 
 #[derive(Debug, PartialEq)]
 pub enum ExitCode {
@@ -28,4 +25,15 @@ pub enum ExitCode {
 
 // impl PartialOrd for ExitCode {
 //     //
+// }
+
+// impl Termination for ExitCode {
+//     fn report(self) -> std::process::ExitCode {
+//         match self {
+//             ExitCode::Success => std::process::ExitCode::SUCCESS,
+//             ExitCode::Error => std::process::ExitCode::FAILURE,
+
+//             _ => std::process::ExitCode::FAILURE,
+//         }
+//     }
 // }

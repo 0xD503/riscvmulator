@@ -3,7 +3,9 @@
 ## Following action
 
 - implement device framework
-    - ??
+    - create table of devices available for use
+    - read devices from config file
+    - attach devices that are in config (check for conflicting address ranges)
 - separate project into crates
     - ??
 - implement extensions framework

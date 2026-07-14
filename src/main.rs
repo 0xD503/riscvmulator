@@ -4,7 +4,7 @@ use riscvmulator::ExitCode;
 use riscvmulator::emulator::Emulator;
 use riscvmulator::init::init;
 
-fn main() {
+fn main() -> Result<(), ExitCode> {
     let emu_config = init().unwrap_or_else(|err| {
         error!("{err}");
         std::process::exit(err.exit_code());
@@ -38,5 +38,5 @@ fn main() {
         }
     }
 
-    emulator.run();
+    emulator.run()
 }

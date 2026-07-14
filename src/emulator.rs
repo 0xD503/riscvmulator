@@ -88,7 +88,7 @@ impl Emulator {
         self.periodical_tasks.lock().unwrap().push(task);
     }
 
-    pub fn run(&mut self) -> ExitCode {
+    pub fn run(&mut self) -> Result<(), ExitCode> {
         let exit_code = self.loop_run();
         self.loop_tear_down();
 
@@ -178,7 +178,7 @@ impl Emulator {
         self.wait_until_start_trigger();
     }
 
-    fn loop_run(&mut self) -> ExitCode {
+    fn loop_run(&mut self) -> Result<(), ExitCode> {
         let exit_code;
 
         loop {
@@ -193,7 +193,11 @@ impl Emulator {
                     }
                     EmulatorEvent::Stop(status_code) => {
                         self.loop_stop();
-                        exit_code = status_code;
+                        exit_code = match status_code {
+                            ExitCode::Success => Ok(()),
+
+                            _ => Err(status_code),
+                        };
                         break;
                     }
                     EmulatorEvent::InteractiveMode => {
@@ -202,7 +206,7 @@ impl Emulator {
                 }
             } else {
                 error!("Event receiver stopped: {}", event.unwrap_err());
-                exit_code = ExitCode::Error;
+                exit_code = Err(ExitCode::Error);
                 break;
             }
         }
