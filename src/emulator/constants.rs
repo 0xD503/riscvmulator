@@ -1,6 +1,6 @@
 use crate::globals::exit_codes::ExitCode;
 
-pub const PERIODICAL_TASKS_PERIOD_MS: u64 = 200;
+pub const PERIODICAL_TASKS_PERIOD_MS: u64 = 125;
 
 #[derive(Debug)]
 pub enum EmulatorEvent {

@@ -1,7 +1,7 @@
 // TODO: disallow dead code
 #![allow(dead_code)]
 
-use std::sync::atomic::AtomicU64;
+// use std::sync::atomic::AtomicU64;
 
 use log::error;
 

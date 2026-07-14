@@ -89,7 +89,10 @@ impl Emulator {
     }
 
     pub fn run(&mut self) -> ExitCode {
-        self.run_loop()
+        let exit_code = self.loop_run();
+        self.loop_tear_down();
+
+        exit_code
     }
 
     pub fn loop_prepare_non_interactive(
@@ -119,7 +122,6 @@ impl Emulator {
                 while !halted.load(Ordering::Relaxed) {
                     hart.step(&bus);
                 }
-                // self.run();
 
                 // return hart ownership back to original owner (SoC)
                 hart
@@ -133,45 +135,39 @@ impl Emulator {
         let run_loop_stopped = Arc::clone(&self.run_loop_stopped);
         let args = PeriodicalTaskArgs::new(Arc::clone(&self.soc.bus));
         let event_sender = Arc::clone(&self.emulator_event_sender);
-        self.periodical_tasks_join_handles
-            .push(thread::spawn(move || {
-                // let exit_code;// = ExitCode::Success;
-                let mut need_to_stop_hooks = false;
 
-                while !halted.load(Ordering::Relaxed) {
-                    for task in tasks.lock().unwrap().iter_mut() {
-                        let hook_action = task(&args);
+        self.periodical_tasks_join_handles.push(thread::spawn(move || {
+            let mut need_to_stop_hooks = false;
 
-                        match hook_action {
-                            // TODO: refactor so hook actions send events to `mpsc` channel
-                            HookAction::Stop(status_code) => {
-                                if let Err(err) = event_sender
-                                    .send(EmulatorEvent::Stop(status_code))
-                                {
-                                    error!("event receiver died before senders extinction: {err}");
-                                    todo!("decide what to do or make sure it won't happen");
-                                }
-                                // halted.store(true, Ordering::Relaxed);
-                                // run_loop_stopped.store(true, Ordering::Relaxed);
-                                // exit_code = status_code;
-                                need_to_stop_hooks = true;
+            // TODO: `halted` or `run_loop_stopped`???
+            while !halted.load(Ordering::Relaxed) {
+                for task in tasks.lock().unwrap().iter_mut() {
+                    let hook_action = task(&args);
+
+                    match hook_action {
+                        HookAction::Stop(status_code) => {
+                            if let Err(err) = event_sender
+                                .send(EmulatorEvent::Stop(status_code))
+                            {
+                                error!("event receiver died before senders extinction: {err}");
+                                todo!("decide what to do or make sure it won't happen");
                             }
-
-                            HookAction::None => continue,
+                            need_to_stop_hooks = true;
                         }
-                    }
 
-                    if need_to_stop_hooks {
-                        break;
+                        HookAction::None => continue,
                     }
-
-                    thread::sleep(Duration::from_millis(
-                        PERIODICAL_TASKS_PERIOD_MS,
-                    ));
                 }
 
-                // exit_code
-            }));
+                if need_to_stop_hooks {
+                    break;
+                }
+
+                thread::sleep(Duration::from_millis(
+                    PERIODICAL_TASKS_PERIOD_MS,
+                ));
+            }
+        }));
     }
 
     fn wait_until_start_trigger(&self) {
@@ -182,8 +178,7 @@ impl Emulator {
         self.wait_until_start_trigger();
     }
 
-    fn run_loop(&mut self) -> ExitCode {
-        // let mut started = false;
+    fn loop_run(&mut self) -> ExitCode {
         let exit_code;
 
         loop {
@@ -192,12 +187,9 @@ impl Emulator {
                 match received_event {
                     EmulatorEvent::Start => {
                         self.loop_start();
-                        // todo!("remove event???")
-                        // started = true;
                     }
                     EmulatorEvent::Halt => {
-                        self.halted.store(true, Ordering::Relaxed);
-                        todo!();
+                        self.loop_halt();
                     }
                     EmulatorEvent::Stop(status_code) => {
                         self.loop_stop();
@@ -214,41 +206,9 @@ impl Emulator {
                 break;
             }
         }
-        // loop {
-        //     if self.in_interactive_mode {
-        //         self.interactive_mode();
-        //     } else if !self.halted.load(Ordering::Relaxed) {
-        //         if !started {
-        //             // it doesn't run actually, it takes ownership of hart
-        //             // threads from SoC, puts them waitin on a barrier until
-        //             // real run trigger
-        //             self.spawn_hart_threads();
 
-        //             // start trigger
-        //             self.trigger_start();
+        info!("Emulator stopped");
 
-        //             // start periodical tasks and hooks executor thread
-        //             self.spawn_hooks_executors();
-
-        //             started = true;
-        //         }
-        //     } else if self.halted.load(Ordering::Relaxed) {
-        //         if self.run_loop_stopped.load(Ordering::Relaxed) {
-        //             // info!("Emulator stopped");
-        //             break;
-        //         }
-        //         todo!("handle halted state");
-        //     }
-        // }
-
-        self.loop_tear_down();
-
-        // for exit_code in self.periodical_tasks_join_handles {
-
-        // }
-
-        // info!("Emulator stopped");
-        //
         exit_code
     }
 
@@ -263,6 +223,11 @@ impl Emulator {
 
         // start trigger
         self.trigger_start();
+    }
+
+    fn loop_halt(&mut self) {
+        self.halted.store(true, Ordering::Relaxed);
+        todo!();
     }
 
     fn loop_stop(&mut self) {
@@ -300,11 +265,6 @@ impl Emulator {
 
     // fn on_halted(&self) {
     //     todo!("unimplemented halted state handling");
-    // }
-
-    // // TODO: remove testing facilities
-    // pub fn ready_for_testing(&mut self) {
-    //     self.soc.ready_for_testing();
     // }
 }
 

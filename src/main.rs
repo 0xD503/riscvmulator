@@ -38,7 +38,5 @@ fn main() {
         }
     }
 
-    // emulator.ready_for_testing();
-
     emulator.run();
 }

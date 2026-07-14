@@ -7,9 +7,6 @@ use crate::soc::peripherals::common::device::{
     DeviceIOError, Devices, RawDevice,
 };
 
-// pub const HTIF_TO_HOST: XLen = 0x80001000;
-// // pub const HTIF_FROM_HOST: XLen = 0x80001004;
-
 pub trait Bus<AddrType> {
     // fn memory_reset(&mut self);
 
@@ -87,9 +84,6 @@ pub struct SystemBus<AddrType: Send + Sync> {
     ram_end: XLen,
 
     devices: Devices<AddrType>,
-    // // testing facilities
-    // initialized: AtomicBool,
-    // htif_to_host_addr: AtomicXLen,
 }
 
 impl<AddrType: Send + Sync> SystemBus<AddrType> {
@@ -100,17 +94,11 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
             ram_end: ram_base + ram_size as XLen,
 
             devices: Devices::new(),
-            // initialized: AtomicBool::new(false),
-            // htif_to_host_addr: AtomicXLen::new(0x8000_1000),
         }
     }
 
     pub fn reset(&self) {
         self.memory.reset();
-
-        // self.initialized.store(false, atomic::Ordering::Relaxed);
-        // self.htif_to_host_addr
-        //     .store(0x8000_1000, atomic::Ordering::Relaxed);
     }
 
     // pub fn fill_with_nops(&mut self) {
@@ -127,16 +115,6 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
     //     base_addr: AddrType,
     // ) -> usize { Byte, DoubleWord, HalfWord, Word
     //     (addr - base_addr) as usize
-    // }
-
-    // // testing facilities
-    // pub fn set_ready_for_testing(&self) {
-    //     self.initialized.store(true, atomic::Ordering::Relaxed);
-    // }
-
-    // pub fn set_htif(&self, addr: XLen) {
-    //     self.htif_to_host_addr
-    //         .store(addr, atomic::Ordering::Relaxed);
     // }
 }
 
@@ -199,18 +177,6 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
     }
 
     fn write_u8(&self, address: XLen, value: u8) -> Result<(), DeviceIOError> {
-        // // TODO: test scaffolding, isolate later
-        // if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
-        //     if self.initialized.load(atomic::Ordering::Relaxed) {
-        //         if value.to_u64() == 1 {
-        //             info!("TEST PASSED");
-        //             std::process::exit(ExitCode::Success as i32);
-        //         } else {
-        //             error!("TEST FAILED");
-        //             std::process::exit(value.to_u64() as i32);
-        //         }
-        //     }
-        // }
         if (self.ram_base..=(self.ram_end - size_of::<u8>() as XLen))
             .contains(&address)
         {
@@ -230,18 +196,6 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         address: XLen,
         value: u16,
     ) -> Result<(), DeviceIOError> {
-        // // TODO: test scaffolding, isolate later
-        // if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
-        //     if self.initialized.load(atomic::Ordering::Relaxed) {
-        //         if value.to_u64() == 1 {
-        //             info!("TEST PASSED");
-        //             std::process::exit(ExitCode::Success as i32);
-        //         } else {
-        //             error!("TEST FAILED");
-        //             std::process::exit(value.to_u64() as i32);
-        //         }
-        //     }
-        // }
         if (self.ram_base..=(self.ram_end - size_of::<u16>() as XLen))
             .contains(&address)
         {
@@ -261,18 +215,6 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         address: XLen,
         value: u32,
     ) -> Result<(), DeviceIOError> {
-        // // TODO: test scaffolding, isolate later
-        // if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
-        //     if self.initialized.load(atomic::Ordering::Relaxed) {
-        //         if value.to_u64() == 1 {
-        //             info!("TEST PASSED");
-        //             std::process::exit(ExitCode::Success as i32);
-        //         } else {
-        //             error!("TEST FAILED");
-        //             std::process::exit(value.to_u64() as i32);
-        //         }
-        //     }
-        // }
         if (self.ram_base..=(self.ram_end - size_of::<u32>() as XLen))
             .contains(&address)
         {
@@ -292,18 +234,6 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         address: XLen,
         value: u64,
     ) -> Result<(), DeviceIOError> {
-        // // TODO: test scaffolding, isolate later
-        // if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
-        //     if self.initialized.load(atomic::Ordering::Relaxed) {
-        //         if value.to_u64() == 1 {
-        //             info!("TEST PASSED");
-        //             std::process::exit(ExitCode::Success as i32);
-        //         } else {
-        //             error!("TEST FAILED");
-        //             std::process::exit(value.to_u64() as i32);
-        //         }
-        //     }
-        // }
         if (self.ram_base..=(self.ram_end - size_of::<u64>() as XLen))
             .contains(&address)
         {
@@ -337,18 +267,6 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
     //     }
     // }
     // fn write<MemValType: MemoryValue>(&self, address: XLen, value: MemValType) {
-    //     // TODO: test scaffolding, isolate later
-    //     if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
-    //         if self.initialized.load(atomic::Ordering::Relaxed) {
-    //             if value.to_u64() == 1 {
-    //                 info!("TEST PASSED");
-    //                 std::process::exit(ExitCode::Success as i32);
-    //             } else {
-    //                 error!("TEST FAILED");
-    //                 std::process::exit(value.to_u64() as i32);
-    //             }
-    //         }
-    //     }
     //     if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
     //         .contains(&address)
     //     {
@@ -434,18 +352,6 @@ impl<AddrType: Send + Sync> RawBus<XLen> for SystemBus<AddrType> {
         address: XLen,
         value: MemValType,
     ) {
-        // // TODO: test scaffolding, isolate later
-        // if address == self.htif_to_host_addr.load(atomic::Ordering::Relaxed) {
-        //     if self.initialized.load(atomic::Ordering::Relaxed) {
-        //         if value.to_u64() == 1 {
-        //             info!("TEST PASSED");
-        //             std::process::exit(ExitCode::Success as i32);
-        //         } else {
-        //             error!("TEST FAILED");
-        //             std::process::exit(value.to_u64() as i32);
-        //         }
-        //     }
-        // }
         if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
             .contains(&address)
         {
