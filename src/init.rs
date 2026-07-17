@@ -7,16 +7,27 @@ use super::config::{Config, ConfigError};
 use super::logger::init_logger;
 use super::parse_args::parse_args;
 
-pub fn init() -> Result<Config, ConfigError> {
+pub fn config_creator(
+    test_path: Option<&'static str>,
+) -> Result<Config, ConfigError> {
     let args = parse_args();
-    let config = Config::build(&args);
+    let mut config = Config::build(&args);
     init_logger(&config);
+
+    if let Some(path) = test_path {
+        if let Ok(cfg) = config.as_mut() {
+            cfg.set_input_elf_path(path.to_string());
+        }
+    }
 
     config
 }
 
-pub fn build_emulator() -> Result<Emulator, ExitCode> {
-    let emu_config = init().map_err(|err| {
+pub fn create_emulator(
+    config_initializer: fn(Option<&'static str>) -> Result<Config, ConfigError>,
+    test_path: Option<&'static str>,
+) -> Result<Emulator, ExitCode> {
+    let emu_config = config_initializer(test_path).map_err(|err| {
         error!("{err}");
         err.exit_code()
     })?;

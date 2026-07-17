@@ -29,7 +29,6 @@ RUN apt-get update && apt-get install --assume-yes \
     python3 \
     ## convenience tools
     tmux emacs-nox ripgrep fd-find fzf htop lldb \
-    ## some options for perverts
     vim gdb \
     ## clean apt cache and install some crates
     && rm -rf /var/lib/apt/lists/* \

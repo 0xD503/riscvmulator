@@ -1,5 +1,8 @@
 use riscvmulator::{
-    Bus, ExitCode, HookAction, config::Config, emulator::Emulator,
+    Bus, ExitCode, HookAction,
+    config::{Config, ConfigError},
+    emulator::Emulator,
+    init::create_emulator,
 };
 
 use crate::peripherals::htif::HTIF_SUCCESS;
@@ -12,14 +15,30 @@ fn test_teardown() {
     //
 }
 
+pub fn config_creator(
+    test_path: Option<&'static str>,
+) -> Result<Config, ConfigError> {
+    let mut emu_config = Config::default();
+    if let Some(path) = test_path {
+        emu_config.set_input_elf_path(path.to_string());
+    }
+
+    Ok(emu_config)
+}
+
 pub fn run_test(test_path: &'static str) {
     test_setup();
 
-    let mut emu_config = Config::default();
-    emu_config.set_input_elf_path(test_path.to_string());
+    let mut emulator = create_emulator(config_creator, Some(test_path))
+        .expect("failed to create emulator");
 
-    let mut emulator = Emulator::build_from_config(&emu_config)
-        .expect("failed to init emulator");
+    // assert_eq!(emulator.run(), Ok(()));
+
+    let emu_config = config_creator(Some(test_path)).unwrap();
+    // emu_config.set_input_elf_path(test_path.to_string());
+
+    // let mut emulator = Emulator::build_from_config(&emu_config)
+    //     .expect("failed to init emulator");
 
     let elf_data = emulator
         .load_elf(emu_config.input_elf_path().unwrap())
