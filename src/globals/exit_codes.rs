@@ -1,5 +1,9 @@
 // use std::process::Termination;
 
+use log::error;
+
+use crate::config::ConfigError;
+
 #[derive(Debug, PartialEq)]
 pub enum ExitCode {
     Success = 0,
@@ -37,3 +41,38 @@ pub enum ExitCode {
 //         }
 //     }
 // }
+
+impl From<ConfigError> for ExitCode {
+    fn from(config_err: ConfigError) -> Self {
+        match config_err {
+            ConfigError::Read(_) => Self::ConfigRead,
+            ConfigError::Build(_) => Self::ConfigBuild,
+            ConfigError::Validation(_) => Self::ConfigValidation,
+        }
+    }
+}
+
+impl From<i32> for ExitCode {
+    fn from(exit_code: i32) -> Self {
+        match exit_code {
+            0 => Self::Success,
+            1 => Self::Error,
+
+            90 => Self::ConfigRead,
+            91 => Self::ConfigBuild,
+            92 => Self::ConfigValidation,
+
+            93 => Self::ElfRead,
+            94 => Self::ElfParseHeader,
+            95 => Self::SegmentsLoad,
+            96 => Self::StringTable,
+
+            110 => Self::EmulatorModePrepFailure,
+
+            _ => {
+                error!("Unknown exit code: {exit_code}");
+                unreachable!("Unknown exit code: {exit_code}");
+            }
+        }
+    }
+}
