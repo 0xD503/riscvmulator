@@ -10,7 +10,7 @@ use super::registers::{RegisterFileInterface, RegisterInterface};
 
 use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, SignedImmediate, SignedXLen,
-    SignedXLen32, UnsignedXLen, Word, XLen, XLen32,
+    SignedXLen32, UnsignedImmediate, UnsignedXLen, Word, XLen, XLen32,
 };
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
@@ -416,13 +416,19 @@ impl Executor {
     fn instruction_sub(&mut self, decoder: &Decoder) {
         trace!("Executing SUB...");
 
-        self.result = decoder.source_register_1 - decoder.source_register_2;
+        self.result = XLen::wrapping_sub(
+            decoder.source_register_1,
+            decoder.source_register_2,
+        );
     }
 
     fn instruction_sll(&mut self, decoder: &Decoder) {
         trace!("Executing SLL...");
 
-        self.result = decoder.source_register_1 << decoder.source_register_2;
+        self.result = XLen::wrapping_shl(
+            decoder.source_register_1,
+            decoder.source_register_2 as UnsignedImmediate,
+        );
     }
 
     fn instruction_slt(&mut self, decoder: &Decoder) {
@@ -456,7 +462,10 @@ impl Executor {
     fn instruction_srl(&mut self, decoder: &Decoder) {
         trace!("Executing SRL...");
 
-        self.result = decoder.source_register_1 >> decoder.source_register_2;
+        self.result = XLen::wrapping_shr(
+            decoder.source_register_1,
+            decoder.source_register_2 as UnsignedImmediate,
+        );
     }
 
     fn instruction_sra(&mut self, decoder: &Decoder) {
@@ -702,8 +711,10 @@ impl Executor {
     fn instruction_sub_word(&mut self, decoder: &Decoder) {
         trace!("Executing SUBW...");
 
-        let result32 = decoder.source_register_1 as SignedXLen32
-            - decoder.source_register_2 as SignedXLen32;
+        let result32 = SignedXLen32::wrapping_sub(
+            decoder.source_register_1 as SignedXLen32,
+            decoder.source_register_2 as SignedXLen32,
+        );
         self.result = result32 as SignedXLen as XLen;
     }
 
