@@ -16,6 +16,7 @@ use std::{error::Error, fmt::Formatter};
 use log::error;
 use log::info;
 
+use crate::BusAddrType;
 use crate::Device;
 use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
 use crate::globals::exit_codes::ExitCode;
@@ -45,7 +46,7 @@ pub struct Emulator {
     input_file: Option<String>,
 
     devices_available_for_use:
-        HashMap<String, fn(usize, usize, String) -> Box<dyn Device>>,
+        HashMap<String, fn(BusAddrType, usize, String) -> Box<dyn Device>>,
 }
 
 impl Emulator {
