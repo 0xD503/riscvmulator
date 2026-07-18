@@ -15,7 +15,7 @@ pub struct HTIF {
 }
 
 impl HTIF {
-    pub fn new(
+    fn new(
         base_addr: BusAddrType,
         size: usize,
         dev_type: String,

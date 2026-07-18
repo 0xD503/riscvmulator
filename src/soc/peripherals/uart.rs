@@ -9,7 +9,7 @@ pub struct UART {
 }
 
 impl UART {
-    pub fn new(
+    fn new(
         base_addr: BusAddrType,
         size: usize,
         dev_type: String,
@@ -19,6 +19,8 @@ impl UART {
             data: DeviceData::new(base_addr, size, dev_type, name),
         }
     }
+
+    //
 }
 
 impl Device for UART {

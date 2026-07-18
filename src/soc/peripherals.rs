@@ -1,4 +1,5 @@
-mod clint;
 pub mod common;
+pub mod uart;
+
+mod clint;
 mod plic;
-mod uart;

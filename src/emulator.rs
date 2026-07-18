@@ -22,6 +22,8 @@ use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
 use crate::globals::exit_codes::ExitCode;
 use crate::hooks::{HookAction, PeriodicalTask, PeriodicalTaskArgs};
 use crate::soc::hart::Hart;
+use crate::soc::peripherals::common::constants::DEV_TYPE_UART;
+use crate::soc::peripherals::uart::UART;
 use crate::{config::Config, soc::SoC};
 
 use self::elf_loader::{ElfData, ElfError, load_elf};
@@ -45,8 +47,10 @@ pub struct Emulator {
 
     input_file: Option<String>,
 
-    devices_available_for_use:
-        HashMap<String, fn(BusAddrType, usize, String) -> Box<dyn Device>>,
+    devices_available_for_use: HashMap<
+        String,
+        fn(BusAddrType, usize, String, String) -> Box<dyn Device>,
+    >,
 }
 
 impl Emulator {
@@ -132,7 +136,8 @@ impl Emulator {
     }
 
     fn devices_fill_available(&mut self) {
-        //
+        // self.devices_available_for_use
+        //     .insert(DEV_TYPE_UART.to_string(), UART::new);
     }
 
     fn spawn_hart_threads(&mut self) {
