@@ -145,7 +145,7 @@ impl Default for LoggingCfg {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct EmulatorCfg {
-    pub input_elf_path: Option<String>,
+    pub input_file: Option<String>,
     throttle_frequency: u64,
     pub(crate) logging: LoggingCfg,
 }
@@ -153,7 +153,7 @@ pub struct EmulatorCfg {
 impl Default for EmulatorCfg {
     fn default() -> Self {
         Self {
-            input_elf_path: None,
+            input_file: None,
             throttle_frequency: DEFAULT_THROTTLE_FREQ,
             logging: Default::default(),
         }
@@ -300,12 +300,12 @@ impl Config {
         // TODO: autoresolves
     }
 
-    pub fn input_elf_path(&self) -> Option<String> {
-        self.emulator.input_elf_path.clone()
+    pub fn input_file(&self) -> Option<String> {
+        self.emulator.input_file.clone()
     }
 
     pub fn set_input_elf_path(&mut self, path: String) {
-        self.emulator.input_elf_path = Some(path);
+        self.emulator.input_file = Some(path);
     }
 
     // pub fn set_config_file_path(&mut self, path: String) {

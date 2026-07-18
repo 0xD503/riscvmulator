@@ -1,9 +1,4 @@
-use riscvmulator::{
-    Bus, ExitCode, HookAction,
-    config::{Config, ConfigError},
-    emulator::Emulator,
-    init::create_emulator,
-};
+use riscvmulator::{Bus, ExitCode, HookAction, init::emulator_create};
 
 use crate::peripherals::htif::HTIF_SUCCESS;
 
@@ -15,33 +10,21 @@ fn test_teardown() {
     //
 }
 
-pub fn config_creator(
-    test_path: Option<&'static str>,
-) -> Result<Config, ConfigError> {
-    let mut emu_config = Config::default();
-    if let Some(path) = test_path {
-        emu_config.set_input_elf_path(path.to_string());
-    }
-
-    Ok(emu_config)
-}
-
 pub fn run_test(test_path: &'static str) {
     test_setup();
 
-    let mut emulator = create_emulator(config_creator, Some(test_path))
-        .expect("failed to create emulator");
-
-    // assert_eq!(emulator.run(), Ok(()));
-
-    let emu_config = config_creator(Some(test_path)).unwrap();
-    // emu_config.set_input_elf_path(test_path.to_string());
-
-    // let mut emulator = Emulator::build_from_config(&emu_config)
-    //     .expect("failed to init emulator");
+    let custom_config = false;
+    let initialize_logger = false;
+    let mut emulator =
+        emulator_create(custom_config, initialize_logger, Some(test_path))
+            .expect("failed to create emulator");
 
     let elf_data = emulator
-        .load_elf(emu_config.input_elf_path().unwrap())
+        .load_elf(
+            emulator
+                .input_file()
+                .expect("expected input ELF file as an integration test"),
+        )
         .expect("failed to load ELF file");
     emulator
         .loop_prepare_non_interactive()

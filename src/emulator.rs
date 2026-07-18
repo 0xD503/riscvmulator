@@ -38,6 +38,8 @@ pub struct Emulator {
 
     periodical_tasks: Arc<Mutex<Vec<PeriodicalTask>>>, //
     periodical_tasks_join_handles: Vec<JoinHandle<()>>,
+
+    input_file: Option<String>,
 }
 
 impl Emulator {
@@ -70,6 +72,8 @@ impl Emulator {
 
             periodical_tasks: Default::default(),
             periodical_tasks_join_handles: Vec::with_capacity(10),
+
+            input_file: config.input_file(),
         })
     }
 
@@ -106,6 +110,10 @@ impl Emulator {
     ) -> Result<(), SendError<EmulatorEvent>> {
         self.emulator_event_sender
             .send(EmulatorEvent::InteractiveMode)
+    }
+
+    pub fn input_file(&self) -> Option<String> {
+        self.input_file.clone()
     }
 
     fn spawn_hart_threads(&mut self) {
