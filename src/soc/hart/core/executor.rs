@@ -255,43 +255,46 @@ impl Executor {
         );
     }
 
+    // use wrapping operation in order to allow overruns
+    fn update_memory_address(&mut self, decoder: &Decoder) {
+        self.memory_address = XLen::wrapping_add(
+            decoder.source_register_1,
+            decoder.immediate.sign_extend(),
+        );
+    }
+
     fn instruction_load_byte(&mut self, decoder: &Decoder) {
         trace!("Executing LB...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueType::BYTE;
     }
 
     fn instruction_load_half(&mut self, decoder: &Decoder) {
         trace!("Executing LH...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueType::HALF_WORD;
     }
 
     fn instruction_load_word(&mut self, decoder: &Decoder) {
         trace!("Executing LW...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueType::WORD;
     }
 
     fn instruction_load_byte_unsigned(&mut self, decoder: &Decoder) {
         trace!("Executing LBU...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueType::UNSIGNED_BYTE;
     }
 
     fn instruction_load_half_unsigned(&mut self, decoder: &Decoder) {
         trace!("Executing LHU...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueType::UNSIGNED_HALF_WORD;
     }
 
@@ -373,15 +376,14 @@ impl Executor {
     fn instruction_auipc(&mut self, decoder: &Decoder, pc: &Register) {
         trace!("Executing AUIPC...");
 
-        self.result = pc.read()
-            + decoder.immediate as SignedImmediate as SignedXLen as XLen;
+        self.result =
+            XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
     }
 
     fn instruction_store_byte(&mut self, decoder: &Decoder) {
         trace!("Executing SB...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.value_to_store_u8 = decoder.source_register_2 as Byte;
         self.memory_value_type = MemoryValueType::BYTE;
     }
@@ -389,8 +391,7 @@ impl Executor {
     fn instruction_store_half_word(&mut self, decoder: &Decoder) {
         trace!("Executing SH...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.value_to_store_u16 = decoder.source_register_2 as HalfWord;
         self.memory_value_type = MemoryValueType::HALF_WORD;
     }
@@ -398,11 +399,7 @@ impl Executor {
     fn instruction_store_word(&mut self, decoder: &Decoder) {
         trace!("Executing SW...");
 
-        // use wrapping operation in order to allow overruns
-        self.memory_address = XLen::wrapping_add(
-            decoder.source_register_1,
-            decoder.immediate.sign_extend(),
-        );
+        self.update_memory_address(decoder);
         self.value_to_store_u32 = decoder.source_register_2 as Word;
         self.memory_value_type = MemoryValueType::WORD;
     }
@@ -410,7 +407,10 @@ impl Executor {
     fn instruction_add(&mut self, decoder: &Decoder) {
         trace!("Executing ADD...");
 
-        self.result = decoder.source_register_1 + decoder.source_register_2;
+        self.result = XLen::wrapping_add(
+            decoder.source_register_1,
+            decoder.source_register_2,
+        );
     }
 
     fn instruction_sub(&mut self, decoder: &Decoder) {
@@ -489,8 +489,8 @@ impl Executor {
         trace!("Executing BEQ...");
 
         if decoder.source_register_1 == decoder.source_register_2 {
-            self.branch_target_address = pc.read()
-                + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+            self.branch_target_address =
+                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -525,8 +525,8 @@ impl Executor {
         if (decoder.source_register_1 as SignedXLen)
             < (decoder.source_register_2 as SignedXLen)
         {
-            self.branch_target_address = pc.read()
-                + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+            self.branch_target_address =
+                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -541,8 +541,8 @@ impl Executor {
         if (decoder.source_register_1 as SignedXLen)
             >= (decoder.source_register_2 as SignedXLen)
         {
-            self.branch_target_address = pc.read()
-                + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+            self.branch_target_address =
+                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -557,8 +557,8 @@ impl Executor {
         if (decoder.source_register_1 as UnsignedXLen)
             < (decoder.source_register_2 as UnsignedXLen)
         {
-            self.branch_target_address = pc.read()
-                + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+            self.branch_target_address =
+                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -573,8 +573,8 @@ impl Executor {
         if (decoder.source_register_1 as UnsignedXLen)
             >= (decoder.source_register_2 as UnsignedXLen)
         {
-            self.branch_target_address = pc.read()
-                + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+            self.branch_target_address =
+                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
         // TODO: generate exception if address is misaligned
@@ -591,10 +591,12 @@ impl Executor {
     ) {
         trace!("Executing JALR...");
 
-        self.jump_target_address = (decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen))
-            & !(XLen::MAX & 0x01);
-        self.result = pc.read() + fetch_unit.instruction_size as XLen;
+        self.jump_target_address = (XLen::wrapping_add(
+            decoder.source_register_1,
+            decoder.immediate.sign_extend(),
+        )) & !(XLen::MAX & 0x01);
+        self.result =
+            XLen::wrapping_add(pc.read(), fetch_unit.instruction_size as XLen);
         // TODO: generate exception if address is misaligned
         error!(
             "TODO: unimplemented: generate exception if address is misaligned"
@@ -621,16 +623,14 @@ impl Executor {
     fn instruction_load_double_word(&mut self, decoder: &Decoder) {
         trace!("Executing LD...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueType::DOUBLE_WORD;
     }
 
     fn instruction_load_word_unsigned(&mut self, decoder: &Decoder) {
         trace!("Executing LWU...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueType::UNSIGNED_WORD;
     }
 
@@ -684,8 +684,7 @@ impl Executor {
     fn instruction_store_double_word(&mut self, decoder: &Decoder) {
         trace!("Executing SD...");
 
-        self.memory_address = decoder.source_register_1
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.update_memory_address(decoder);
         self.value_to_store_u64 = decoder.source_register_2;
         self.memory_value_type = MemoryValueType::DOUBLE_WORD;
     }
@@ -693,8 +692,10 @@ impl Executor {
     fn instruction_add_word(&mut self, decoder: &Decoder) {
         trace!("Executing ADDW...");
 
-        let result32 = decoder.source_register_1 as SignedXLen32
-            + decoder.source_register_2 as SignedXLen32;
+        let result32 = SignedXLen32::wrapping_add(
+            decoder.source_register_1 as SignedXLen32,
+            decoder.source_register_2 as SignedXLen32,
+        );
         self.result = result32 as SignedXLen as XLen;
     }
 
