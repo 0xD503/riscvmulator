@@ -8,6 +8,7 @@ fn main() -> Result<(), ExitCode> {
     let test_path = None;
     let mut emulator =
         emulator_create(custom_config, initialize_logger, test_path)?;
+
     emulator_prepare_loop(&mut emulator)?;
 
     emulator.run()

@@ -10,7 +10,7 @@ use log::error;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::globals::exit_codes::ExitCode;
 
@@ -21,7 +21,7 @@ pub struct ElfData {
 }
 
 pub(crate) fn load_elf(
-    file_path: PathBuf,
+    file_path: &Path,
     soc: &mut SoC,
 ) -> Result<ElfData, ElfError> {
     let content = fs::read(file_path).map_err(|err| match err {
@@ -95,6 +95,7 @@ pub enum ElfError {
     ParseHeader(elf::ParseError),
     SegmentsLoad,
     StringTable(elf::ParseError),
+    NoInputFileProvided,
 }
 
 impl ElfError {
@@ -104,6 +105,9 @@ impl ElfError {
             ElfError::ParseHeader(_) => ExitCode::ElfParseHeader as i32,
             ElfError::SegmentsLoad => ExitCode::SegmentsLoad as i32,
             ElfError::StringTable(_) => ExitCode::StringTable as i32,
+            ElfError::NoInputFileProvided => {
+                ExitCode::NoInputFileProvided as i32
+            }
         }
     }
 }
@@ -125,6 +129,9 @@ impl Display for ElfError {
             }
             ElfError::StringTable(err) => {
                 write!(formatter, "{err}")
+            }
+            ElfError::NoInputFileProvided => {
+                write!(formatter, "no input file was provided")
             }
         }
     }

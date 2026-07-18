@@ -1,4 +1,7 @@
-use riscvmulator::{Bus, ExitCode, HookAction, init::emulator_create};
+use riscvmulator::{
+    Bus, ExitCode, HookAction, PeriodicalTaskArgs,
+    init::{emulator_create, emulator_prepare_loop},
+};
 
 use crate::peripherals::htif::HTIF_SUCCESS;
 
@@ -19,19 +22,13 @@ pub fn run_test(test_path: &'static str) {
         emulator_create(custom_config, initialize_logger, Some(test_path))
             .expect("failed to create emulator");
 
-    let elf_data = emulator
-        .load_elf(
-            emulator
-                .input_file()
-                .expect("expected input ELF file as an integration test"),
-        )
-        .expect("failed to load ELF file");
-    emulator
-        .loop_prepare_non_interactive()
-        .expect("failed to prepare emulator to non-interactive mode");
+    let elf_data = emulator_prepare_loop(&mut emulator)
+        .expect("expected successful ELF load/read")
+        .expect("expected non-interactive loop");
 
+    // add HTIF memory address spy/watcher
     let tohost_addr = elf_data.tohost_addr;
-    emulator.add_periodical_task(Box::new(move |args| {
+    let htif_spy = move |args: &PeriodicalTaskArgs| {
         match args.bus.read_u32(tohost_addr) {
             Ok(HTIF_SUCCESS) => HookAction::Stop(ExitCode::Success),
             // riscv-tests HTIF returns number of failed test case on failure
@@ -39,7 +36,8 @@ pub fn run_test(test_path: &'static str) {
 
             _ => HookAction::None,
         }
-    }));
+    };
+    emulator.add_periodical_task(Box::new(htif_spy));
 
     assert_eq!(emulator.run(), Ok(()));
 

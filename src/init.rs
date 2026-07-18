@@ -6,6 +6,7 @@ use crate::emulator::Emulator;
 use super::config::{Config, ConfigError};
 use super::logger::init_logger;
 use super::parse_args::parse_args;
+use crate::emulator::elf_loader::ElfData;
 
 fn config_creator(
     custom_config: bool,
@@ -24,13 +25,9 @@ fn config_creator(
         init_logger(&config);
     }
 
-    dbg!("AHAHA1111");
     if let Some(path) = test_path {
-        dbg!("AHAHA222");
         if let Ok(cfg) = config.as_mut() {
-            dbg!("AHAHA3333");
             cfg.set_input_elf_path(path.to_string());
-            dbg!("AHAHA4444");
         }
     }
 
@@ -58,15 +55,21 @@ pub fn emulator_create(
     Ok(emulator)
 }
 
-pub fn emulator_prepare_loop(emulator: &mut Emulator) -> Result<(), ExitCode> {
+pub fn emulator_prepare_loop(
+    emulator: &mut Emulator,
+) -> Result<Option<ElfData>, ExitCode> {
+    let mut elf_data = None;
     if let Some(elf_path) = emulator.input_file() {
-        if let Err(err) = emulator.load_elf(elf_path) {
+        let elf_load_result = emulator.load_elf();
+        if let Err(err) = elf_load_result {
             match err {
                 _ => {
                     error!("{err}");
                     return Err(From::from(err.exit_code()));
                 }
             }
+        } else if let Ok(data) = elf_load_result {
+            elf_data = Some(data);
         }
         if let Err(_) = emulator.loop_prepare_non_interactive() {
             error!("failed to prepare emulator to non-interactive mode");
@@ -81,5 +84,5 @@ pub fn emulator_prepare_loop(emulator: &mut Emulator) -> Result<(), ExitCode> {
         }
     }
 
-    Ok(())
+    Ok(elf_data)
 }

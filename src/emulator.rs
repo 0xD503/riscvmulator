@@ -1,7 +1,8 @@
 mod constants;
-mod elf_loader;
+pub(crate) mod elf_loader;
 
 use std::fmt::Display;
+use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::SendError;
@@ -77,8 +78,11 @@ impl Emulator {
         })
     }
 
-    pub fn load_elf(&mut self, path: String) -> Result<ElfData, ElfError> {
-        let load_result = load_elf(path.into(), &mut self.soc);
+    pub fn load_elf(&mut self) -> Result<ElfData, ElfError> {
+        let Some(path) = self.input_file.as_deref() else {
+            return Err(ElfError::NoInputFileProvided);
+        };
+        let load_result = load_elf(Path::new(path), &mut self.soc);
         if load_result.is_ok() {
             self.in_interactive_mode = false;
             self.halted.store(false, Ordering::Relaxed);

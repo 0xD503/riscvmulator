@@ -18,8 +18,8 @@ pub enum ExitCode {
     ElfParseHeader = 94,
     SegmentsLoad = 95,
     StringTable = 96,
-    //
-    // DeviceReadError = 97,
+
+    NoInputFileProvided = 97,
     // DeviceWriteError = 98,
     //
     // HookStopSignal = 99,
