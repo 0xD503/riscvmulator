@@ -330,8 +330,7 @@ impl Executor {
         trace!("Executing SLTIU...");
 
         self.result = if (decoder.source_register_1 as UnsignedXLen)
-            < (decoder.immediate as SignedImmediate as SignedXLen
-                as UnsignedXLen)
+            < decoder.immediate.sign_extend()
         {
             1
         } else {
@@ -342,8 +341,8 @@ impl Executor {
     fn instruction_xori(&mut self, decoder: &Decoder) {
         trace!("Executing XORI...");
 
-        self.result = decoder.source_register_1
-            ^ decoder.immediate as SignedImmediate as SignedXLen as XLen;
+        self.result =
+            decoder.source_register_1 ^ decoder.immediate.sign_extend();
     }
 
     fn instruction_srli(&mut self, decoder: &Decoder) {
@@ -362,15 +361,15 @@ impl Executor {
     fn instruction_ori(&mut self, decoder: &Decoder) {
         trace!("Executing ORI...");
 
-        self.result = decoder.source_register_1
-            | decoder.immediate as SignedImmediate as SignedXLen as XLen;
+        self.result =
+            decoder.source_register_1 | decoder.immediate.sign_extend();
     }
 
     fn instruction_andi(&mut self, decoder: &Decoder) {
         trace!("Executing ANDI...");
 
-        self.result = decoder.source_register_1
-            & decoder.immediate as SignedImmediate as SignedXLen as XLen;
+        self.result =
+            decoder.source_register_1 & decoder.immediate.sign_extend();
     }
 
     fn instruction_auipc(&mut self, decoder: &Decoder, pc: &Register) {
@@ -492,8 +491,7 @@ impl Executor {
     fn instruction_lui(&mut self, decoder: &Decoder) {
         trace!("Executing LUI...");
 
-        self.result =
-            decoder.immediate as SignedImmediate as SignedXLen as XLen;
+        self.result = decoder.immediate.sign_extend();
     }
 
     fn instruction_beq(&mut self, decoder: &Decoder, pc: &Register) {
@@ -664,7 +662,7 @@ impl Executor {
 
         let result32 =
             (decoder.source_register_1 as XLen32) << decoder.immediate;
-        self.result = result32 as SignedXLen32 as SignedXLen as XLen;
+        self.result = result32.sign_extend();
     }
 
     fn instruction_shift_right_logical_immediate_word(
@@ -675,7 +673,7 @@ impl Executor {
 
         let result32 =
             (decoder.source_register_1 as XLen32) >> decoder.immediate;
-        self.result = result32 as SignedXLen32 as SignedXLen as XLen;
+        self.result = result32.sign_extend();
     }
 
     fn instruction_shift_right_arith_immediate_word(
@@ -690,8 +688,8 @@ impl Executor {
         let result32 = SignedXLen32::wrapping_shr(
             decoder.source_register_1 as SignedXLen32,
             decoder.immediate,
-        );
-        self.result = result32 as SignedXLen as XLen;
+        ) as XLen32;
+        self.result = result32.sign_extend();
     }
 
     fn instruction_store_double_word(&mut self, decoder: &Decoder) {
@@ -708,8 +706,8 @@ impl Executor {
         let result32 = SignedXLen32::wrapping_add(
             decoder.source_register_1 as SignedXLen32,
             decoder.source_register_2 as SignedXLen32,
-        );
-        self.result = result32 as SignedXLen as XLen;
+        ) as XLen32;
+        self.result = result32.sign_extend();
     }
 
     fn instruction_sub_word(&mut self, decoder: &Decoder) {
@@ -718,22 +716,22 @@ impl Executor {
         let result32 = SignedXLen32::wrapping_sub(
             decoder.source_register_1 as SignedXLen32,
             decoder.source_register_2 as SignedXLen32,
-        );
-        self.result = result32 as SignedXLen as XLen;
+        ) as XLen32;
+        self.result = result32.sign_extend();
     }
 
     fn instruction_shift_left_logical_word(&mut self, decoder: &Decoder) {
         trace!("Executing SLLW...");
 
         let result32 = (decoder.source_register_1 as XLen32) << decoder.shamt;
-        self.result = result32 as SignedXLen32 as SignedXLen as XLen;
+        self.result = result32.sign_extend();
     }
 
     fn instruction_shift_right_logical_word(&mut self, decoder: &Decoder) {
         trace!("Executing SRLW...");
 
         let result32 = (decoder.source_register_1 as XLen32) >> decoder.shamt;
-        self.result = result32 as SignedXLen32 as SignedXLen as XLen;
+        self.result = result32.sign_extend();
     }
 
     fn instruction_shift_right_arith_word(&mut self, decoder: &Decoder) {
@@ -742,9 +740,9 @@ impl Executor {
             decoder.source_register_1 as SignedXLen32, decoder.shamt
         );
 
-        let result32 =
-            (decoder.source_register_1 as SignedXLen32) >> decoder.shamt;
-        self.result = result32 as SignedXLen as XLen;
+        let result32 = ((decoder.source_register_1 as SignedXLen32)
+            >> decoder.shamt) as XLen32;
+        self.result = result32.sign_extend();
     }
 
     fn instruction_fence(&mut self, decoder: &Decoder) {

@@ -40,6 +40,9 @@ impl<AddrType> Devices<AddrType> {
             todo!("handle already existing device error");
         }
         // TODO: make some checks for interleaving/existing ranges
+        // TODO
+
+        // add device to devices list
         dev_tree.insert(base_addr, device);
     }
 

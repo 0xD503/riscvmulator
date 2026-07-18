@@ -21,6 +21,7 @@
 - [ ] add UTs
 - [ ] add benchmarks (compare with Spike)
 - [ ] add docs
+- [ ] use `sign_extend()` method instead of casting dupes
 - [ ] add/fix project build profiles: `debug`, `release`, `release with debinfo`, `release size optimized`, etc
 - [ ] profile bottlenecks
 - [ ] get rid of warnings
