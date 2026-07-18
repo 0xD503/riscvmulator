@@ -471,8 +471,10 @@ impl Executor {
     fn instruction_sra(&mut self, decoder: &Decoder) {
         trace!("Executing SRA...");
 
-        self.result = ((decoder.source_register_1 as SignedXLen)
-            >> decoder.source_register_2) as XLen;
+        self.result = SignedXLen::wrapping_shr(
+            decoder.source_register_1 as SignedXLen,
+            decoder.source_register_2 as UnsignedImmediate,
+        ) as XLen;
     }
 
     fn instruction_or(&mut self, decoder: &Decoder) {
@@ -685,8 +687,10 @@ impl Executor {
             decoder.source_register_1 as SignedXLen32, decoder.immediate
         );
 
-        let result32 =
-            (decoder.source_register_1 as SignedXLen32) >> decoder.immediate;
+        let result32 = SignedXLen32::wrapping_shr(
+            decoder.source_register_1 as SignedXLen32,
+            decoder.immediate,
+        );
         self.result = result32 as SignedXLen as XLen;
     }
 
