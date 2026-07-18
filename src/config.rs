@@ -251,10 +251,10 @@ impl Config {
             );
         }
         for dev in &self.soc.bus.devices {
-            if dev.size_bytes == 0 {
+            if dev.size_bytes < size_of::<XLen>() {
                 let dev_name = &dev.name;
                 errors_list.push(format!(
-                    "{dev_name} device space size should be > 0"
+                    "{dev_name} device space size should be >= size of XLen"
                 ));
             }
             if let Some(irq_line) = &dev.irq_line {

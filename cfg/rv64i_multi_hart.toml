@@ -29,7 +29,8 @@ base_addr = 0x8000_0000
 size_bytes = 262144    ## 256 KB
 
 [[soc.bus.devices]]
-name = "uart"
+dev_type = "uart"
+name = "uart0"
 base_addr = 0x1000_0000
 size_bytes = 100
 irq_line = 10

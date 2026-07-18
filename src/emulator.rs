@@ -1,6 +1,7 @@
 mod constants;
 pub(crate) mod elf_loader;
 
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
@@ -15,6 +16,7 @@ use std::{error::Error, fmt::Formatter};
 use log::error;
 use log::info;
 
+use crate::Device;
 use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
 use crate::globals::exit_codes::ExitCode;
 use crate::hooks::{HookAction, PeriodicalTask, PeriodicalTaskArgs};
@@ -41,6 +43,9 @@ pub struct Emulator {
     periodical_tasks_join_handles: Vec<JoinHandle<()>>,
 
     input_file: Option<String>,
+
+    devices_available_for_use:
+        HashMap<String, fn(usize, usize, String) -> Box<dyn Device>>,
 }
 
 impl Emulator {
@@ -53,7 +58,7 @@ impl Emulator {
 
         let (sender, receiver) = mpsc::channel::<EmulatorEvent>();
 
-        Ok(Emulator {
+        let mut emulator = Emulator {
             soc: buildable_soc,
 
             hart_join_handles: Vec::with_capacity(
@@ -75,7 +80,36 @@ impl Emulator {
             periodical_tasks_join_handles: Vec::with_capacity(10),
 
             input_file: config.input_file(),
-        })
+
+            devices_available_for_use: Default::default(),
+        };
+        emulator.devices_fill_available();
+
+        Ok(emulator)
+    }
+
+    pub fn loop_prepare_non_interactive(
+        &mut self,
+    ) -> Result<(), SendError<EmulatorEvent>> {
+        self.emulator_event_sender.send(EmulatorEvent::Start)
+    }
+
+    pub fn loop_prepare_interactive(
+        &mut self,
+    ) -> Result<(), SendError<EmulatorEvent>> {
+        self.emulator_event_sender
+            .send(EmulatorEvent::InteractiveMode)
+    }
+
+    pub fn run(&mut self) -> Result<(), ExitCode> {
+        let exit_code = self.loop_run();
+        self.loop_tear_down();
+
+        exit_code
+    }
+
+    pub fn add_periodical_task(&mut self, task: PeriodicalTask) {
+        self.periodical_tasks.lock().unwrap().push(task);
     }
 
     pub fn load_elf(&mut self) -> Result<ElfData, ElfError> {
@@ -92,32 +126,12 @@ impl Emulator {
         load_result
     }
 
-    pub fn add_periodical_task(&mut self, task: PeriodicalTask) {
-        self.periodical_tasks.lock().unwrap().push(task);
-    }
-
-    pub fn run(&mut self) -> Result<(), ExitCode> {
-        let exit_code = self.loop_run();
-        self.loop_tear_down();
-
-        exit_code
-    }
-
-    pub fn loop_prepare_non_interactive(
-        &mut self,
-    ) -> Result<(), SendError<EmulatorEvent>> {
-        self.emulator_event_sender.send(EmulatorEvent::Start)
-    }
-
-    pub fn loop_prepare_interactive(
-        &mut self,
-    ) -> Result<(), SendError<EmulatorEvent>> {
-        self.emulator_event_sender
-            .send(EmulatorEvent::InteractiveMode)
-    }
-
     pub fn input_file(&self) -> Option<String> {
         self.input_file.clone()
+    }
+
+    fn devices_fill_available(&mut self) {
+        //
     }
 
     fn spawn_hart_threads(&mut self) {

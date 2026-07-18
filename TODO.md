@@ -3,8 +3,11 @@
 ## Following action
 
 - implement device framework
-    - create table of devices available for use
+    - create hash table of devices available for use (<dev_type, dev_ctor>)
+    - initialze table of available devices
+    - create `device::build()` that takes base addr/size/name and returns trait object
     - read devices from config file
+    - dispatch/build/attach devices from config
     - attach devices that are in config (check for conflicting address ranges)
 - separate project into crates
     - ??
