@@ -46,8 +46,7 @@
 - [ ] XTAL frequency
 - [ ] throttle frequency
 - [ ] generate exception if address is misaligned
-- [ ] HALT into interactive mode by `Ctrl+C`
-- [ ] add emulator throtling
+- [ ] HALT/stop into interactive mode by `Ctrl+C`/double `Ctrl+C`
 - [ ] implement `EBREAK`, add debug mode
 - [ ] add fuzzer
 - [ ] customize log string: add core num, PC value, cycle count

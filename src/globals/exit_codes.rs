@@ -1,4 +1,4 @@
-// use std::process::Termination;
+use std::process::Termination;
 
 use log::error;
 
@@ -31,16 +31,16 @@ pub enum ExitCode {
 //     //
 // }
 
-// impl Termination for ExitCode {
-//     fn report(self) -> std::process::ExitCode {
-//         match self {
-//             ExitCode::Success => std::process::ExitCode::SUCCESS,
-//             ExitCode::Error => std::process::ExitCode::FAILURE,
+impl Termination for ExitCode {
+    fn report(self) -> std::process::ExitCode {
+        match self {
+            ExitCode::Success => std::process::ExitCode::SUCCESS,
+            ExitCode::Error => std::process::ExitCode::FAILURE,
 
-//             _ => std::process::ExitCode::FAILURE,
-//         }
-//     }
-// }
+            _ => std::process::ExitCode::FAILURE,
+        }
+    }
+}
 
 impl From<ConfigError> for ExitCode {
     fn from(config_err: ConfigError) -> Self {
@@ -66,6 +66,8 @@ impl From<i32> for ExitCode {
             94 => Self::ElfParseHeader,
             95 => Self::SegmentsLoad,
             96 => Self::StringTable,
+
+            97 => Self::NoInputFileProvided,
 
             110 => Self::EmulatorModePrepFailure,
 

@@ -59,7 +59,7 @@ pub fn emulator_prepare_loop(
     emulator: &mut Emulator,
 ) -> Result<Option<ElfData>, ExitCode> {
     let mut elf_data = None;
-    if let Some(elf_path) = emulator.input_file() {
+    if let Some(_) = emulator.input_file() {
         let elf_load_result = emulator.load_elf();
         if let Err(err) = elf_load_result {
             match err {

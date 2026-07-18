@@ -609,8 +609,8 @@ impl Executor {
     ) {
         trace!("Executing JAL...");
 
-        self.jump_target_address = pc.read()
-            + (decoder.immediate as SignedImmediate as SignedXLen as XLen);
+        self.jump_target_address =
+            XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
         self.result = pc.read() + fetch_unit.instruction_size as XLen;
         // TODO: generate exception if address is misaligned
         error!(
