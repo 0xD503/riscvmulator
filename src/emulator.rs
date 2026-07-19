@@ -162,6 +162,7 @@ impl Emulator {
                     device.dev_type,
                     device.name,
                 );
+                //bus.devices.attach_device(device_handle);
                 let device_created = bus
                     .devices
                     .tree
@@ -179,19 +180,9 @@ impl Emulator {
                     todo!();
                 }
             }
-            // // let dev_type = &device.dev_type;
-            // match device.dev_type.as_str() {
-            //     DEV_TYPE_UART => {
-            //         //
-            //     }
-
-            //     _ => {
-            //         //
-            //     }
-            // }
         }
 
-        dbg!("GREPME: {}", &bus.devices.tree);
+        // dbg!("GREPME: {}", &bus.devices.tree);
     }
 
     fn spawn_hart_threads(&mut self) {

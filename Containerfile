@@ -27,12 +27,13 @@ RUN apt-get update && apt-get install --assume-yes \
     git \
     less patch \
     python3 \
+    #sshd \
     ## convenience tools
     tmux emacs-nox ripgrep fd-find fzf htop lldb \
     vim gdb \
     ## clean apt cache and install some crates
     && rm -rf /var/lib/apt/lists/* \
-    && rustup component add clippy rustfmt \
+    && rustup component add clippy rustfmt rust-src rust-analyzer \
     && cargo install --locked just \
     && cargo install --locked wild-linker
 

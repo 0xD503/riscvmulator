@@ -32,7 +32,7 @@ impl<AddrType> Devices<AddrType> {
         }
     }
 
-    fn attach_device(&mut self, device: Box<dyn Device>) {
+    pub fn attach_device(&mut self, device: Box<dyn Device>) {
         let mut dev_tree = self.tree.write().unwrap_or_else(|err| {
             todo!("Is it even possible???: {err}");
         });
@@ -356,8 +356,9 @@ impl DeviceData {
         trace!("Writing device at offset: {offset:#018X?}");
 
         let mut byte_array = self.memory_map.write().map_err(|err| {
-            // todo!("Is it even possible???: {err}");
+            error!("Failed to write device: {err}");
             IODeviceError::Write(offset as XLen)
+            // todo!("Is it even possible???: {err}");
         })?;
 
         // bus makes bounds check, so we assume that `offset` is always correct
