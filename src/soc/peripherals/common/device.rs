@@ -298,7 +298,7 @@ impl fmt::Display for IODeviceError {
 }
 
 #[derive(Debug)]
-pub struct DeviceData {
+pub struct DeviceMeta {
     pub memory_map: RwLock<Vec<u8>>,
     base_addr: BusAddrType,
     size: usize,
@@ -306,14 +306,14 @@ pub struct DeviceData {
     name: String,
 }
 
-impl DeviceData {
+impl DeviceMeta {
     pub fn new(
         base_addr: BusAddrType,
         size: usize,
         kind: String,
         name: String,
     ) -> Self {
-        DeviceData {
+        DeviceMeta {
             memory_map: RwLock::new(vec![0; size]),
             base_addr,
             size,
@@ -323,7 +323,7 @@ impl DeviceData {
     }
 }
 
-impl DeviceData {
+impl DeviceMeta {
     pub fn read_impl<MemoryValType: MemoryValue>(
         &self,
         offset: usize,
@@ -371,7 +371,7 @@ impl DeviceData {
 }
 
 pub trait Device: Send + Sync + Debug {
-    fn data(&self) -> &DeviceData;
+    fn data(&self) -> &DeviceMeta;
 
     // fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType;
     // fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType);
@@ -381,43 +381,18 @@ pub trait Device: Send + Sync + Debug {
     // type. Read more at:
     // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
 
-    fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError> {
-        self.data().read_impl(offset)
-    }
-    fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError> {
-        self.data().read_impl(offset)
-    }
-    fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError> {
-        self.data().read_impl(offset)
-    }
-    fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError> {
-        self.data().read_impl(offset)
-    }
+    fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError>;
+    fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError>;
+    fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError>;
+    fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError>;
 
-    fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError> {
-        self.data().write_impl(offset, value)
-    }
-    fn write_u16(
-        &self,
-        offset: usize,
-        value: u16,
-    ) -> Result<(), IODeviceError> {
-        self.data().write_impl(offset, value)
-    }
-    fn write_u32(
-        &self,
-        offset: usize,
-        value: u32,
-    ) -> Result<(), IODeviceError> {
-        self.data().write_impl(offset, value)
-    }
-    fn write_u64(
-        &self,
-        offset: usize,
-        value: u64,
-    ) -> Result<(), IODeviceError> {
-        self.data().write_impl(offset, value)
-    }
+    fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError>;
+    fn write_u16(&self, offset: usize, value: u16)
+    -> Result<(), IODeviceError>;
+    fn write_u32(&self, offset: usize, value: u32)
+    -> Result<(), IODeviceError>;
+    fn write_u64(&self, offset: usize, value: u64)
+    -> Result<(), IODeviceError>;
 
     fn base_addr(&self) -> BusAddrType {
         self.data().base_addr

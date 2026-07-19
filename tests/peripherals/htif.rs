@@ -3,7 +3,7 @@ use std::sync::RwLock;
 use log::{error, trace};
 
 use riscvmulator::{
-    BusAddrType, Device, DeviceData, IODeviceError, MemoryValue, XLen,
+    BusAddrType, Device, DeviceMeta, IODeviceError, MemoryValue, XLen,
 };
 
 pub const HTIF_SUCCESS: u32 = 1;
@@ -12,23 +12,23 @@ pub const HTIF_SUCCESS: u32 = 1;
 pub struct HTIF {
     // memory_map: RwLock<Vec<u8>>,
     // base_addr: BusAddrType,
-    data: DeviceData,
+    data: DeviceMeta,
 }
 
 impl HTIF {
-    fn new(
-        base_addr: BusAddrType,
-        size: usize,
-        kind: String,
-        name: String,
-    ) -> Self {
-        HTIF {
-            data: DeviceData::new(base_addr, size, kind, name),
-            //
-            // memory_map: RwLock::new(vec![0; size]),
-            // base_addr,
-        }
-    }
+    // fn new(
+    //     base_addr: BusAddrType,
+    //     size: usize,
+    //     kind: String,
+    //     name: String,
+    // ) -> Self {
+    //     HTIF {
+    //         data: DeviceMeta::new(base_addr, size, kind, name),
+    //         //
+    //         // memory_map: RwLock::new(vec![0; size]),
+    //         // base_addr,
+    //     }
+    // }
 
     // fn read_impl<MemoryValType: MemoryValue>(
     //     &self,
@@ -76,58 +76,53 @@ impl HTIF {
 }
 
 impl Device for HTIF {
-    fn data(&self) -> &DeviceData {
+    fn data(&self) -> &DeviceMeta {
         &self.data
     }
 
-    // fn read_u8(&self, offset: usize) -> Result<u8, DeviceIOError> {
-    //     // let mem_map = self.memory_map.read().unwrap_or_else(|err| {
-    //     //     // Err(DeviceIOError::Read(offset as XLen))
-    //     //     todo!("Is it even possible???: {err}")
-    //     // });
-    //     // Ok(mem_map[offset])
-    //     self.data().read_impl(offset)
-    // }
-    // fn read_u16(&self, offset: usize) -> Result<u16, DeviceIOError> {
-    //     self.data().read_impl(offset)
-    // }
-    // fn read_u32(&self, offset: usize) -> Result<u32, DeviceIOError> {
-    //     self.data().read_impl(offset)
-    // }
-    // fn read_u64(&self, offset: usize) -> Result<u64, DeviceIOError> {
-    //     self.data().read_impl(offset)
-    // }
+    // fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType;
+    // fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType);
 
-    // fn write_u8(&self, offset: usize, value: u8) -> Result<(), DeviceIOError> {
-    //     self.data().write_impl(offset, value)
-    // }
-    // fn write_u16(
-    //     &self,
-    //     offset: usize,
-    //     value: u16,
-    // ) -> Result<(), DeviceIOError> {
-    //     self.data().write_impl(offset, value)
-    // }
-    // fn write_u32(
-    //     &self,
-    //     offset: usize,
-    //     value: u32,
-    // ) -> Result<(), DeviceIOError> {
-    //     self.data().write_impl(offset, value)
-    // }
-    // fn write_u64(
-    //     &self,
-    //     offset: usize,
-    //     value: u64,
-    // ) -> Result<(), DeviceIOError> {
-    //     self.data().write_impl(offset, value)
-    // }
+    // we cannot make `read()`/`write()` methods to be generic because of the
+    // `dyn` traits compatibility requirement. So we declare methods for each
+    // type. Read more at:
+    // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
 
-    // fn base_addr(&self) -> BusAddrType {
-    //     self.base_addr
-    // }
-    // fn mem_space_size(&self) -> usize {
-    //     // TODO: check: unwrapping probably safe here
-    //     self.memory_map.read().unwrap().len()
-    // }
+    fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError> {
+        self.data().read_impl(offset)
+    }
+    fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError> {
+        self.data().read_impl(offset)
+    }
+    fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError> {
+        self.data().read_impl(offset)
+    }
+    fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError> {
+        self.data().read_impl(offset)
+    }
+
+    fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError> {
+        self.data().write_impl(offset, value)
+    }
+    fn write_u16(
+        &self,
+        offset: usize,
+        value: u16,
+    ) -> Result<(), IODeviceError> {
+        self.data().write_impl(offset, value)
+    }
+    fn write_u32(
+        &self,
+        offset: usize,
+        value: u32,
+    ) -> Result<(), IODeviceError> {
+        self.data().write_impl(offset, value)
+    }
+    fn write_u64(
+        &self,
+        offset: usize,
+        value: u64,
+    ) -> Result<(), IODeviceError> {
+        self.data().write_impl(offset, value)
+    }
 }
