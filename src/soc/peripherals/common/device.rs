@@ -63,63 +63,65 @@ impl<AddrType> Devices<AddrType> {
     //     device_tree_read_guard.range(..=addr).next_back();
     // }
 
-    pub fn read_bytes(
-        &self,
-        addr: XLen,
-        dest: &mut [Byte],
-    ) -> Result<(), IODeviceError> {
-        let result;
+    // TODO: remake read/write methods to generics
 
-        let device_tree_read_guard = self.tree.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-        let closest_dev = device_tree_read_guard.range(..=addr).next_back();
+    // pub fn read_bytes(
+    //     &self,
+    //     addr: XLen,
+    //     dest: &mut [Byte],
+    // ) -> Result<(), IODeviceError> {
+    //     let result;
 
-        if let Some(device_entry) = closest_dev {
-            let device = device_entry.1;
-            let device_addr_range =
-                device.base_addr()..=(device.end_addr() - dest.len() as XLen);
-            if device_addr_range.contains(&addr) {
-                let offset = (addr - device.base_addr()) as usize;
-                result = device.read_bytes(offset, dest);
-            } else {
-                result = Err(IODeviceError::Read(addr))
-            }
-        } else {
-            result = Err(IODeviceError::Read(addr))
-        }
+    //     let device_tree_read_guard = self.tree.read().unwrap_or_else(|err| {
+    //         todo!("Is it even possible???: {err}");
+    //     });
+    //     let closest_dev = device_tree_read_guard.range(..=addr).next_back();
 
-        result
-    }
+    //     if let Some(device_entry) = closest_dev {
+    //         let device = device_entry.1;
+    //         let device_addr_range =
+    //             device.base_addr()..=(device.end_addr() - dest.len() as XLen);
+    //         if device_addr_range.contains(&addr) {
+    //             let offset = (addr - device.base_addr()) as usize;
+    //             result = device.read_bytes(offset, dest);
+    //         } else {
+    //             result = Err(IODeviceError::Read(addr))
+    //         }
+    //     } else {
+    //         result = Err(IODeviceError::Read(addr))
+    //     }
 
-    pub fn write(
-        &self,
-        addr: XLen,
-        value: &[Byte],
-    ) -> Result<(), IODeviceError> {
-        let result;
+    //     result
+    // }
 
-        let device_tree_read_guard = self.tree.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-        let closest_dev = device_tree_read_guard.range(..=addr).next_back();
+    // pub fn write(
+    //     &self,
+    //     addr: XLen,
+    //     value: &[Byte],
+    // ) -> Result<(), IODeviceError> {
+    //     let result;
 
-        if let Some(device_entry) = closest_dev {
-            let device = device_entry.1;
-            let device_addr_range =
-                device.base_addr()..=(device.end_addr() - value.len() as XLen);
-            if device_addr_range.contains(&addr) {
-                let offset = (addr - device.base_addr()) as usize;
-                result = device.write_bytes(offset, value);
-            } else {
-                result = Err(IODeviceError::Write(addr))
-            }
-        } else {
-            result = Err(IODeviceError::Write(addr))
-        }
+    //     let device_tree_read_guard = self.tree.read().unwrap_or_else(|err| {
+    //         todo!("Is it even possible???: {err}");
+    //     });
+    //     let closest_dev = device_tree_read_guard.range(..=addr).next_back();
 
-        result
-    }
+    //     if let Some(device_entry) = closest_dev {
+    //         let device = device_entry.1;
+    //         let device_addr_range =
+    //             device.base_addr()..=(device.end_addr() - value.len() as XLen);
+    //         if device_addr_range.contains(&addr) {
+    //             let offset = (addr - device.base_addr()) as usize;
+    //             result = device.write_bytes(offset, value);
+    //         } else {
+    //             result = Err(IODeviceError::Write(addr))
+    //         }
+    //     } else {
+    //         result = Err(IODeviceError::Write(addr))
+    //     }
+
+    //     result
+    // }
 
     pub fn read_u8(&self, addr: XLen) -> Result<u8, IODeviceError> {
         let result;
