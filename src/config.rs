@@ -80,7 +80,7 @@ impl Default for MemoryCfg {
 pub struct DeviceCfg {
     pub(super) base_addr: BusAddrType,
     pub(super) size_bytes: usize,
-    pub(super) dev_type: String,
+    pub(super) kind: String,
     pub(super) name: String,
     irq_line: Option<IRQ_Line>,
 }

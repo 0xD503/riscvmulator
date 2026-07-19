@@ -13,11 +13,11 @@ impl CLINT {
     pub fn create_dev(
         base_addr: BusAddrType,
         size: usize,
-        dev_type: String,
+        kind: String,
         name: String,
     ) -> Box<dyn Device> {
         let clint_dev = CLINT {
-            data: DeviceData::new(base_addr, size, dev_type, name),
+            data: DeviceData::new(base_addr, size, kind, name),
         };
         Box::new(clint_dev)
     }

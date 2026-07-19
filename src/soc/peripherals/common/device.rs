@@ -290,11 +290,8 @@ impl fmt::Display for IODeviceError {
             Self::Write(addr) => {
                 writeln!(formatter, "failed to write device at addr: {addr}")
             }
-            Self::Create(dev_type) => {
-                writeln!(
-                    formatter,
-                    "failed to create device of type: {dev_type}"
-                )
+            Self::Create(kind) => {
+                writeln!(formatter, "failed to create device of type: {kind}")
             }
         }
     }
@@ -305,7 +302,7 @@ pub struct DeviceData {
     pub memory_map: RwLock<Vec<u8>>,
     base_addr: BusAddrType,
     size: usize,
-    dev_type: String,
+    kind: String,
     name: String,
 }
 
@@ -313,14 +310,14 @@ impl DeviceData {
     pub fn new(
         base_addr: BusAddrType,
         size: usize,
-        dev_type: String,
+        kind: String,
         name: String,
     ) -> Self {
         DeviceData {
             memory_map: RwLock::new(vec![0; size]),
             base_addr,
             size,
-            dev_type,
+            kind,
             name,
         }
     }
@@ -433,8 +430,8 @@ pub trait Device: Send + Sync + Debug {
         self.base_addr() + self.mem_space_size() as BusAddrType
     }
 
-    fn dev_type(&self) -> &String {
-        &self.data().dev_type
+    fn kind(&self) -> &String {
+        &self.data().kind
     }
     fn name(&self) -> &String {
         &self.data().name

@@ -13,11 +13,11 @@ impl PLIC {
     pub fn create_dev(
         base_addr: BusAddrType,
         size: usize,
-        dev_type: String,
+        kind: String,
         name: String,
     ) -> Box<dyn Device> {
         let plic_dev = PLIC {
-            data: DeviceData::new(base_addr, size, dev_type, name),
+            data: DeviceData::new(base_addr, size, kind, name),
         };
         Box::new(plic_dev)
     }

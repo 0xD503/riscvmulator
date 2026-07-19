@@ -19,11 +19,11 @@ impl HTIF {
     fn new(
         base_addr: BusAddrType,
         size: usize,
-        dev_type: String,
+        kind: String,
         name: String,
     ) -> Self {
         HTIF {
-            data: DeviceData::new(base_addr, size, dev_type, name),
+            data: DeviceData::new(base_addr, size, kind, name),
             //
             // memory_map: RwLock::new(vec![0; size]),
             // base_addr,
