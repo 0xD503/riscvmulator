@@ -6,7 +6,10 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct PLIC {
+pub struct PLIC
+where
+    Self: Device,
+{
     meta: DeviceMeta,
 }
 

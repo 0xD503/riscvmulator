@@ -6,7 +6,10 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct CLINT {
+pub struct CLINT
+where
+    Self: Device,
+{
     meta: DeviceMeta,
 }
 
