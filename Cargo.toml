@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 keywords = [ "emulator", "risc-v", "riscv", "cpu" ]
 categories = [ "emulators" ]
 ## use fixed `major`/`minor`, but latest `patch` version
-rust-version = "1.96"
+rust-version = "1.97"
 
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
