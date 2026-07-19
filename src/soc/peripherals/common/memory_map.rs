@@ -28,8 +28,7 @@ impl MemoryMap {
         // bus makes bounds check, so we assume that `offset` is always correct
         debug_assert!(offset + dest.len() <= byte_array.len());
 
-        // TODO: notice, so far emulator only supports little-endian
-        let src = byte_array[offset..offset + dest.len()].try_into().unwrap();
+        let src = &byte_array[offset..offset + dest.len()];
         dest.copy_from_slice(src);
 
         Ok(())

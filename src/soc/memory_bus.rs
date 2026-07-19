@@ -130,6 +130,11 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         } else {
             trace!("Reading MMIO at addr: {address:#018X?}");
 
+            // let mut dest = [0u8; size_of::<u8>()];
+            // self.devices.read_bytes(address, &mut dest)?;
+
+            // Ok(u8::from_le_bytes(dest))
+
             self.devices.read_u8(address)
         }
     }
