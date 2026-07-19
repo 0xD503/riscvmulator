@@ -16,7 +16,7 @@ where
     Self: Device,
 {
     meta: DeviceMeta,
-    state: RwLock<UARTState>,
+    guarded_state: RwLock<UARTState>,
 }
 
 impl UART {
@@ -28,21 +28,25 @@ impl UART {
     ) -> Box<dyn Device> {
         let uart_dev = UART {
             meta: DeviceMeta::new(base_addr, size, kind, name),
-            state: RwLock::new(UARTState::new(size)),
+            guarded_state: RwLock::new(UARTState::new(size)),
         };
         Box::new(uart_dev)
     }
+
+    // fn state_locker(&self) -> &RwLock<UARTState> {
+    //     &self.state
+    // }
 
     fn read_impl<MemoryValType: MemoryValue>(
         &self,
         offset: usize,
     ) -> Result<MemoryValType, IODeviceError> {
-        let read_guarded_state = self.state.read().map_err(|err| {
-            error!("failed to read UART state: {err}");
+        let guarded_state_read = self.guarded_state.read().map_err(|err| {
+            error!("failed to read device state: {err}");
             IODeviceError::Read(offset as XLen)
         })?;
 
-        read_guarded_state.memory_map.read_impl(offset)
+        guarded_state_read.memory_map.read_impl(offset)
     }
 
     fn write_impl<MemoryValType: MemoryValue>(
@@ -50,20 +54,14 @@ impl UART {
         offset: usize,
         value: MemoryValType,
     ) -> Result<(), IODeviceError> {
-        let mut write_guarded_state = self.state.write().map_err(|err| {
-            error!("failed to write UART state: {err}");
-            IODeviceError::Write(offset as XLen)
-        })?;
+        let mut guarded_state_write =
+            self.guarded_state.write().map_err(|err| {
+                error!("failed to write device state: {err}");
+                IODeviceError::Write(offset as XLen)
+            })?;
 
-        write_guarded_state.memory_map.write_impl(offset, value)
+        guarded_state_write.memory_map.write_impl(offset, value)
     }
-
-    // fn state_read(&self) -> &UARTState {
-    //     &self.state.read().map_err(|err| {
-    //         error!("failed to read UART state: {err}");
-    //         IODeviceError::Read(offset as XLen)
-    //     })
-    // }
 }
 
 impl Device for UART {

@@ -43,6 +43,9 @@ run-dev:
 run-dev-trace:
   {{RUN_IN_CONTAINER_TRACE}}cargo run --release
 
+asm:
+  {{RUN_IN_CONTAINER_DEBUG}}cargo asm --release
+
 build-deb:
   {{RUN_IN_CONTAINER}}cargo build
 

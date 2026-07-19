@@ -65,7 +65,7 @@ impl Emulator {
     ) -> Result<Emulator, EmulatorError> {
         let buildable_soc: SoC = SoC::new(&config.soc);
 
-        info!("SoC was created");
+        // info!("SoC was created");
 
         let (sender, receiver) = mpsc::channel::<EmulatorEvent>();
 
