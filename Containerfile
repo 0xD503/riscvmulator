@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install --assume-yes \
     ## clean apt cache and install some crates
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt \
-    && cargo install just \
+    && cargo install --locked just \
     && cargo install --locked wild-linker
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
