@@ -1,9 +1,11 @@
 use std::sync::RwLock;
 
 use crate::{
-    BusAddrType, Device, soc::peripherals::common::device::DeviceData,
+    BusAddrType, Device, IODeviceError,
+    soc::peripherals::common::device::DeviceData,
 };
 
+#[derive(Debug)]
 pub struct UART {
     data: DeviceData,
 }
@@ -18,6 +20,20 @@ impl UART {
         UART {
             data: DeviceData::new(base_addr, size, dev_type, name),
         }
+    }
+
+    pub fn create_dev(
+        base_addr: BusAddrType,
+        size: usize,
+        dev_type: String,
+        name: String,
+    ) -> Box<dyn Device> {
+        // ) -> Result<Box<dyn Device>, IODeviceError> {
+        let uart_dev = UART {
+            data: DeviceData::new(base_addr, size, dev_type, name),
+        };
+        // Ok(Box::new(uart_dev))
+        Box::new(uart_dev)
     }
 
     //

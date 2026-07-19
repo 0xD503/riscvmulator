@@ -3,11 +3,12 @@ use std::sync::RwLock;
 use log::{error, trace};
 
 use riscvmulator::{
-    BusAddrType, Device, DeviceData, DeviceIOError, MemoryValue, XLen,
+    BusAddrType, Device, DeviceData, IODeviceError, MemoryValue, XLen,
 };
 
 pub const HTIF_SUCCESS: u32 = 1;
 
+#[derive(Debug)]
 pub struct HTIF {
     // memory_map: RwLock<Vec<u8>>,
     // base_addr: BusAddrType,

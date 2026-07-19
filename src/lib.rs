@@ -18,4 +18,4 @@ pub use globals::exit_codes::ExitCode;
 pub use hooks::{HookAction, PeriodicalTaskArgs};
 pub use soc::memory::MemoryValue;
 pub use soc::memory_bus::Bus;
-pub use soc::peripherals::common::device::{Device, DeviceData, DeviceIOError};
+pub use soc::peripherals::common::device::{Device, DeviceData, IODeviceError};

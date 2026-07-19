@@ -47,7 +47,7 @@ pub fn emulator_create(
             },
         )?;
 
-    let emulator = Emulator::build_from_config(&emu_config).map_err(|err| {
+    let emulator = Emulator::build_from_config(emu_config).map_err(|err| {
         error!("{err}");
         err.exit_code()
     })?;

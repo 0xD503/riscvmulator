@@ -4,7 +4,7 @@ use crate::constants::arch::{Byte, XLen};
 use crate::soc::hart::extensions::compressed::constants::InstructionTypeCompressed;
 use crate::soc::memory::{Memory, MemoryDevice, MemoryValue};
 use crate::soc::peripherals::common::device::{
-    DeviceIOError, Devices, RawDevice,
+    Devices, IODeviceError, RawDevice,
 };
 
 pub trait Bus<AddrType> {
@@ -15,31 +15,31 @@ pub trait Bus<AddrType> {
     // type. Read more at:
     // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
 
-    fn read_u8(&self, address: AddrType) -> Result<u8, DeviceIOError>;
-    fn read_u16(&self, address: AddrType) -> Result<u16, DeviceIOError>;
-    fn read_u32(&self, address: AddrType) -> Result<u32, DeviceIOError>;
-    fn read_u64(&self, address: AddrType) -> Result<u64, DeviceIOError>;
+    fn read_u8(&self, address: AddrType) -> Result<u8, IODeviceError>;
+    fn read_u16(&self, address: AddrType) -> Result<u16, IODeviceError>;
+    fn read_u32(&self, address: AddrType) -> Result<u32, IODeviceError>;
+    fn read_u64(&self, address: AddrType) -> Result<u64, IODeviceError>;
 
     fn write_u8(
         &self,
         address: AddrType,
         value: u8,
-    ) -> Result<(), DeviceIOError>;
+    ) -> Result<(), IODeviceError>;
     fn write_u16(
         &self,
         address: AddrType,
         value: u16,
-    ) -> Result<(), DeviceIOError>;
+    ) -> Result<(), IODeviceError>;
     fn write_u32(
         &self,
         address: AddrType,
         value: u32,
-    ) -> Result<(), DeviceIOError>;
+    ) -> Result<(), IODeviceError>;
     fn write_u64(
         &self,
         address: AddrType,
         value: u64,
-    ) -> Result<(), DeviceIOError>;
+    ) -> Result<(), IODeviceError>;
 
     // fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
     // fn write<MemValType: MemoryValue>(
@@ -83,7 +83,7 @@ pub struct SystemBus<AddrType: Send + Sync> {
     memory: Memory<AddrType>,
     ram_end: XLen,
 
-    devices: Devices<AddrType>,
+    pub(crate) devices: Devices<AddrType>,
 }
 
 impl<AddrType: Send + Sync> SystemBus<AddrType> {
@@ -119,7 +119,7 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
 }
 
 impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
-    fn read_u8(&self, address: XLen) -> Result<u8, DeviceIOError> {
+    fn read_u8(&self, address: XLen) -> Result<u8, IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u8>() as XLen))
             .contains(&address)
         {
@@ -133,7 +133,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
             self.devices.read_u8(address)
         }
     }
-    fn read_u16(&self, address: XLen) -> Result<u16, DeviceIOError> {
+    fn read_u16(&self, address: XLen) -> Result<u16, IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u16>() as XLen))
             .contains(&address)
         {
@@ -147,7 +147,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
             self.devices.read_u16(address)
         }
     }
-    fn read_u32(&self, address: XLen) -> Result<u32, DeviceIOError> {
+    fn read_u32(&self, address: XLen) -> Result<u32, IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u32>() as XLen))
             .contains(&address)
         {
@@ -161,7 +161,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
             self.devices.read_u32(address)
         }
     }
-    fn read_u64(&self, address: XLen) -> Result<u64, DeviceIOError> {
+    fn read_u64(&self, address: XLen) -> Result<u64, IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u64>() as XLen))
             .contains(&address)
         {
@@ -176,7 +176,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         }
     }
 
-    fn write_u8(&self, address: XLen, value: u8) -> Result<(), DeviceIOError> {
+    fn write_u8(&self, address: XLen, value: u8) -> Result<(), IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u8>() as XLen))
             .contains(&address)
         {
@@ -195,7 +195,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         &self,
         address: XLen,
         value: u16,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u16>() as XLen))
             .contains(&address)
         {
@@ -214,7 +214,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         &self,
         address: XLen,
         value: u32,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u32>() as XLen))
             .contains(&address)
         {
@@ -233,7 +233,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         &self,
         address: XLen,
         value: u64,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u64>() as XLen))
             .contains(&address)
         {

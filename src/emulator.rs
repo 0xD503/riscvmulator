@@ -18,6 +18,7 @@ use log::info;
 
 use crate::BusAddrType;
 use crate::Device;
+use crate::config::DeviceCfg;
 use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
 use crate::globals::exit_codes::ExitCode;
 use crate::hooks::{HookAction, PeriodicalTask, PeriodicalTaskArgs};
@@ -48,14 +49,14 @@ pub struct Emulator {
     input_file: Option<String>,
 
     devices_available_for_use: HashMap<
-        String,
-        fn(BusAddrType, usize, String, String) -> Box<dyn Device>,
+        String, /* device_type */
+        fn(BusAddrType, usize, String, String) -> Box<dyn Device>, /* device_creator */
     >,
 }
 
 impl Emulator {
     pub fn build_from_config(
-        config: &Config,
+        config: Config,
     ) -> Result<Emulator, EmulatorError> {
         let buildable_soc: SoC = SoC::new(&config.soc);
 
@@ -82,13 +83,14 @@ impl Emulator {
             emulator_event_receiver: receiver,
 
             periodical_tasks: Default::default(),
-            periodical_tasks_join_handles: Vec::with_capacity(10),
+            periodical_tasks_join_handles: Vec::with_capacity(16),
 
             input_file: config.input_file(),
 
-            devices_available_for_use: Default::default(),
+            devices_available_for_use: HashMap::with_capacity(16),
         };
         emulator.devices_fill_available();
+        emulator.devices_create_requested(config.soc.bus.devices);
 
         Ok(emulator)
     }
@@ -136,8 +138,52 @@ impl Emulator {
     }
 
     fn devices_fill_available(&mut self) {
-        // self.devices_available_for_use
-        //     .insert(DEV_TYPE_UART.to_string(), UART::new);
+        self.devices_available_for_use
+            .insert(DEV_TYPE_UART.to_string(), UART::create_dev);
+    }
+
+    fn devices_create_requested(&mut self, devices: Vec<DeviceCfg>) {
+        let bus = Arc::clone(&self.soc.bus);
+        for device in devices {
+            if let Some(device_creator) =
+                self.devices_available_for_use.get(&device.dev_type)
+            {
+                let device_handle = device_creator(
+                    device.base_addr,
+                    device.size_bytes,
+                    device.dev_type,
+                    device.name,
+                );
+                let device_created = bus
+                    .devices
+                    .tree
+                    .write()
+                    .unwrap_or_else(|err| {
+                        todo!("Is it even possible???: {err}");
+                    })
+                    .insert(device.base_addr, device_handle)
+                    .is_none_or(|value| {
+                        error!("device already exists: {value}");
+                        false
+                    });
+                if !device_created {
+                    error!("failed to create device");
+                    todo!();
+                }
+            }
+            // // let dev_type = &device.dev_type;
+            // match device.dev_type.as_str() {
+            //     DEV_TYPE_UART => {
+            //         //
+            //     }
+
+            //     _ => {
+            //         //
+            //     }
+            // }
+        }
+
+        dbg!("GREPME: {}", &bus.devices.tree);
     }
 
     fn spawn_hart_threads(&mut self) {

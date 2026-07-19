@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    fmt::{self, Formatter},
+    fmt::{self, Debug, Formatter},
     marker::PhantomData,
     sync::RwLock,
 };
@@ -52,7 +52,7 @@ impl<AddrType> Devices<AddrType> {
         todo!("later");
     }
 
-    pub fn read_u8(&self, addr: XLen) -> Result<u8, DeviceIOError> {
+    pub fn read_u8(&self, addr: XLen) -> Result<u8, IODeviceError> {
         let result;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
@@ -68,15 +68,15 @@ impl<AddrType> Devices<AddrType> {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.read_u8(offset);
             } else {
-                result = Err(DeviceIOError::Read(addr))
+                result = Err(IODeviceError::Read(addr))
             }
         } else {
-            result = Err(DeviceIOError::Read(addr))
+            result = Err(IODeviceError::Read(addr))
         }
 
         result
     }
-    pub fn read_u16(&self, addr: XLen) -> Result<u16, DeviceIOError> {
+    pub fn read_u16(&self, addr: XLen) -> Result<u16, IODeviceError> {
         let result;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
@@ -92,15 +92,15 @@ impl<AddrType> Devices<AddrType> {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.read_u16(offset);
             } else {
-                result = Err(DeviceIOError::Read(addr))
+                result = Err(IODeviceError::Read(addr))
             }
         } else {
-            result = Err(DeviceIOError::Read(addr))
+            result = Err(IODeviceError::Read(addr))
         }
 
         result
     }
-    pub fn read_u32(&self, addr: XLen) -> Result<u32, DeviceIOError> {
+    pub fn read_u32(&self, addr: XLen) -> Result<u32, IODeviceError> {
         let result;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
@@ -116,15 +116,15 @@ impl<AddrType> Devices<AddrType> {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.read_u32(offset);
             } else {
-                result = Err(DeviceIOError::Read(addr))
+                result = Err(IODeviceError::Read(addr))
             }
         } else {
-            result = Err(DeviceIOError::Read(addr))
+            result = Err(IODeviceError::Read(addr))
         }
 
         result
     }
-    pub fn read_u64(&self, addr: XLen) -> Result<u64, DeviceIOError> {
+    pub fn read_u64(&self, addr: XLen) -> Result<u64, IODeviceError> {
         let result;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
@@ -140,16 +140,16 @@ impl<AddrType> Devices<AddrType> {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.read_u64(offset);
             } else {
-                result = Err(DeviceIOError::Read(addr))
+                result = Err(IODeviceError::Read(addr))
             }
         } else {
-            result = Err(DeviceIOError::Read(addr))
+            result = Err(IODeviceError::Read(addr))
         }
 
         result
     }
 
-    pub fn write_u8(&self, addr: XLen, value: u8) -> Result<(), DeviceIOError> {
+    pub fn write_u8(&self, addr: XLen, value: u8) -> Result<(), IODeviceError> {
         let result;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
@@ -165,10 +165,10 @@ impl<AddrType> Devices<AddrType> {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.write_u8(offset, value);
             } else {
-                result = Err(DeviceIOError::Write(addr))
+                result = Err(IODeviceError::Write(addr))
             }
         } else {
-            result = Err(DeviceIOError::Write(addr))
+            result = Err(IODeviceError::Write(addr))
         }
 
         result
@@ -178,7 +178,7 @@ impl<AddrType> Devices<AddrType> {
         &self,
         addr: XLen,
         value: u16,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         let result;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
@@ -194,10 +194,10 @@ impl<AddrType> Devices<AddrType> {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.write_u16(offset, value);
             } else {
-                result = Err(DeviceIOError::Write(addr))
+                result = Err(IODeviceError::Write(addr))
             }
         } else {
-            result = Err(DeviceIOError::Write(addr))
+            result = Err(IODeviceError::Write(addr))
         }
 
         result
@@ -207,7 +207,7 @@ impl<AddrType> Devices<AddrType> {
         &self,
         addr: XLen,
         value: u32,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         let result;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
@@ -223,10 +223,10 @@ impl<AddrType> Devices<AddrType> {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.write_u32(offset, value);
             } else {
-                result = Err(DeviceIOError::Write(addr))
+                result = Err(IODeviceError::Write(addr))
             }
         } else {
-            result = Err(DeviceIOError::Write(addr))
+            result = Err(IODeviceError::Write(addr))
         }
 
         result
@@ -236,7 +236,7 @@ impl<AddrType> Devices<AddrType> {
         &self,
         addr: XLen,
         value: u64,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         let result;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
@@ -252,10 +252,10 @@ impl<AddrType> Devices<AddrType> {
                 let offset = (addr - device.base_addr()) as usize;
                 result = device.write_u64(offset, value);
             } else {
-                result = Err(DeviceIOError::Write(addr))
+                result = Err(IODeviceError::Write(addr))
             }
         } else {
-            result = Err(DeviceIOError::Write(addr))
+            result = Err(IODeviceError::Write(addr))
         }
 
         result
@@ -267,12 +267,13 @@ impl<AddrType> Devices<AddrType> {
 // }
 
 #[derive(Debug)]
-pub enum DeviceIOError {
+pub enum IODeviceError {
     Read(XLen),
     Write(XLen),
+    Create(String),
 }
 
-impl DeviceIOError {
+impl IODeviceError {
     // pub fn exit_code(&self) -> i32 {
     //     match self {
     //         Self::Read(_) => ExitCode::DeviceReadError as i32,
@@ -280,7 +281,7 @@ impl DeviceIOError {
     // }
 }
 
-impl fmt::Display for DeviceIOError {
+impl fmt::Display for IODeviceError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
             Self::Read(addr) => {
@@ -289,10 +290,17 @@ impl fmt::Display for DeviceIOError {
             Self::Write(addr) => {
                 writeln!(formatter, "failed to write device at addr: {addr}")
             }
+            Self::Create(dev_type) => {
+                writeln!(
+                    formatter,
+                    "failed to create device of type: {dev_type}"
+                )
+            }
         }
     }
 }
 
+#[derive(Debug)]
 pub struct DeviceData {
     pub memory_map: RwLock<Vec<u8>>,
     base_addr: BusAddrType,
@@ -322,12 +330,12 @@ impl DeviceData {
     pub fn read_impl<MemoryValType: MemoryValue>(
         &self,
         offset: usize,
-    ) -> Result<MemoryValType, DeviceIOError> {
+    ) -> Result<MemoryValType, IODeviceError> {
         trace!("Reading device at offset: {offset:#018X?}");
 
         let byte_array = self.memory_map.read().map_err(|err| {
             error!("Failed to read device: {err}");
-            DeviceIOError::Read(offset as XLen)
+            IODeviceError::Read(offset as XLen)
         })?;
 
         // bus makes bounds check, so we assume that `offset` is always correct
@@ -344,12 +352,12 @@ impl DeviceData {
         &self,
         offset: usize,
         value: MemoryValType,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         trace!("Writing device at offset: {offset:#018X?}");
 
         let mut byte_array = self.memory_map.write().map_err(|err| {
             // todo!("Is it even possible???: {err}");
-            DeviceIOError::Write(offset as XLen)
+            IODeviceError::Write(offset as XLen)
         })?;
 
         // bus makes bounds check, so we assume that `offset` is always correct
@@ -364,7 +372,7 @@ impl DeviceData {
     }
 }
 
-pub trait Device: Send + Sync {
+pub trait Device: Send + Sync + Debug {
     fn data(&self) -> &DeviceData;
 
     // fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType;
@@ -375,41 +383,41 @@ pub trait Device: Send + Sync {
     // type. Read more at:
     // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
 
-    fn read_u8(&self, offset: usize) -> Result<u8, DeviceIOError> {
+    fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError> {
         self.data().read_impl(offset)
     }
-    fn read_u16(&self, offset: usize) -> Result<u16, DeviceIOError> {
+    fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError> {
         self.data().read_impl(offset)
     }
-    fn read_u32(&self, offset: usize) -> Result<u32, DeviceIOError> {
+    fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError> {
         self.data().read_impl(offset)
     }
-    fn read_u64(&self, offset: usize) -> Result<u64, DeviceIOError> {
+    fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError> {
         self.data().read_impl(offset)
     }
 
-    fn write_u8(&self, offset: usize, value: u8) -> Result<(), DeviceIOError> {
+    fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError> {
         self.data().write_impl(offset, value)
     }
     fn write_u16(
         &self,
         offset: usize,
         value: u16,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         self.data().write_impl(offset, value)
     }
     fn write_u32(
         &self,
         offset: usize,
         value: u32,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         self.data().write_impl(offset, value)
     }
     fn write_u64(
         &self,
         offset: usize,
         value: u64,
-    ) -> Result<(), DeviceIOError> {
+    ) -> Result<(), IODeviceError> {
         self.data().write_impl(offset, value)
     }
 
@@ -450,3 +458,9 @@ pub trait RawDevice {
 //     fn read_raw<ValueType>(&self, offset: usize) -> ValueType;
 //     fn write_raw<ValueType>(&mut self, offset: usize, value: ValueType);
 // }
+
+impl fmt::Display for dyn Device {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        write!(formatter, "{}", self.name())
+    }
+}

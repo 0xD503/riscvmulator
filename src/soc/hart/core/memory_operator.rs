@@ -3,7 +3,7 @@ use crate::soc::hart::core::decoder::Decoder;
 use crate::soc::hart::core::executor::Executor;
 use crate::soc::memory::{MemoryValue, MemoryValueType};
 use crate::soc::memory_bus::{Bus, SystemBus};
-use crate::soc::peripherals::common::device::DeviceIOError;
+use crate::soc::peripherals::common::device::IODeviceError;
 
 use log::{error, trace};
 
@@ -17,7 +17,7 @@ impl Executor {
 
     fn handle_memory_read<const SIGNED: bool, ValType: MemoryValue>(
         &mut self,
-        mem_read_result: &Result<ValType, DeviceIOError>,
+        mem_read_result: &Result<ValType, IODeviceError>,
     ) {
         if let Ok(non_extended_value) = mem_read_result {
             if SIGNED {

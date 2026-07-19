@@ -77,10 +77,11 @@ impl Default for MemoryCfg {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
-struct DeviceCfg {
-    name: String,
-    base_addr: BusAddrType,
-    size_bytes: usize,
+pub struct DeviceCfg {
+    pub(super) base_addr: BusAddrType,
+    pub(super) size_bytes: usize,
+    pub(super) dev_type: String,
+    pub(super) name: String,
     irq_line: Option<IRQ_Line>,
 }
 
@@ -94,7 +95,7 @@ struct DeviceCfg {
 #[serde(deny_unknown_fields)]
 pub struct BusCfg {
     pub(super) memory: MemoryCfg,
-    devices: Vec<DeviceCfg>,
+    pub(super) devices: Vec<DeviceCfg>,
 }
 
 impl Default for BusCfg {
