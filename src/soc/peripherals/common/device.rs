@@ -371,10 +371,7 @@ impl DeviceMeta {
 }
 
 pub trait Device: Send + Sync + Debug {
-    fn data(&self) -> &DeviceMeta;
-
-    // fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType;
-    // fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType);
+    fn meta(&self) -> &DeviceMeta;
 
     // we cannot make `read()`/`write()` methods to be generic because of the
     // `dyn` traits compatibility requirement. So we declare methods for each
@@ -395,10 +392,10 @@ pub trait Device: Send + Sync + Debug {
     -> Result<(), IODeviceError>;
 
     fn base_addr(&self) -> BusAddrType {
-        self.data().base_addr
+        self.meta().base_addr
     }
     fn mem_space_size(&self) -> usize {
-        self.data().size
+        self.meta().size
     }
     fn end_addr(&self) -> BusAddrType {
         // non-inclusive end addr
@@ -406,10 +403,10 @@ pub trait Device: Send + Sync + Debug {
     }
 
     fn kind(&self) -> &String {
-        &self.data().kind
+        &self.meta().kind
     }
     fn name(&self) -> &String {
-        &self.data().name
+        &self.meta().name
     }
 }
 
@@ -421,16 +418,6 @@ pub trait RawDevice {
         value: MemValType,
     );
 }
-
-// pub trait Device<ValueType> {
-//     fn read<ValueType>(&self, offset: usize) -> ValueType;
-//     fn write<ValueType>(&mut self, offset: usize, value: ValueType);
-// }
-
-// pub trait RawDevice<ValueType> {
-//     fn read_raw<ValueType>(&self, offset: usize) -> ValueType;
-//     fn write_raw<ValueType>(&mut self, offset: usize, value: ValueType);
-// }
 
 impl fmt::Display for dyn Device {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {

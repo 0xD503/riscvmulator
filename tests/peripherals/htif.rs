@@ -76,12 +76,9 @@ impl HTIF {
 }
 
 impl Device for HTIF {
-    fn data(&self) -> &DeviceMeta {
+    fn meta(&self) -> &DeviceMeta {
         &self.data
     }
-
-    // fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType;
-    // fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType);
 
     // we cannot make `read()`/`write()` methods to be generic because of the
     // `dyn` traits compatibility requirement. So we declare methods for each
@@ -89,40 +86,40 @@ impl Device for HTIF {
     // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
 
     fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError> {
-        self.data().read_impl(offset)
+        self.meta().read_impl(offset)
     }
     fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError> {
-        self.data().read_impl(offset)
+        self.meta().read_impl(offset)
     }
     fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError> {
-        self.data().read_impl(offset)
+        self.meta().read_impl(offset)
     }
     fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError> {
-        self.data().read_impl(offset)
+        self.meta().read_impl(offset)
     }
 
     fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError> {
-        self.data().write_impl(offset, value)
+        self.meta().write_impl(offset, value)
     }
     fn write_u16(
         &self,
         offset: usize,
         value: u16,
     ) -> Result<(), IODeviceError> {
-        self.data().write_impl(offset, value)
+        self.meta().write_impl(offset, value)
     }
     fn write_u32(
         &self,
         offset: usize,
         value: u32,
     ) -> Result<(), IODeviceError> {
-        self.data().write_impl(offset, value)
+        self.meta().write_impl(offset, value)
     }
     fn write_u64(
         &self,
         offset: usize,
         value: u64,
     ) -> Result<(), IODeviceError> {
-        self.data().write_impl(offset, value)
+        self.meta().write_impl(offset, value)
     }
 }

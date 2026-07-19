@@ -25,6 +25,8 @@ RV64I is complete, passes `rv64ui-p` tests. The rest extensions are under develo
 - [ ] Linux-able
 - [ ] `C` extension (compressed instructions)
 - [ ] `RV64/32E` (embedded)
+- [x] little-endian
+- [ ] big-endian
 
 Currently project implements base RV64I functionality. Project passes `rv64ui-p`
 compliance tests.
