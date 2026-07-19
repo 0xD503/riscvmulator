@@ -1,6 +1,6 @@
 [emulator]
 ## 0 means as fast as possible
-throttle_frequency = 0
+#throttle_frequency = 0
 
 [emulator.logging]
 level = "info"
@@ -8,7 +8,7 @@ style = "auto"
 
 [soc]
 harts_num = 4
-xtal_frequency_hz = 16384
+#xtal_frequency_hz = 16384
 
 [soc.hart]
 pc_reset_value = 0x8000_0000
