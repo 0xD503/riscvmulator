@@ -27,9 +27,3 @@ extension_Zicsr = false
 [soc.bus.memory]
 base_addr = 0x8000_0000
 size_bytes = 262144    ## 256 KB
-
-# [[soc.bus.devices]]
-# name = "htif"
-# base_addr =
-# size_bytes =
-# irq_line =
