@@ -2,7 +2,6 @@ mod constants;
 
 use std::marker::PhantomData;
 use std::mem::size_of;
-// use std::sync::Mutex;
 use std::sync::RwLock;
 
 use log::trace;
@@ -285,39 +284,6 @@ impl<AddrType: Send + Sync> MemoryDevice for Memory<AddrType> {
     fn write_u64(&self, offset: usize, value: u64) {
         self.write_impl(offset, value);
     }
-
-    // fn read<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
-    //     trace!("Reading memory at offset: {offset:#018X?}");
-
-    //     let byte_array = self.byte_array.read().unwrap_or_else(|err| {
-    //         todo!("Is it even possible???: {err}");
-    //     });
-
-    //     // bus makes bounds check, so we assume that `offset` is always correct
-    //     debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
-
-    //     let bytes = byte_array[offset..offset + size_of::<MemValType>()]
-    //         .try_into()
-    //         .unwrap();
-    //     // TODO: notice, so far emulator only supports little-endian
-    //     MemValType::from_le_bytes(bytes)
-    // }
-
-    // fn write<MemValType: MemoryValue>(&self, offset: usize, value: MemValType) {
-    //     trace!("Writing memory at offset: {offset:#018X?}");
-
-    //     let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
-    //         todo!("Is it even possible???: {err}");
-    //     });
-
-    //     // bus makes bounds check, so we assume that `offset` is always correct
-    //     debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
-
-    //     // TODO: notice, so far emulator only supports little-endian
-    //     let bytes = value.to_le_bytes();
-    //     byte_array[offset..offset + size_of::<MemValType>()]
-    //         .copy_from_slice(bytes.as_ref());
-    // }
 }
 
 impl<AddrType: Send + Sync> RawDevice for Memory<AddrType> {

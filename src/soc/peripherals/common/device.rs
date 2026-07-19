@@ -8,7 +8,7 @@ use std::{
 use log::{error, trace};
 
 use crate::{
-    constants::arch::{BusAddrType, XLen},
+    constants::arch::{BusAddrType, Byte, XLen},
     soc::memory::MemoryValue,
 };
 
@@ -262,10 +262,6 @@ impl<AddrType> Devices<AddrType> {
     }
 }
 
-// impl<AddrType> Device for Device<AddrType> {
-//     //
-// }
-
 #[derive(Debug)]
 pub enum IODeviceError {
     Read(XLen),
@@ -299,7 +295,6 @@ impl fmt::Display for IODeviceError {
 
 #[derive(Debug)]
 pub struct DeviceMeta {
-    pub memory_map: RwLock<Vec<u8>>,
     base_addr: BusAddrType,
     size: usize,
     kind: String,
@@ -314,7 +309,6 @@ impl DeviceMeta {
         name: String,
     ) -> Self {
         DeviceMeta {
-            memory_map: RwLock::new(vec![0; size]),
             base_addr,
             size,
             kind,
@@ -323,73 +317,83 @@ impl DeviceMeta {
     }
 }
 
-impl DeviceMeta {
-    pub fn read_impl<MemoryValType: MemoryValue>(
-        &self,
-        offset: usize,
-    ) -> Result<MemoryValType, IODeviceError> {
-        trace!("Reading device at offset: {offset:#018X?}");
-
-        let byte_array = self.memory_map.read().map_err(|err| {
-            error!("Failed to read device: {err}");
-            IODeviceError::Read(offset as XLen)
-        })?;
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemoryValType>() <= byte_array.len());
-
-        let bytes = byte_array[offset..offset + size_of::<MemoryValType>()]
-            .try_into()
-            .unwrap();
-        // TODO: notice, so far emulator only supports little-endian
-        Ok(MemoryValType::from_le_bytes(bytes))
-    }
-
-    pub fn write_impl<MemoryValType: MemoryValue>(
-        &self,
-        offset: usize,
-        value: MemoryValType,
-    ) -> Result<(), IODeviceError> {
-        trace!("Writing device at offset: {offset:#018X?}");
-
-        let mut byte_array = self.memory_map.write().map_err(|err| {
-            error!("Failed to write device: {err}");
-            IODeviceError::Write(offset as XLen)
-            // todo!("Is it even possible???: {err}");
-        })?;
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemoryValType>() <= byte_array.len());
-
-        // TODO: notice, so far emulator only supports little-endian
-        let bytes = value.to_le_bytes();
-        byte_array[offset..offset + size_of::<MemoryValType>()]
-            .copy_from_slice(bytes.as_ref());
-
-        Ok(())
-    }
-}
-
 pub trait Device: Send + Sync + Debug {
     fn meta(&self) -> &DeviceMeta;
+
+    fn read_bytes(
+        &self,
+        offset: usize,
+        dest: &mut [Byte],
+    ) -> Result<(), IODeviceError>;
+
+    fn write_bytes(
+        &self,
+        offset: usize,
+        value: &[Byte],
+    ) -> Result<(), IODeviceError>;
 
     // we cannot make `read()`/`write()` methods to be generic because of the
     // `dyn` traits compatibility requirement. So we declare methods for each
     // type. Read more at:
     // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
 
-    fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError>;
-    fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError>;
-    fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError>;
-    fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError>;
+    fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError> {
+        let mut dest = [0u8; size_of::<u8>()];
+        self.read_bytes(offset, &mut dest)?;
 
-    fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError>;
-    fn write_u16(&self, offset: usize, value: u16)
-    -> Result<(), IODeviceError>;
-    fn write_u32(&self, offset: usize, value: u32)
-    -> Result<(), IODeviceError>;
-    fn write_u64(&self, offset: usize, value: u64)
-    -> Result<(), IODeviceError>;
+        Ok(u8::from_le_bytes(dest))
+    }
+    fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError> {
+        let mut dest = [0u8; size_of::<u16>()];
+        self.read_bytes(offset, &mut dest)?;
+
+        Ok(u16::from_le_bytes(dest))
+    }
+    fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError> {
+        let mut dest = [0u8; size_of::<u32>()];
+        self.read_bytes(offset, &mut dest)?;
+
+        Ok(u32::from_le_bytes(dest))
+    }
+    fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError> {
+        let mut dest = [0u8; size_of::<u64>()];
+        self.read_bytes(offset, &mut dest)?;
+
+        Ok(u64::from_le_bytes(dest))
+    }
+
+    fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError> {
+        let src = u8::to_le_bytes(value);
+
+        self.write_bytes(offset, &src)
+    }
+    fn write_u16(
+        &self,
+        offset: usize,
+        value: u16,
+    ) -> Result<(), IODeviceError> {
+        let src = u16::to_le_bytes(value);
+
+        self.write_bytes(offset, &src)
+    }
+    fn write_u32(
+        &self,
+        offset: usize,
+        value: u32,
+    ) -> Result<(), IODeviceError> {
+        let src = u32::to_le_bytes(value);
+
+        self.write_bytes(offset, &src)
+    }
+    fn write_u64(
+        &self,
+        offset: usize,
+        value: u64,
+    ) -> Result<(), IODeviceError> {
+        let src = u64::to_le_bytes(value);
+
+        self.write_bytes(offset, &src)
+    }
 
     fn base_addr(&self) -> BusAddrType {
         self.meta().base_addr

@@ -13,7 +13,7 @@ pub mod emulator;
 pub mod init;
 
 // public re-exports
-pub use constants::arch::{BusAddrType, XLen};
+pub use constants::arch::{BusAddrType, Byte, XLen};
 pub use globals::exit_codes::ExitCode;
 pub use hooks::{HookAction, PeriodicalTaskArgs};
 pub use soc::memory::MemoryValue;

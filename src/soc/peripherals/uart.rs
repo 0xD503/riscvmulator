@@ -3,11 +3,9 @@ use std::sync::RwLock;
 use log::error;
 
 use crate::{
-    BusAddrType, Device, IODeviceError, MemoryValue, XLen,
-    soc::peripherals::common::{
-        device::DeviceMeta,
-        memory_map::{self, MemoryMap},
-    },
+    BusAddrType, Device, IODeviceError, XLen,
+    constants::arch::Byte,
+    soc::peripherals::common::{device::DeviceMeta, memory_map::MemoryMap},
 };
 
 #[derive(Debug)]
@@ -32,36 +30,6 @@ impl UART {
         };
         Box::new(uart_dev)
     }
-
-    // fn state_locker(&self) -> &RwLock<UARTState> {
-    //     &self.state
-    // }
-
-    fn read_impl<MemoryValType: MemoryValue>(
-        &self,
-        offset: usize,
-    ) -> Result<MemoryValType, IODeviceError> {
-        let guarded_state_read = self.guarded_state.read().map_err(|err| {
-            error!("failed to read device state: {err}");
-            IODeviceError::Read(offset as XLen)
-        })?;
-
-        guarded_state_read.memory_map.read_impl(offset)
-    }
-
-    fn write_impl<MemoryValType: MemoryValue>(
-        &self,
-        offset: usize,
-        value: MemoryValType,
-    ) -> Result<(), IODeviceError> {
-        let mut guarded_state_write =
-            self.guarded_state.write().map_err(|err| {
-                error!("failed to write device state: {err}");
-                IODeviceError::Write(offset as XLen)
-            })?;
-
-        guarded_state_write.memory_map.write_impl(offset, value)
-    }
 }
 
 impl Device for UART {
@@ -69,47 +37,33 @@ impl Device for UART {
         &self.meta
     }
 
-    // we cannot make `read()`/`write()` methods to be generic because of the
-    // `dyn` traits compatibility requirement. So we declare methods for each
-    // type. Read more at:
-    // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
+    fn read_bytes(
+        &self,
+        offset: usize,
+        dest: &mut [Byte],
+    ) -> Result<(), IODeviceError> {
+        let guarded_state_read = self.guarded_state.read().map_err(|err| {
+            error!("failed to read device state: {err}");
+            IODeviceError::Read(offset as XLen)
+        })?;
+        guarded_state_read.memory_map.read_bytes(offset, dest)?;
 
-    fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError> {
-        self.read_impl(offset)
-    }
-    fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError> {
-        self.read_impl(offset)
-    }
-    fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError> {
-        self.read_impl(offset)
-    }
-    fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError> {
-        self.read_impl(offset)
+        Ok(())
     }
 
-    fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError> {
-        self.write_impl(offset, value)
-    }
-    fn write_u16(
+    fn write_bytes(
         &self,
         offset: usize,
-        value: u16,
+        value: &[Byte],
     ) -> Result<(), IODeviceError> {
-        self.write_impl(offset, value)
-    }
-    fn write_u32(
-        &self,
-        offset: usize,
-        value: u32,
-    ) -> Result<(), IODeviceError> {
-        self.write_impl(offset, value)
-    }
-    fn write_u64(
-        &self,
-        offset: usize,
-        value: u64,
-    ) -> Result<(), IODeviceError> {
-        self.write_impl(offset, value)
+        let mut guarded_state_write =
+            self.guarded_state.write().map_err(|err| {
+                error!("failed to write device state: {err}");
+                IODeviceError::Write(offset as XLen)
+            })?;
+        guarded_state_write.memory_map.write_bytes(offset, value)?;
+
+        Ok(())
     }
 }
 

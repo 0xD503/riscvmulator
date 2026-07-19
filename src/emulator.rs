@@ -24,11 +24,11 @@ use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
 use crate::globals::exit_codes::ExitCode;
 use crate::hooks::{HookAction, PeriodicalTask, PeriodicalTaskArgs};
 use crate::soc::hart::Hart;
-use crate::soc::peripherals::clint::CLINT;
+// use crate::soc::peripherals::clint::CLINT;
 use crate::soc::peripherals::common::constants::DEV_KIND_CLINT;
 use crate::soc::peripherals::common::constants::DEV_KIND_PLIC;
 use crate::soc::peripherals::common::constants::DEV_KIND_UART;
-use crate::soc::peripherals::plic::PLIC;
+// use crate::soc::peripherals::plic::PLIC;
 use crate::soc::peripherals::uart::UART;
 use crate::{config::Config, soc::SoC};
 
@@ -145,10 +145,10 @@ impl Emulator {
     fn devices_fill_available(&mut self) {
         self.devices_available_for_use
             .insert(DEV_KIND_UART.to_string(), UART::create_dev);
-        self.devices_available_for_use
-            .insert(DEV_KIND_CLINT.to_string(), CLINT::create_dev);
-        self.devices_available_for_use
-            .insert(DEV_KIND_PLIC.to_string(), PLIC::create_dev);
+        // self.devices_available_for_use
+        //     .insert(DEV_KIND_CLINT.to_string(), CLINT::create_dev);
+        // self.devices_available_for_use
+        //     .insert(DEV_KIND_PLIC.to_string(), PLIC::create_dev);
     }
 
     fn devices_create_requested(

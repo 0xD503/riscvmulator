@@ -3,7 +3,7 @@ use std::sync::RwLock;
 use log::{error, trace};
 
 use riscvmulator::{
-    BusAddrType, Device, DeviceMeta, IODeviceError, MemoryValue, XLen,
+    BusAddrType, Byte, Device, DeviceMeta, IODeviceError, MemoryValue, XLen,
 };
 
 pub const HTIF_SUCCESS: u32 = 1;
@@ -80,46 +80,70 @@ impl Device for HTIF {
         &self.data
     }
 
-    // we cannot make `read()`/`write()` methods to be generic because of the
-    // `dyn` traits compatibility requirement. So we declare methods for each
-    // type. Read more at:
-    // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
+    fn read_bytes(
+        &self,
+        offset: usize,
+        dest: &mut [Byte],
+    ) -> Result<(), IODeviceError> {
+        // let guarded_state_read = self.guarded_state.read().map_err(|err| {
+        //     error!("failed to read device state: {err}");
+        //     IODeviceError::Read(offset as XLen)
+        // })?;
 
-    fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError> {
-        self.meta().read_impl(offset)
-    }
-    fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError> {
-        self.meta().read_impl(offset)
-    }
-    fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError> {
-        self.meta().read_impl(offset)
-    }
-    fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError> {
-        self.meta().read_impl(offset)
+        // let read_result = guarded_state_read.memory_map.read_impl(offset)?;
+        // dest = MemoryValue::from_le_bytes(read_result);
+
+        Ok(())
     }
 
-    fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError> {
-        self.meta().write_impl(offset, value)
-    }
-    fn write_u16(
+    fn write_bytes(
         &self,
         offset: usize,
-        value: u16,
+        src: &[Byte],
     ) -> Result<(), IODeviceError> {
-        self.meta().write_impl(offset, value)
+        Ok(())
     }
-    fn write_u32(
-        &self,
-        offset: usize,
-        value: u32,
-    ) -> Result<(), IODeviceError> {
-        self.meta().write_impl(offset, value)
-    }
-    fn write_u64(
-        &self,
-        offset: usize,
-        value: u64,
-    ) -> Result<(), IODeviceError> {
-        self.meta().write_impl(offset, value)
-    }
+
+    // // we cannot make `read()`/`write()` methods to be generic because of the
+    // // `dyn` traits compatibility requirement. So we declare methods for each
+    // // type. Read more at:
+    // // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
+
+    // fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError> {
+    //     self.meta().read_impl(offset)
+    // }
+    // fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError> {
+    //     self.meta().read_impl(offset)
+    // }
+    // fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError> {
+    //     self.meta().read_impl(offset)
+    // }
+    // fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError> {
+    //     self.meta().read_impl(offset)
+    // }
+
+    // fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError> {
+    //     self.meta().write_impl(offset, value)
+    // }
+    // fn write_u16(
+    //     &self,
+    //     offset: usize,
+    //     value: u16,
+    // ) -> Result<(), IODeviceError> {
+    //     self.meta().write_impl(offset, value)
+    // }
+    // fn write_u32(
+    //     &self,
+    //     offset: usize,
+    //     value: u32,
+    // ) -> Result<(), IODeviceError> {
+    //     self.meta().write_impl(offset, value)
+    // }
+    // fn write_u64(
+    //     &self,
+    //     offset: usize,
+    //     value: u64,
+    // ) -> Result<(), IODeviceError> {
+    //     self.meta().write_impl(offset, value)
+    // }
 }
