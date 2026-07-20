@@ -95,7 +95,12 @@ impl Emulator {
             devices_available_for_use: HashMap::with_capacity(16),
         };
         emulator.devices_fill_available();
-        emulator.devices_create_requested(config.soc.bus.devices);
+        emulator
+            .devices_create_requested(config.soc.bus.devices)
+            .map_err(|err| {
+                error!("failed to attach device: {err}");
+                EmulatorError::DeviceAttach
+            })?;
 
         Ok(emulator)
     }
@@ -167,21 +172,14 @@ impl Emulator {
                     device.kind,
                     device.name,
                 );
-                bus.devices.attach_device(device_handle)?;
-                // if !device_created {
-                //     error!("failed to create device");
-                //     // Err(IODeviceError::Create(dev_kind))
-                //     todo!();
-                // }
+                bus.devices.attach(device_handle)?;
             } else {
-                error!(
-                    "unknown device kind: {dev_kind}, skipping it's creation"
-                );
-                // Err(IODeviceError::Create(dev_kind))
+                error!("unknown device kind: {dev_kind}, won't be attached");
+                return Err(IODeviceError::Attach(dev_kind.to_string()));
             }
         }
 
-        dbg!("GREPME: {}", &bus.devices.tree);
+        // dbg!("GREPME: {}", &bus.devices.tree);
         Ok(())
     }
 
@@ -352,6 +350,7 @@ impl Emulator {
 #[derive(Debug)]
 pub enum EmulatorError {
     // Config(i32),
+    DeviceAttach,
 }
 
 // enum RunState {

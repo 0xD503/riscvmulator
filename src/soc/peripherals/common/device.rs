@@ -32,39 +32,51 @@ impl<AddrType> Devices<AddrType> {
         }
     }
 
-    pub fn attach_device(
-        &self,
-        device: Box<dyn Device>,
-    ) -> Result<(), IODeviceError> {
-        let mut guarded_device_tree_write =
+    pub fn attach(&self, device: Box<dyn Device>) -> Result<(), IODeviceError> {
+        let mut device_tree_guarded_write =
             self.tree.write().map_err(|err| {
-                error!("failed to write device: {err}");
+                error!("failed to attach device: {err}");
                 IODeviceError::Poisoned
             })?;
-        let base_addr = device.base_addr();
-        let error_dev_create = IODeviceError::Create(device.kind().to_string());
+        let device_base_addr = device.base_addr();
+        let device_error_attach =
+            IODeviceError::Attach(device.kind().to_string());
 
-        if guarded_device_tree_write.contains_key(&base_addr) {
-            error!("device with base address {base_addr} already exists");
-            return Err(error_dev_create);
+        if device_tree_guarded_write.contains_key(&device_base_addr) {
+            error!(
+                "device with base address {device_base_addr} already exists"
+            );
+            return Err(device_error_attach);
         }
         // TODO: make some checks for interleaving/existing ranges
         // TODO
 
         // add device to devices list
-        let device_was_created = guarded_device_tree_write
-            .insert(base_addr, device)
+        let device_was_created = device_tree_guarded_write
+            .insert(device_base_addr, device)
             .is_none();
         if !device_was_created {
-            error!("failed to create device with base address {base_addr}");
-            return Err(error_dev_create);
+            error!(
+                "failed to attach device with base address {device_base_addr}"
+            );
+            return Err(device_error_attach);
         }
 
         Ok(())
     }
 
-    fn detach_device(&mut self, device: Box<dyn Device>) {
-        todo!("later");
+    fn detach(&mut self, device: Box<dyn Device>) -> Result<(), IODeviceError> {
+        let mut device_tree_guarded_write =
+            self.tree.write().map_err(|err| {
+                error!("failed to detach device: {err}");
+                IODeviceError::Poisoned
+            })?;
+        let device_base_addr = device.base_addr();
+        // let device_error_detach = IODeviceError::Detach(device.kind().to_string());
+
+        device_tree_guarded_write.remove(&device_base_addr);
+
+        Ok(())
     }
 
     // fn find_closest_device(
@@ -352,7 +364,8 @@ impl<AddrType> Devices<AddrType> {
 pub enum IODeviceError {
     Read(XLen),
     Write(XLen),
-    Create(String),
+    Attach(String),
+    Detach(String),
     Poisoned,
 }
 
@@ -373,8 +386,11 @@ impl fmt::Display for IODeviceError {
             Self::Write(addr) => {
                 writeln!(formatter, "failed to write device at addr: {addr}")
             }
-            Self::Create(kind) => {
-                writeln!(formatter, "failed to create device of type: {kind}")
+            Self::Attach(kind) => {
+                writeln!(formatter, "failed to attach device of kind: {kind}")
+            }
+            Self::Detach(kind) => {
+                writeln!(formatter, "failed to detach device of kind: {kind}")
             }
             Self::Poisoned => {
                 writeln!(
