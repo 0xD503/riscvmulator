@@ -32,20 +32,35 @@ impl<AddrType> Devices<AddrType> {
         }
     }
 
-    pub fn attach_device(&mut self, device: Box<dyn Device>) {
-        let mut dev_tree = self.tree.write().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
+    pub fn attach_device(
+        &self,
+        device: Box<dyn Device>,
+    ) -> Result<(), IODeviceError> {
+        let mut guarded_device_tree_write =
+            self.tree.write().map_err(|err| {
+                error!("failed to write device: {err}");
+                IODeviceError::Poisoned
+            })?;
         let base_addr = device.base_addr();
+        let error_dev_create = IODeviceError::Create(device.kind().to_string());
 
-        if dev_tree.contains_key(&base_addr) {
-            todo!("handle already existing device error");
+        if guarded_device_tree_write.contains_key(&base_addr) {
+            error!("device with base address {base_addr} already exists");
+            return Err(error_dev_create);
         }
         // TODO: make some checks for interleaving/existing ranges
         // TODO
 
         // add device to devices list
-        dev_tree.insert(base_addr, device);
+        let device_was_created = guarded_device_tree_write
+            .insert(base_addr, device)
+            .is_none();
+        if !device_was_created {
+            error!("failed to create device with base address {base_addr}");
+            return Err(error_dev_create);
+        }
+
+        Ok(())
     }
 
     fn detach_device(&mut self, device: Box<dyn Device>) {
@@ -338,6 +353,7 @@ pub enum IODeviceError {
     Read(XLen),
     Write(XLen),
     Create(String),
+    Poisoned,
 }
 
 impl IODeviceError {
@@ -359,6 +375,12 @@ impl fmt::Display for IODeviceError {
             }
             Self::Create(kind) => {
                 writeln!(formatter, "failed to create device of type: {kind}")
+            }
+            Self::Poisoned => {
+                writeln!(
+                    formatter,
+                    "failed to access device tree because of poisoning"
+                )
             }
         }
     }

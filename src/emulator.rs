@@ -25,9 +25,9 @@ use crate::globals::exit_codes::ExitCode;
 use crate::hooks::{HookAction, PeriodicalTask, PeriodicalTaskArgs};
 use crate::soc::hart::Hart;
 // use crate::soc::peripherals::clint::CLINT;
-use crate::soc::peripherals::common::constants::DEV_KIND_CLINT;
-use crate::soc::peripherals::common::constants::DEV_KIND_PLIC;
-use crate::soc::peripherals::common::constants::DEV_KIND_UART;
+use crate::soc::peripherals::common::constants::{
+    DEV_KIND_CLINT, DEV_KIND_PLIC, DEV_KIND_UART,
+};
 // use crate::soc::peripherals::plic::PLIC;
 use crate::soc::peripherals::uart::UART;
 use crate::{config::Config, soc::SoC};
@@ -167,24 +167,12 @@ impl Emulator {
                     device.kind,
                     device.name,
                 );
-                //bus.devices.attach_device(device_handle);
-                let device_created = bus
-                    .devices
-                    .tree
-                    .write()
-                    .unwrap_or_else(|err| {
-                        todo!("Is it even possible???: {err}");
-                    })
-                    .insert(device.base_addr, device_handle)
-                    .is_none_or(|value| {
-                        error!("device already exists: {value}");
-                        false
-                    });
-                if !device_created {
-                    error!("failed to create device");
-                    // Err(IODeviceError::Create(dev_kind))
-                    todo!();
-                }
+                bus.devices.attach_device(device_handle)?;
+                // if !device_created {
+                //     error!("failed to create device");
+                //     // Err(IODeviceError::Create(dev_kind))
+                //     todo!();
+                // }
             } else {
                 error!(
                     "unknown device kind: {dev_kind}, skipping it's creation"
@@ -193,7 +181,7 @@ impl Emulator {
             }
         }
 
-        // dbg!("GREPME: {}", &bus.devices.tree);
+        dbg!("GREPME: {}", &bus.devices.tree);
         Ok(())
     }
 
