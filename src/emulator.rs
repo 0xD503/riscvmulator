@@ -190,12 +190,15 @@ impl Emulator {
             let start_trigger = Arc::clone(&self.start_trigger);
             let bus = Arc::clone(&self.soc.bus);
             let halted = Arc::clone(&self.halted);
+            let run_loop_stopped = Arc::clone(&self.run_loop_stopped);
             // thread::Builder::name(self, "core {i}")
             self.hart_join_handles.push(thread::spawn(move || {
                 start_trigger.wait();
 
-                while !halted.load(Ordering::Relaxed) {
+                while !run_loop_stopped.load(Ordering::Relaxed) {
                     hart.step(&bus);
+
+                    // while halted.load(Ordering::Relaxed) {}
                 }
 
                 // return hart ownership back to original owner (SoC)
@@ -341,10 +344,6 @@ impl Emulator {
                 });
             });
     }
-
-    // fn on_halted(&self) {
-    //     todo!("unimplemented halted state handling");
-    // }
 }
 
 #[derive(Debug)]
