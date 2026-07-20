@@ -15,7 +15,7 @@ use crate::{
 pub struct Devices<AddrType> {
     // TODO: not sure what is better: `RwLock` vs `Mutex`
     // because `RwLock` may cause writer starvation
-    pub(crate) tree: RwLock<BTreeMap<XLen, Box<dyn Device>>>,
+    tree: RwLock<BTreeMap<XLen, Box<dyn Device>>>,
 
     _phantom_marker: PhantomData<AddrType>,
 }
@@ -38,10 +38,15 @@ impl<AddrType> Devices<AddrType> {
                 error!("failed to attach device: {err}");
                 IODeviceError::Poisoned
             })?;
+
+        // device validation
+        if device.mem_space_size() < size_of::<XLen>() {
+            let dev_name = device.name();
+            error!("{dev_name} device space size should be >= size of XLen");
+        }
         let device_base_addr = device.base_addr();
         let device_error_attach =
             IODeviceError::Attach(device.kind().to_string());
-
         if device_tree_guarded_write.contains_key(&device_base_addr) {
             error!(
                 "device with base address {device_base_addr} already exists"
@@ -65,7 +70,10 @@ impl<AddrType> Devices<AddrType> {
         Ok(())
     }
 
-    fn detach(&mut self, device: Box<dyn Device>) -> Result<(), IODeviceError> {
+    fn detach(
+        &self,
+        device: Box<dyn Device>,
+    ) -> Result<Option<Box<dyn Device>>, IODeviceError> {
         let mut device_tree_guarded_write =
             self.tree.write().map_err(|err| {
                 error!("failed to detach device: {err}");
@@ -74,9 +82,7 @@ impl<AddrType> Devices<AddrType> {
         let device_base_addr = device.base_addr();
         // let device_error_detach = IODeviceError::Detach(device.kind().to_string());
 
-        device_tree_guarded_write.remove(&device_base_addr);
-
-        Ok(())
+        Ok(device_tree_guarded_write.remove(&device_base_addr))
     }
 
     // fn find_closest_device(
