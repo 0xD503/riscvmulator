@@ -19,7 +19,7 @@ use self::constants::MEMORY_ARRAY_PADDING;
 #[allow(clippy::upper_case_acronyms)]
 #[allow(non_camel_case_types)]
 #[derive(Default, Clone)]
-pub enum MemoryValueType {
+pub enum MemoryValueTypeEnum {
     #[default]
     BYTE,
     HALF_WORD,
@@ -32,7 +32,7 @@ pub enum MemoryValueType {
     // UNSIGNED_DOUBLE_WORD,
 }
 
-pub trait MemoryValue: Sized {
+pub trait MemoryValueType: Sized {
     type Bytes: AsRef<[Byte]>;
 
     fn from_le_bytes(bytes: &[Byte]) -> Self;
@@ -44,7 +44,7 @@ pub trait MemoryValue: Sized {
     fn to_u64(&self) -> u64;
 }
 
-impl MemoryValue for Byte {
+impl MemoryValueType for Byte {
     type Bytes = [Byte; size_of::<Self>()];
 
     fn from_le_bytes(bytes: &[Byte]) -> Self {
@@ -68,7 +68,7 @@ impl MemoryValue for Byte {
     }
 }
 
-impl MemoryValue for HalfWord {
+impl MemoryValueType for HalfWord {
     type Bytes = [Byte; size_of::<Self>()];
 
     fn from_le_bytes(bytes: &[Byte]) -> Self {
@@ -91,7 +91,7 @@ impl MemoryValue for HalfWord {
         *self as u64
     }
 }
-impl MemoryValue for Word {
+impl MemoryValueType for Word {
     type Bytes = [Byte; size_of::<Self>()];
 
     fn from_le_bytes(bytes: &[Byte]) -> Self {
@@ -115,7 +115,7 @@ impl MemoryValue for Word {
     }
 }
 
-impl MemoryValue for DoubleWord {
+impl MemoryValueType for DoubleWord {
     type Bytes = [Byte; size_of::<Self>()];
 
     fn from_le_bytes(bytes: &[Byte]) -> Self {
@@ -217,10 +217,10 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
         self.fill(MEM_RESET_VALUE);
     }
 
-    fn read_impl<MemoryValType: MemoryValue>(
+    fn read_impl<MemValType: MemoryValueType>(
         &self,
         offset: usize,
-    ) -> MemoryValType {
+    ) -> MemValType {
         trace!("Reading memory at offset: {offset:#018X?}");
 
         let byte_array = self.byte_array.read().unwrap_or_else(|err| {
@@ -228,19 +228,19 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
         });
 
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemoryValType>() <= byte_array.len());
+        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
 
-        let bytes = byte_array[offset..offset + size_of::<MemoryValType>()]
+        let bytes = byte_array[offset..offset + size_of::<MemValType>()]
             .try_into()
             .unwrap();
         // TODO: notice, so far emulator only supports little-endian
-        MemoryValType::from_le_bytes(bytes)
+        MemValType::from_le_bytes(bytes)
     }
 
-    fn write_impl<MemoryValType: MemoryValue>(
+    fn write_impl<MemValType: MemoryValueType>(
         &self,
         offset: usize,
-        value: MemoryValType,
+        value: MemValType,
     ) {
         trace!("Writing memory at offset: {offset:#018X?}");
 
@@ -249,11 +249,11 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
         });
 
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemoryValType>() <= byte_array.len());
+        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
 
         // TODO: notice, so far emulator only supports little-endian
         let bytes = value.to_le_bytes();
-        byte_array[offset..offset + size_of::<MemoryValType>()]
+        byte_array[offset..offset + size_of::<MemValType>()]
             .copy_from_slice(bytes.as_ref());
     }
 }
@@ -287,7 +287,10 @@ impl<AddrType: Send + Sync> MemoryDevice for Memory<AddrType> {
 }
 
 impl<AddrType: Send + Sync> RawDevice for Memory<AddrType> {
-    fn read_raw<MemValType: MemoryValue>(&self, offset: usize) -> MemValType {
+    fn read_raw<MemValType: MemoryValueType>(
+        &self,
+        offset: usize,
+    ) -> MemValType {
         let byte_array = self.byte_array.read().unwrap_or_else(|err| {
             todo!("Is it even possible???: {err}");
         });
@@ -302,7 +305,7 @@ impl<AddrType: Send + Sync> RawDevice for Memory<AddrType> {
         MemValType::from_le_bytes(bytes)
     }
 
-    fn write_raw<MemValType: MemoryValue>(
+    fn write_raw<MemValType: MemoryValueType>(
         &self,
         offset: usize,
         value: MemValType,

@@ -3,7 +3,7 @@ use std::sync::RwLock;
 use log::{error, trace};
 
 use riscvmulator::{
-    BusAddrType, Byte, Device, DeviceMeta, IODeviceError, MemoryValue, XLen,
+    BusAddrType, Byte, Device, DeviceMeta, IODeviceError, MemoryValueType, XLen,
 };
 
 pub const HTIF_SUCCESS: u32 = 1;
@@ -30,10 +30,10 @@ impl HTIF {
     //     }
     // }
 
-    // fn read_impl<MemoryValType: MemoryValue>(
+    // fn read_impl<MemValType: MemoryValue>(
     //     &self,
     //     offset: usize,
-    // ) -> Result<MemoryValType, DeviceIOError> {
+    // ) -> Result<MemValType, DeviceIOError> {
     //     trace!("Reading HTIF device at offset: {offset:#018X?}");
 
     //     let byte_array = self.data().memory_map.read().map_err(|err| {
@@ -42,19 +42,19 @@ impl HTIF {
     //     })?;
 
     //     // bus makes bounds check, so we assume that `offset` is always correct
-    //     debug_assert!(offset + size_of::<MemoryValType>() <= byte_array.len());
+    //     debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
 
-    //     let bytes = byte_array[offset..offset + size_of::<MemoryValType>()]
+    //     let bytes = byte_array[offset..offset + size_of::<MemValType>()]
     //         .try_into()
     //         .unwrap();
     //     // TODO: notice, so far emulator only supports little-endian
-    //     Ok(MemoryValType::from_le_bytes(bytes))
+    //     Ok(MemValType::from_le_bytes(bytes))
     // }
 
-    // fn write_impl<MemoryValType: MemoryValue>(
+    // fn write_impl<MemValType: MemoryValue>(
     //     &self,
     //     offset: usize,
-    //     value: MemoryValType,
+    //     value: MemValType,
     // ) -> Result<(), DeviceIOError> {
     //     trace!("Writing HTIF device at offset: {offset:#018X?}");
 
@@ -64,11 +64,11 @@ impl HTIF {
     //     })?;
 
     //     // bus makes bounds check, so we assume that `offset` is always correct
-    //     debug_assert!(offset + size_of::<MemoryValType>() <= byte_array.len());
+    //     debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
 
     //     // TODO: notice, so far emulator only supports little-endian
     //     let bytes = value.to_le_bytes();
-    //     byte_array[offset..offset + size_of::<MemoryValType>()]
+    //     byte_array[offset..offset + size_of::<MemValType>()]
     //         .copy_from_slice(bytes.as_ref());
 
     //     Ok(())

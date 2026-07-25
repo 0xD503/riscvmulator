@@ -2,7 +2,7 @@ use log::{error, trace};
 
 use crate::constants::arch::{Byte, XLen};
 use crate::soc::hart::extensions::compressed::constants::InstructionTypeCompressed;
-use crate::soc::memory::{Memory, MemoryDevice, MemoryValue};
+use crate::soc::memory::{Memory, MemoryDevice, MemoryValueType};
 use crate::soc::peripherals::common::device::{
     Devices, IODeviceError, RawDevice,
 };
@@ -58,13 +58,13 @@ pub trait Bus<AddrType> {
 
 pub trait RawBus<AddrType> {
     // data read/write
-    fn read_raw<MemValType: MemoryValue>(
+    fn read_raw<MemValType: MemoryValueType>(
         &self,
         address: AddrType,
     ) -> MemValType;
     // fn read_data(&self, address: XLen, size: usize) -> Vec<Byte>;
 
-    fn write_raw<MemValType: MemoryValue>(
+    fn write_raw<MemValType: MemoryValueType>(
         &self,
         address: AddrType,
         value: MemValType,
@@ -335,7 +335,10 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
 }
 
 impl<AddrType: Send + Sync> RawBus<XLen> for SystemBus<AddrType> {
-    fn read_raw<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
+    fn read_raw<MemValType: MemoryValueType>(
+        &self,
+        address: XLen,
+    ) -> MemValType {
         if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
             .contains(&address)
         {
@@ -352,7 +355,7 @@ impl<AddrType: Send + Sync> RawBus<XLen> for SystemBus<AddrType> {
             );
         }
     }
-    fn write_raw<MemValType: MemoryValue>(
+    fn write_raw<MemValType: MemoryValueType>(
         &self,
         address: XLen,
         value: MemValType,

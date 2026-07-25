@@ -1,7 +1,7 @@
 use crate::constants::arch::BusAddrType;
 use crate::soc::hart::core::decoder::Decoder;
 use crate::soc::hart::core::executor::Executor;
-use crate::soc::memory::{MemoryValue, MemoryValueType};
+use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
 use crate::soc::memory_bus::{Bus, SystemBus};
 use crate::soc::peripherals::common::device::IODeviceError;
 
@@ -15,7 +15,7 @@ impl Executor {
 
     // memop handlers
 
-    fn handle_memory_read<const SIGNED: bool, ValType: MemoryValue>(
+    fn handle_memory_read<const SIGNED: bool, ValType: MemoryValueType>(
         &mut self,
         mem_read_result: &Result<ValType, IODeviceError>,
     ) {
@@ -117,25 +117,25 @@ impl Executor {
             trace!("Executing memory read...");
 
             match self.memory_value_type {
-                MemoryValueType::DOUBLE_WORD => {
+                MemoryValueTypeEnum::DOUBLE_WORD => {
                     self.read_memory_signed_double_word(bus);
                 }
-                MemoryValueType::WORD => {
+                MemoryValueTypeEnum::WORD => {
                     self.read_memory_signed_word(bus);
                 }
-                MemoryValueType::HALF_WORD => {
+                MemoryValueTypeEnum::HALF_WORD => {
                     self.read_memory_signed_half_word(bus);
                 }
-                MemoryValueType::BYTE => {
+                MemoryValueTypeEnum::BYTE => {
                     self.read_memory_signed_byte(bus);
                 }
-                MemoryValueType::UNSIGNED_WORD => {
+                MemoryValueTypeEnum::UNSIGNED_WORD => {
                     self.read_memory_unsigned_word(bus);
                 }
-                MemoryValueType::UNSIGNED_HALF_WORD => {
+                MemoryValueTypeEnum::UNSIGNED_HALF_WORD => {
                     self.read_memory_unsigned_half_word(bus);
                 }
-                MemoryValueType::UNSIGNED_BYTE => {
+                MemoryValueTypeEnum::UNSIGNED_BYTE => {
                     self.read_memory_unsigned_byte(bus);
                 }
             }
@@ -144,32 +144,32 @@ impl Executor {
 
             let result;
             match self.memory_value_type {
-                MemoryValueType::DOUBLE_WORD => {
+                MemoryValueTypeEnum::DOUBLE_WORD => {
                     result = bus.write_u64(
                         self.memory_address,
                         self.value_to_store_u64,
                     );
                 }
-                MemoryValueType::WORD => {
+                MemoryValueTypeEnum::WORD => {
                     result = bus.write_u32(
                         self.memory_address,
                         self.value_to_store_u32,
                     );
                 }
-                MemoryValueType::HALF_WORD => {
+                MemoryValueTypeEnum::HALF_WORD => {
                     result = bus.write_u16(
                         self.memory_address,
                         self.value_to_store_u16,
                     );
                 }
-                MemoryValueType::BYTE => {
+                MemoryValueTypeEnum::BYTE => {
                     result = bus
                         .write_u8(self.memory_address, self.value_to_store_u8);
                 }
 
-                MemoryValueType::UNSIGNED_WORD
-                | MemoryValueType::UNSIGNED_HALF_WORD
-                | MemoryValueType::UNSIGNED_BYTE => {
+                MemoryValueTypeEnum::UNSIGNED_WORD
+                | MemoryValueTypeEnum::UNSIGNED_HALF_WORD
+                | MemoryValueTypeEnum::UNSIGNED_BYTE => {
                     error!("unreachable!");
                     unreachable!("unreachable!");
                 }

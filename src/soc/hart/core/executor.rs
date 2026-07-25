@@ -17,7 +17,7 @@ use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
 use crate::soc::hart::privileged::machine::{
     MCause_Code, MSTATUS_MPP_MASK, MSTATUS_MPP_OFFSET, MStatus_MPP,
 };
-use crate::soc::memory::{MemoryValue, MemoryValueType};
+use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
 
 use log::{error, trace};
 
@@ -33,7 +33,7 @@ pub struct Executor {
     pub(crate) value_to_store_u32: Word,
     pub(crate) value_to_store_u64: DoubleWord,
     // value_to_store_u128: u128,
-    pub(crate) memory_value_type: MemoryValueType,
+    pub(crate) memory_value_type: MemoryValueTypeEnum,
 
     pub(crate) need_to_branch: bool,
 
@@ -60,7 +60,7 @@ impl Executor {
             value_to_store_u16: Default::default(),
             value_to_store_u32: Default::default(),
             value_to_store_u64: Default::default(),
-            memory_value_type: MemoryValueType::DOUBLE_WORD,
+            memory_value_type: MemoryValueTypeEnum::DOUBLE_WORD,
             need_to_branch: false,
             zicsr: ExecutorZicsrContext {
                 csr_value: Default::default(),
@@ -267,35 +267,35 @@ impl Executor {
         trace!("Executing LB...");
 
         self.update_memory_address(decoder);
-        self.memory_value_type = MemoryValueType::BYTE;
+        self.memory_value_type = MemoryValueTypeEnum::BYTE;
     }
 
     fn instruction_load_half(&mut self, decoder: &Decoder) {
         trace!("Executing LH...");
 
         self.update_memory_address(decoder);
-        self.memory_value_type = MemoryValueType::HALF_WORD;
+        self.memory_value_type = MemoryValueTypeEnum::HALF_WORD;
     }
 
     fn instruction_load_word(&mut self, decoder: &Decoder) {
         trace!("Executing LW...");
 
         self.update_memory_address(decoder);
-        self.memory_value_type = MemoryValueType::WORD;
+        self.memory_value_type = MemoryValueTypeEnum::WORD;
     }
 
     fn instruction_load_byte_unsigned(&mut self, decoder: &Decoder) {
         trace!("Executing LBU...");
 
         self.update_memory_address(decoder);
-        self.memory_value_type = MemoryValueType::UNSIGNED_BYTE;
+        self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_BYTE;
     }
 
     fn instruction_load_half_unsigned(&mut self, decoder: &Decoder) {
         trace!("Executing LHU...");
 
         self.update_memory_address(decoder);
-        self.memory_value_type = MemoryValueType::UNSIGNED_HALF_WORD;
+        self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_HALF_WORD;
     }
 
     fn instruction_addi(&mut self, decoder: &Decoder) {
@@ -384,7 +384,7 @@ impl Executor {
 
         self.update_memory_address(decoder);
         self.value_to_store_u8 = decoder.source_register_2 as Byte;
-        self.memory_value_type = MemoryValueType::BYTE;
+        self.memory_value_type = MemoryValueTypeEnum::BYTE;
     }
 
     fn instruction_store_half_word(&mut self, decoder: &Decoder) {
@@ -392,7 +392,7 @@ impl Executor {
 
         self.update_memory_address(decoder);
         self.value_to_store_u16 = decoder.source_register_2 as HalfWord;
-        self.memory_value_type = MemoryValueType::HALF_WORD;
+        self.memory_value_type = MemoryValueTypeEnum::HALF_WORD;
     }
 
     fn instruction_store_word(&mut self, decoder: &Decoder) {
@@ -400,7 +400,7 @@ impl Executor {
 
         self.update_memory_address(decoder);
         self.value_to_store_u32 = decoder.source_register_2 as Word;
-        self.memory_value_type = MemoryValueType::WORD;
+        self.memory_value_type = MemoryValueTypeEnum::WORD;
     }
 
     fn instruction_add(&mut self, decoder: &Decoder) {
@@ -633,14 +633,14 @@ impl Executor {
         trace!("Executing LD...");
 
         self.update_memory_address(decoder);
-        self.memory_value_type = MemoryValueType::DOUBLE_WORD;
+        self.memory_value_type = MemoryValueTypeEnum::DOUBLE_WORD;
     }
 
     fn instruction_load_word_unsigned(&mut self, decoder: &Decoder) {
         trace!("Executing LWU...");
 
         self.update_memory_address(decoder);
-        self.memory_value_type = MemoryValueType::UNSIGNED_WORD;
+        self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_WORD;
     }
 
     fn instruction_add_immediate_word(&mut self, decoder: &Decoder) {
@@ -697,7 +697,7 @@ impl Executor {
 
         self.update_memory_address(decoder);
         self.value_to_store_u64 = decoder.source_register_2;
-        self.memory_value_type = MemoryValueType::DOUBLE_WORD;
+        self.memory_value_type = MemoryValueTypeEnum::DOUBLE_WORD;
     }
 
     fn instruction_add_word(&mut self, decoder: &Decoder) {

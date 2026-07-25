@@ -16,6 +16,6 @@ pub mod init;
 pub use constants::arch::{BusAddrType, Byte, XLen};
 pub use globals::exit_codes::ExitCode;
 pub use hooks::{HookAction, PeriodicalTaskArgs};
-pub use soc::memory::MemoryValue;
+pub use soc::memory::MemoryValueType;
 pub use soc::memory_bus::Bus;
 pub use soc::peripherals::common::device::{Device, DeviceMeta, IODeviceError};

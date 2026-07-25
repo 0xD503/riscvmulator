@@ -9,7 +9,7 @@ use log::{error, trace};
 
 use crate::{
     constants::arch::{BusAddrType, Byte, XLen},
-    soc::memory::MemoryValue,
+    soc::memory::MemoryValueType,
 };
 
 pub struct Devices<AddrType> {
@@ -40,9 +40,13 @@ impl<AddrType> Devices<AddrType> {
             })?;
 
         // device validation
-        if device.mem_space_size() < size_of::<XLen>() {
+        if (device.end_addr() - size_of::<XLen>() as BusAddrType)
+            <= device.base_addr()
+        {
             let dev_name = device.name();
-            error!("{dev_name} device space size should be >= size of XLen");
+            error!(
+                "{dev_name} device memory space size should be >= size of XLen"
+            );
         }
         let device_base_addr = device.base_addr();
         let device_error_attach =
@@ -151,6 +155,37 @@ impl<AddrType> Devices<AddrType> {
     //         }
     //     } else {
     //         result = Err(IODeviceError::Write(addr))
+    //     }
+
+    //     result
+    // }
+
+    // fn read<MemValType: MemoryValueType>(
+    //     &self,
+    //     addr: XLen, // TODO: fix to usize
+    // ) -> Result<MemValType, IODeviceError> {
+    //     let result;
+
+    //     let device_tree = self.tree.read().unwrap_or_else(|err| {
+    //         todo!("Is it even possible???: {err}");
+    //     });
+    //     let closest_dev = device_tree.range(..=addr).next_back();
+
+    //     if let Some(device_entry) = closest_dev {
+    //         let device = device_entry.1;
+    //         let device_addr_range = device.base_addr()
+    //             ..=(device.end_addr() - size_of::<MemValType>() as XLen);
+    //         if device_addr_range.contains(&addr) {
+    //             let offset = (addr - device.base_addr()) as usize;
+
+    //             // match MemValType {
+    //             // }
+    //             result = device.read_bytes(offset, );
+    //         } else {
+    //             result = Err(IODeviceError::Read(addr))
+    //         }
+    //     } else {
+    //         result = Err(IODeviceError::Read(addr))
     //     }
 
     //     result
@@ -530,8 +565,11 @@ pub trait Device: Send + Sync + Debug {
 }
 
 pub trait RawDevice {
-    fn read_raw<MemValType: MemoryValue>(&self, offset: usize) -> MemValType;
-    fn write_raw<MemValType: MemoryValue>(
+    fn read_raw<MemValType: MemoryValueType>(
+        &self,
+        offset: usize,
+    ) -> MemValType;
+    fn write_raw<MemValType: MemoryValueType>(
         &self,
         offset: usize,
         value: MemValType,
