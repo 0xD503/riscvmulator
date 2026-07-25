@@ -149,7 +149,7 @@ impl<AddrType> Devices<AddrType> {
     //             device.base_addr()..=(device.end_addr() - value.len() as XLen);
     //         if device_addr_range.contains(&addr) {
     //             let offset = (addr - device.base_addr()) as usize;
-    //             result = device.write_bytes(offset, value);
+    //             result = device.write(offset, value);
     //         } else {
     //             result = Err(IODeviceError::Write(addr))
     //         }
@@ -438,6 +438,8 @@ impl<AddrType> Devices<AddrType> {
 pub enum IODeviceError {
     Read(XLen),
     Write(XLen),
+    ReadPoisoned(XLen),
+    WritePoisoned(XLen),
     LoadAccessFault(XLen),
     StoreAMOAccessFault(XLen),
     Attach(String),
@@ -462,6 +464,18 @@ impl fmt::Display for IODeviceError {
             }
             Self::Write(addr) => {
                 writeln!(formatter, "failed to write device at addr: {addr}")
+            }
+            Self::ReadPoisoned(addr) => {
+                writeln!(
+                    formatter,
+                    "failed to read (poisoned) device at addr: {addr}"
+                )
+            }
+            Self::WritePoisoned(addr) => {
+                writeln!(
+                    formatter,
+                    "failed to write (poisoned) device at addr: {addr}"
+                )
             }
             Self::LoadAccessFault(addr) => {
                 writeln!(formatter, "load access fault: {addr}")

@@ -44,7 +44,7 @@ impl Device for UART {
     ) -> Result<(), IODeviceError> {
         let guarded_state_read = self.guarded_state.read().map_err(|err| {
             error!("failed to read device state: {err}");
-            IODeviceError::Read(offset as XLen)
+            IODeviceError::ReadPoisoned(offset as XLen)
         })?;
         guarded_state_read.memory_map.read(offset, dest)?;
 
@@ -59,9 +59,9 @@ impl Device for UART {
         let mut guarded_state_write =
             self.guarded_state.write().map_err(|err| {
                 error!("failed to write device state: {err}");
-                IODeviceError::Write(offset as XLen)
+                IODeviceError::WritePoisoned(offset as XLen)
             })?;
-        guarded_state_write.memory_map.write_bytes(offset, value)?;
+        guarded_state_write.memory_map.write(offset, value)?;
 
         Ok(())
     }

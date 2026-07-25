@@ -1,4 +1,5 @@
-use crate::constants::arch::BusAddrType;
+use crate::Byte;
+use crate::constants::arch::{BusAddrType, DoubleWord, HalfWord, Word};
 use crate::soc::hart::core::decoder::Decoder;
 use crate::soc::hart::core::executor::Executor;
 use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
@@ -17,13 +18,16 @@ impl Executor {
 
     fn handle_memory_read<const SIGNED: bool, ValType: MemoryValueType>(
         &mut self,
-        mem_read_result: &Result<ValType, IODeviceError>,
+        mem_read_result: &Result<(), IODeviceError>,
+        dest: &[Byte],
     ) {
-        if let Ok(non_extended_value) = mem_read_result {
+        if mem_read_result.is_ok() {
             if SIGNED {
-                self.result = non_extended_value.sign_extend();
+                self.result = ValType::from_le_bytes(dest.try_into().unwrap())
+                    .sign_extend();
             } else {
-                self.result = non_extended_value.zero_extend();
+                self.result = ValType::from_le_bytes(dest.try_into().unwrap())
+                    .zero_extend();
             }
         } else {
             // info!("");
@@ -63,33 +67,47 @@ impl Executor {
     // }
 
     fn read_memory_signed_byte(&mut self, bus: &SystemBus<BusAddrType>) {
-        let mem_read_result = bus.read_u8(self.memory_address);
-        self.handle_memory_read::<true, _>(&mem_read_result);
+        let mut dest = [0u8; size_of::<Byte>()];
+
+        let mem_read_result = bus.read(self.memory_address, &mut dest);
+        self.handle_memory_read::<true, Byte>(&mem_read_result, &dest);
     }
     fn read_memory_signed_half_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        let mem_read_result = bus.read_u16(self.memory_address);
-        self.handle_memory_read::<true, _>(&mem_read_result);
+        let mut dest = [0u8; size_of::<HalfWord>()];
+
+        let mem_read_result = bus.read(self.memory_address, &mut dest);
+        self.handle_memory_read::<true, HalfWord>(&mem_read_result, &dest);
     }
     fn read_memory_signed_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        let mem_read_result = bus.read_u32(self.memory_address);
-        self.handle_memory_read::<true, _>(&mem_read_result);
+        let mut dest = [0u8; size_of::<Word>()];
+
+        let mem_read_result = bus.read(self.memory_address, &mut dest);
+        self.handle_memory_read::<true, Word>(&mem_read_result, &dest);
     }
     fn read_memory_signed_double_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        let mem_read_result = bus.read_u64(self.memory_address);
-        self.handle_memory_read::<true, _>(&mem_read_result);
+        let mut dest = [0u8; size_of::<DoubleWord>()];
+
+        let mem_read_result = bus.read(self.memory_address, &mut dest);
+        self.handle_memory_read::<true, DoubleWord>(&mem_read_result, &dest);
     }
 
     fn read_memory_unsigned_byte(&mut self, bus: &SystemBus<BusAddrType>) {
-        let mem_read_result = bus.read_u8(self.memory_address);
-        self.handle_memory_read::<false, _>(&mem_read_result);
+        let mut dest = [0u8; size_of::<Byte>()];
+
+        let mem_read_result = bus.read(self.memory_address, &mut dest);
+        self.handle_memory_read::<false, Byte>(&mem_read_result, &dest);
     }
     fn read_memory_unsigned_half_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        let mem_read_result = bus.read_u16(self.memory_address);
-        self.handle_memory_read::<false, _>(&mem_read_result);
+        let mut dest = [0u8; size_of::<HalfWord>()];
+
+        let mem_read_result = bus.read(self.memory_address, &mut dest);
+        self.handle_memory_read::<false, HalfWord>(&mem_read_result, &dest);
     }
     fn read_memory_unsigned_word(&mut self, bus: &SystemBus<BusAddrType>) {
-        let mem_read_result = bus.read_u32(self.memory_address);
-        self.handle_memory_read::<false, _>(&mem_read_result);
+        let mut dest = [0u8; size_of::<Word>()];
+
+        let mem_read_result = bus.read(self.memory_address, &mut dest);
+        self.handle_memory_read::<false, Word>(&mem_read_result, &dest);
     }
     // fn read_memory_unsigned_u64(&mut self, bus: &SystemBus<BusAddrType>) {
     //     self.result = bus.read_u64(self.memory_address).zero_extend();

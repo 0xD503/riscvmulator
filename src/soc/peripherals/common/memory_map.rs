@@ -1,7 +1,7 @@
 use log::trace;
 
 use crate::{
-    IODeviceError, soc::peripherals::common::constants::DEV_MEM_INIT_VAL,
+    Byte, IODeviceError, soc::peripherals::common::constants::DEV_MEM_INIT_VAL,
 };
 
 #[derive(Debug)]
@@ -34,10 +34,10 @@ impl MemoryMap {
         Ok(())
     }
 
-    pub fn write_bytes(
+    pub fn write(
         &mut self,
         offset: usize,
-        value: &[u8],
+        value: &[Byte],
     ) -> Result<(), IODeviceError> {
         trace!("Writing device at offset: {offset:#018X?}");
 

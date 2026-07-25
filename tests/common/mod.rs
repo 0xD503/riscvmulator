@@ -1,5 +1,5 @@
 use riscvmulator::{
-    Bus, ExitCode, HookAction, PeriodicalTaskArgs,
+    Bus, ExitCode, HookAction, PeriodicalTaskArgs, Word,
     init::{emulator_create, emulator_prepare_loop},
 };
 
@@ -29,12 +29,20 @@ pub fn run_test(test_path: &'static str) {
     // add HTIF memory address spy/watcher
     let tohost_addr = elf_data.tohost_addr;
     let htif_spy = move |args: &PeriodicalTaskArgs| {
-        match args.bus.read_u32(tohost_addr) {
-            Ok(HTIF_SUCCESS) => HookAction::Stop(ExitCode::Success),
-            // riscv-tests HTIF returns number of failed test case on failure
-            Ok(code) if code != 0 => HookAction::Stop(ExitCode::Error),
+        let mut dest = [0u8; size_of::<Word>()];
 
-            _ => HookAction::None,
+        let mem_read_result = args.bus.read(tohost_addr, &mut dest);
+
+        if mem_read_result.is_ok() {
+            let dest = Word::from_le_bytes(dest);
+            match dest {
+                HTIF_SUCCESS => HookAction::Stop(ExitCode::Success),
+                code if code != 0 => HookAction::Stop(ExitCode::Error),
+
+                _ => HookAction::None,
+            }
+        } else {
+            HookAction::None
         }
     };
     emulator.add_periodical_task(Box::new(htif_spy));

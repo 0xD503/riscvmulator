@@ -15,10 +15,10 @@ pub trait Bus<AddrType> {
     // type. Read more at:
     // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
 
-    fn read_u8(&self, address: AddrType) -> Result<u8, IODeviceError>;
-    fn read_u16(&self, address: AddrType) -> Result<u16, IODeviceError>;
-    fn read_u32(&self, address: AddrType) -> Result<u32, IODeviceError>;
-    fn read_u64(&self, address: AddrType) -> Result<u64, IODeviceError>;
+    // fn read_u8(&self, address: AddrType) -> Result<u8, IODeviceError>;
+    // fn read_u16(&self, address: AddrType) -> Result<u16, IODeviceError>;
+    // fn read_u32(&self, address: AddrType) -> Result<u32, IODeviceError>;
+    // fn read_u64(&self, address: AddrType) -> Result<u64, IODeviceError>;
 
     fn write_u8(
         &self,
@@ -49,8 +49,11 @@ pub trait Bus<AddrType> {
         address: AddrType,
         dest: &mut [Byte],
     ) -> Result<(), IODeviceError>;
-    fn write(&self, address: AddrType, value: u64)
-    -> Result<(), IODeviceError>;
+    fn write(
+        &self,
+        address: AddrType,
+        value: &[Byte],
+    ) -> Result<(), IODeviceError>;
 
     // // instruction read/write
     // fn instruction_read(&self, address: AddrType) -> Result<(), IODeviceError>;
@@ -128,73 +131,83 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         address: XLen,
         dest: &mut [Byte],
     ) -> Result<(), IODeviceError> {
-        Err(IODeviceError::LazyError)
+        trace!("Reading memory at addr: {address:#018X?}");
+
+        let offset = (address - self.ram_base) as usize;
+        self.memory.read(offset, dest)
     }
-    fn write(&self, address: XLen, value: u64) -> Result<(), IODeviceError> {
-        Err(IODeviceError::LazyError)
+    fn write(
+        &self,
+        address: XLen,
+        value: &[Byte],
+    ) -> Result<(), IODeviceError> {
+        trace!("Writing memory at addr: {address:#018X?}");
+
+        let offset = (address - self.ram_base) as usize;
+        self.memory.write(offset, value)
     }
 
-    fn read_u8(&self, address: XLen) -> Result<u8, IODeviceError> {
-        if (self.ram_base..=(self.ram_end - size_of::<u8>() as XLen))
-            .contains(&address)
-        {
-            trace!("Reading memory at addr: {address:#018X?}");
+    // fn read_u8(&self, address: XLen) -> Result<u8, IODeviceError> {
+    //     if (self.ram_base..=(self.ram_end - size_of::<u8>() as XLen))
+    //         .contains(&address)
+    //     {
+    //         trace!("Reading memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
-            Ok(self.memory.read_u8(offset))
-        } else {
-            trace!("Reading MMIO at addr: {address:#018X?}");
+    //         let offset = (address - self.ram_base) as usize;
+    //         Ok(self.memory.read_u8(offset))
+    //     } else {
+    //         trace!("Reading MMIO at addr: {address:#018X?}");
 
-            // let mut dest = [0u8; size_of::<u8>()];
-            // self.devices.read_bytes(address, &mut dest)?;
+    //         // let mut dest = [0u8; size_of::<u8>()];
+    //         // self.devices.read_bytes(address, &mut dest)?;
 
-            // Ok(u8::from_le_bytes(dest))
+    //         // Ok(u8::from_le_bytes(dest))
 
-            self.devices.read_u8(address)
-        }
-    }
-    fn read_u16(&self, address: XLen) -> Result<u16, IODeviceError> {
-        if (self.ram_base..=(self.ram_end - size_of::<u16>() as XLen))
-            .contains(&address)
-        {
-            trace!("Reading memory at addr: {address:#018X?}");
+    //         self.devices.read_u8(address)
+    //     }
+    // }
+    // fn read_u16(&self, address: XLen) -> Result<u16, IODeviceError> {
+    //     if (self.ram_base..=(self.ram_end - size_of::<u16>() as XLen))
+    //         .contains(&address)
+    //     {
+    //         trace!("Reading memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
-            Ok(self.memory.read_u16(offset))
-        } else {
-            trace!("Reading MMIO at addr: {address:#018X?}");
+    //         let offset = (address - self.ram_base) as usize;
+    //         Ok(self.memory.read_u16(offset))
+    //     } else {
+    //         trace!("Reading MMIO at addr: {address:#018X?}");
 
-            self.devices.read_u16(address)
-        }
-    }
-    fn read_u32(&self, address: XLen) -> Result<u32, IODeviceError> {
-        if (self.ram_base..=(self.ram_end - size_of::<u32>() as XLen))
-            .contains(&address)
-        {
-            trace!("Reading memory at addr: {address:#018X?}");
+    //         self.devices.read_u16(address)
+    //     }
+    // }
+    // fn read_u32(&self, address: XLen) -> Result<u32, IODeviceError> {
+    //     if (self.ram_base..=(self.ram_end - size_of::<u32>() as XLen))
+    //         .contains(&address)
+    //     {
+    //         trace!("Reading memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
-            Ok(self.memory.read_u32(offset))
-        } else {
-            trace!("Reading MMIO at addr: {address:#018X?}");
+    //         let offset = (address - self.ram_base) as usize;
+    //         Ok(self.memory.read_u32(offset))
+    //     } else {
+    //         trace!("Reading MMIO at addr: {address:#018X?}");
 
-            self.devices.read_u32(address)
-        }
-    }
-    fn read_u64(&self, address: XLen) -> Result<u64, IODeviceError> {
-        if (self.ram_base..=(self.ram_end - size_of::<u64>() as XLen))
-            .contains(&address)
-        {
-            trace!("Reading memory at addr: {address:#018X?}");
+    //         self.devices.read_u32(address)
+    //     }
+    // }
+    // fn read_u64(&self, address: XLen) -> Result<u64, IODeviceError> {
+    //     if (self.ram_base..=(self.ram_end - size_of::<u64>() as XLen))
+    //         .contains(&address)
+    //     {
+    //         trace!("Reading memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
-            Ok(self.memory.read_u64(offset))
-        } else {
-            trace!("Reading MMIO at addr: {address:#018X?}");
+    //         let offset = (address - self.ram_base) as usize;
+    //         Ok(self.memory.read_u64(offset))
+    //     } else {
+    //         trace!("Reading MMIO at addr: {address:#018X?}");
 
-            self.devices.read_u64(address)
-        }
-    }
+    //         self.devices.read_u64(address)
+    //     }
+    // }
 
     fn write_u8(&self, address: XLen, value: u8) -> Result<(), IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u8>() as XLen))
@@ -317,7 +330,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
             error!(
                 "an attempt to read instruction from unimplemented address space: {address:#018X}"
             );
-            panic!(
+            todo!(
                 "an attempt to read instruction from unimplemented address space: {address:#018X}"
             );
         }

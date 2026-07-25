@@ -187,7 +187,8 @@ pub trait MemoryDevice<AddrType>: Send + Sync {
         offset: usize,
         dest: &mut [Byte],
     ) -> Result<(), IODeviceError>;
-    fn write(&self, offset: usize, value: u64) -> Result<(), IODeviceError>;
+    fn write(&self, offset: usize, value: &[Byte])
+    -> Result<(), IODeviceError>;
 }
 
 #[derive(Default)]
@@ -274,21 +275,41 @@ impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
     ) -> Result<(), IODeviceError> {
         trace!("Reading memory at offset: {offset:#018X?}");
 
-        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
+        let byte_array_guard_read =
+            self.byte_array.read().unwrap_or_else(|err| {
+                todo!("Is it even possible???: {err}");
+            });
 
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + dest.len() <= byte_array.len());
+        debug_assert!(offset + dest.len() <= byte_array_guard_read.len());
 
-        // let bytes = byte_array[offset..offset + dest.len()].try_into().unwrap();
-        // // TODO: notice, so far emulator only supports little-endian
-        // dest = Byte::from_le_bytes(&bytes);
-        // // Err(IODeviceError::LazyError)
+        let src = byte_array_guard_read[offset..offset + dest.len()]
+            .try_into()
+            .unwrap();
+        // TODO: notice, so far emulator only supports little-endian
+        dest.copy_from_slice(src);
+
         Ok(())
     }
-    fn write(&self, offset: usize, value: u64) -> Result<(), IODeviceError> {
-        Err(IODeviceError::LazyError)
+    fn write(
+        &self,
+        offset: usize,
+        value: &[Byte],
+    ) -> Result<(), IODeviceError> {
+        trace!("Writing memory at offset: {offset:#018X?}");
+
+        let mut byte_array_guard_write =
+            self.byte_array.write().unwrap_or_else(|err| {
+                todo!("Is it even possible???: {err}");
+            });
+
+        // bus makes bounds check, so we assume that `offset` is always correct
+        debug_assert!(offset + value.len() <= byte_array_guard_write.len());
+
+        byte_array_guard_write[offset..offset + value.len()]
+            .copy_from_slice(value);
+
+        Ok(())
     }
 
     fn read_u8(&self, offset: usize) -> u8 {
