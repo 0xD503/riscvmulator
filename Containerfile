@@ -41,7 +41,7 @@ RUN apt-get update && apt-get install --assume-yes \
     && cargo install --locked cargo-bloat \
     && cargo install --locked cargo-show-asm \
     && cargo install --locked cargo-deny \
-    && cargo install --locked cargo-about \
+    && cargo install --locked --features cli cargo-about \
     && cargo install --locked cargo-audit \
     && cargo install --locked cargo-fuzz
 
