@@ -163,26 +163,28 @@ impl Executor {
             let result;
             match self.memory_value_type {
                 MemoryValueTypeEnum::DOUBLE_WORD => {
-                    result = bus.write_u64(
+                    result = bus.write(
                         self.memory_address,
-                        self.value_to_store_u64,
+                        &self.value_to_store_u64.to_le_bytes(),
                     );
                 }
                 MemoryValueTypeEnum::WORD => {
-                    result = bus.write_u32(
+                    result = bus.write(
                         self.memory_address,
-                        self.value_to_store_u32,
+                        &self.value_to_store_u32.to_le_bytes(),
                     );
                 }
                 MemoryValueTypeEnum::HALF_WORD => {
-                    result = bus.write_u16(
+                    result = bus.write(
                         self.memory_address,
-                        self.value_to_store_u16,
+                        &self.value_to_store_u16.to_le_bytes(),
                     );
                 }
                 MemoryValueTypeEnum::BYTE => {
-                    result = bus
-                        .write_u8(self.memory_address, self.value_to_store_u8);
+                    result = bus.write(
+                        self.memory_address,
+                        &self.value_to_store_u8.to_le_bytes(),
+                    );
                 }
 
                 MemoryValueTypeEnum::UNSIGNED_WORD

@@ -20,26 +20,26 @@ pub trait Bus<AddrType> {
     // fn read_u32(&self, address: AddrType) -> Result<u32, IODeviceError>;
     // fn read_u64(&self, address: AddrType) -> Result<u64, IODeviceError>;
 
-    fn write_u8(
-        &self,
-        address: AddrType,
-        value: u8,
-    ) -> Result<(), IODeviceError>;
-    fn write_u16(
-        &self,
-        address: AddrType,
-        value: u16,
-    ) -> Result<(), IODeviceError>;
-    fn write_u32(
-        &self,
-        address: AddrType,
-        value: u32,
-    ) -> Result<(), IODeviceError>;
-    fn write_u64(
-        &self,
-        address: AddrType,
-        value: u64,
-    ) -> Result<(), IODeviceError>;
+    // fn write_u8(
+    //     &self,
+    //     address: AddrType,
+    //     value: u8,
+    // ) -> Result<(), IODeviceError>;
+    // fn write_u16(
+    //     &self,
+    //     address: AddrType,
+    //     value: u16,
+    // ) -> Result<(), IODeviceError>;
+    // fn write_u32(
+    //     &self,
+    //     address: AddrType,
+    //     value: u32,
+    // ) -> Result<(), IODeviceError>;
+    // fn write_u64(
+    //     &self,
+    //     address: AddrType,
+    //     value: u64,
+    // ) -> Result<(), IODeviceError>;
 
     // instruction read/write
     fn instruction_read(&self, address: AddrType) -> InstructionTypeCompressed;
@@ -209,78 +209,78 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
     //     }
     // }
 
-    fn write_u8(&self, address: XLen, value: u8) -> Result<(), IODeviceError> {
-        if (self.ram_base..=(self.ram_end - size_of::<u8>() as XLen))
-            .contains(&address)
-        {
-            trace!("Writing memory at addr: {address:#018X?}");
+    // fn write_u8(&self, address: XLen, value: u8) -> Result<(), IODeviceError> {
+    //     if (self.ram_base..=(self.ram_end - size_of::<u8>() as XLen))
+    //         .contains(&address)
+    //     {
+    //         trace!("Writing memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
-            self.memory.write_u8(offset, value);
-            Ok(())
-        } else {
-            trace!("Writing to MMIO at addr: {address:#018X?}");
+    //         let offset = (address - self.ram_base) as usize;
+    //         self.memory.write_u8(offset, value);
+    //         Ok(())
+    //     } else {
+    //         trace!("Writing to MMIO at addr: {address:#018X?}");
 
-            self.devices.write_u8(address, value)
-        }
-    }
-    fn write_u16(
-        &self,
-        address: XLen,
-        value: u16,
-    ) -> Result<(), IODeviceError> {
-        if (self.ram_base..=(self.ram_end - size_of::<u16>() as XLen))
-            .contains(&address)
-        {
-            trace!("Writing memory at addr: {address:#018X?}");
+    //         self.devices.write_u8(address, value)
+    //     }
+    // }
+    // fn write_u16(
+    //     &self,
+    //     address: XLen,
+    //     value: u16,
+    // ) -> Result<(), IODeviceError> {
+    //     if (self.ram_base..=(self.ram_end - size_of::<u16>() as XLen))
+    //         .contains(&address)
+    //     {
+    //         trace!("Writing memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
-            self.memory.write_u16(offset, value);
-            Ok(())
-        } else {
-            trace!("Writing to MMIO at addr: {address:#018X?}");
+    //         let offset = (address - self.ram_base) as usize;
+    //         self.memory.write_u16(offset, value);
+    //         Ok(())
+    //     } else {
+    //         trace!("Writing to MMIO at addr: {address:#018X?}");
 
-            self.devices.write_u16(address, value)
-        }
-    }
-    fn write_u32(
-        &self,
-        address: XLen,
-        value: u32,
-    ) -> Result<(), IODeviceError> {
-        if (self.ram_base..=(self.ram_end - size_of::<u32>() as XLen))
-            .contains(&address)
-        {
-            trace!("Writing memory at addr: {address:#018X?}");
+    //         self.devices.write_u16(address, value)
+    //     }
+    // }
+    // fn write_u32(
+    //     &self,
+    //     address: XLen,
+    //     value: u32,
+    // ) -> Result<(), IODeviceError> {
+    //     if (self.ram_base..=(self.ram_end - size_of::<u32>() as XLen))
+    //         .contains(&address)
+    //     {
+    //         trace!("Writing memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
-            self.memory.write_u32(offset, value);
-            Ok(())
-        } else {
-            trace!("Writing to MMIO at addr: {address:#018X?}");
+    //         let offset = (address - self.ram_base) as usize;
+    //         self.memory.write_u32(offset, value);
+    //         Ok(())
+    //     } else {
+    //         trace!("Writing to MMIO at addr: {address:#018X?}");
 
-            self.devices.write_u32(address, value)
-        }
-    }
-    fn write_u64(
-        &self,
-        address: XLen,
-        value: u64,
-    ) -> Result<(), IODeviceError> {
-        if (self.ram_base..=(self.ram_end - size_of::<u64>() as XLen))
-            .contains(&address)
-        {
-            trace!("Writing memory at addr: {address:#018X?}");
+    //         self.devices.write_u32(address, value)
+    //     }
+    // }
+    // fn write_u64(
+    //     &self,
+    //     address: XLen,
+    //     value: u64,
+    // ) -> Result<(), IODeviceError> {
+    //     if (self.ram_base..=(self.ram_end - size_of::<u64>() as XLen))
+    //         .contains(&address)
+    //     {
+    //         trace!("Writing memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
-            self.memory.write_u64(offset, value);
-            Ok(())
-        } else {
-            trace!("Writing to MMIO at addr: {address:#018X?}");
+    //         let offset = (address - self.ram_base) as usize;
+    //         self.memory.write_u64(offset, value);
+    //         Ok(())
+    //     } else {
+    //         trace!("Writing to MMIO at addr: {address:#018X?}");
 
-            self.devices.write_u64(address, value)
-        }
-    }
+    //         self.devices.write_u64(address, value)
+    //     }
+    // }
 
     // fn read<MemValType: MemoryValue>(&self, address: XLen) -> MemValType {
     //     if (self.ram_base..=(self.ram_end - size_of::<MemValType>() as XLen))
