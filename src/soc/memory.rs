@@ -177,11 +177,6 @@ pub trait MemoryDevice<AddrType>: Send + Sync {
     fn read_u32(&self, offset: usize) -> u32;
     fn read_u64(&self, offset: usize) -> u64;
 
-    fn write_u8(&self, offset: usize, value: u8);
-    fn write_u16(&self, offset: usize, value: u16);
-    fn write_u32(&self, offset: usize, value: u32);
-    fn write_u64(&self, offset: usize, value: u64);
-
     fn read(
         &self,
         offset: usize,
@@ -245,26 +240,6 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
         // TODO: notice, so far emulator only supports little-endian
         MemValType::from_le_bytes(bytes)
     }
-
-    fn write_impl<MemValType: MemoryValueType>(
-        &self,
-        offset: usize,
-        value: MemValType,
-    ) {
-        trace!("Writing memory at offset: {offset:#018X?}");
-
-        let mut byte_array = self.byte_array.write().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
-
-        // TODO: notice, so far emulator only supports little-endian
-        let bytes = value.to_le_bytes();
-        byte_array[offset..offset + size_of::<MemValType>()]
-            .copy_from_slice(bytes.as_ref());
-    }
 }
 
 impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
@@ -323,19 +298,6 @@ impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
     }
     fn read_u64(&self, offset: usize) -> u64 {
         self.read_impl(offset)
-    }
-
-    fn write_u8(&self, offset: usize, value: u8) {
-        self.write_impl(offset, value);
-    }
-    fn write_u16(&self, offset: usize, value: u16) {
-        self.write_impl(offset, value);
-    }
-    fn write_u32(&self, offset: usize, value: u32) {
-        self.write_impl(offset, value);
-    }
-    fn write_u64(&self, offset: usize, value: u64) {
-        self.write_impl(offset, value);
     }
 }
 
