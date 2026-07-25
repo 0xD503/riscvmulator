@@ -94,6 +94,12 @@ check:
   {{RUN_IN_CONTAINER}}cargo check --profile=release-checked
 
 
+## legal
+
+legal:
+  {{RUN_IN_CONTAINER}}cargo deny check
+
+
 ## clean
 
 clean:
