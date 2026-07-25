@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use riscvmulator::ExitCode;
 use riscvmulator::init::{emulator_create, emulator_prepare_loop};
 

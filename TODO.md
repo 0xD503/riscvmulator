@@ -35,6 +35,7 @@
 - [ ] add cargo-deny list
 - [ ] clean out of stale commented out code/comments
 - [ ] get rid of heap allocations outside of initialization/deinitializations
+- [ ] fix security vulnerabilities (if present)
 
 ## Refactor
 

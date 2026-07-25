@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 mod constants;
 mod globals;
 mod hooks;

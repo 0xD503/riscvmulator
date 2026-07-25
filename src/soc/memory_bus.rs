@@ -51,6 +51,9 @@ pub trait Bus<AddrType> {
     ) -> Result<(), IODeviceError>;
     fn write(&self, address: AddrType, value: u64)
     -> Result<(), IODeviceError>;
+
+    // // instruction read/write
+    // fn instruction_read(&self, address: AddrType) -> InstructionTypeCompressed;
 }
 
 pub trait RawBus<AddrType> {

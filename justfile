@@ -35,16 +35,16 @@ run-dev-container:
   fi
 
 build-dev:
-  {{RUN_IN_CONTAINER}}cargo build --release
+  {{RUN_IN_CONTAINER}}cargo build --profile=release-checked
 
 run-dev:
-  {{RUN_IN_CONTAINER_DEBUG}}cargo run --release
+  {{RUN_IN_CONTAINER_DEBUG}}cargo run --profile=release-checked
 
 run-dev-trace:
-  {{RUN_IN_CONTAINER_TRACE}}cargo run --release
+  {{RUN_IN_CONTAINER_TRACE}}cargo run --profile=release-checked
 
 asm:
-  {{RUN_IN_CONTAINER_DEBUG}}cargo asm --release
+  {{RUN_IN_CONTAINER_DEBUG}}cargo asm --profile=release
 
 build-deb:
   {{RUN_IN_CONTAINER}}cargo build
@@ -59,10 +59,10 @@ run-deb-trace:
 ## release
 
 build:
-  {{RUN_IN_CONTAINER}}cargo build --release
+  {{RUN_IN_CONTAINER}}cargo build --profile=release
 
 run:
-  {{RUN_IN_CONTAINER}}cargo run --release
+  {{RUN_IN_CONTAINER}}cargo run --profile=release
 
 run-release-container:
   #!/bin/env sh
@@ -76,22 +76,22 @@ run-release-container:
 ## quality
 
 test:
-  {{RUN_IN_CONTAINER_DEBUG}}cargo test --release
+  {{RUN_IN_CONTAINER_DEBUG}}cargo test --profile=release-checked
 
 bench:
   {{RUN_IN_CONTAINER_DEBUG}}cargo bench
 
 lint:
-  {{RUN_IN_CONTAINER}}cargo clippy -- -D warnings
+  {{RUN_IN_CONTAINER}}cargo clippy --profile=release-checked -- -D warnings
 
 fmt:
   {{RUN_IN_CONTAINER}}cargo fmt
 
 doc:
-  {{RUN_IN_CONTAINER}}cargo doc --release --no-deps --open
+  {{RUN_IN_CONTAINER}}cargo doc --profile=release --no-deps --open
 
 check:
-  {{RUN_IN_CONTAINER}}cargo check --release
+  {{RUN_IN_CONTAINER}}cargo check --profile=release-checked
 
 
 ## clean

@@ -41,7 +41,7 @@ impl<AddrType> Devices<AddrType> {
 
         // device validation
         if (device.end_addr() - size_of::<XLen>() as BusAddrType)
-            <= device.base_addr()
+            < device.base_addr()
         {
             let dev_name = device.name();
             error!(
@@ -175,8 +175,8 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range =
-                device.base_addr()..=(device.end_addr() - dest.len() as XLen);
+            let device_addr_range = device.base_addr()
+                ..=(device.end_addr() - dest.len() as BusAddrType);
             if device_addr_range.contains(&addr) {
                 let offset = (addr - device.base_addr()) as usize;
 

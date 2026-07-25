@@ -23,7 +23,8 @@ RUN apt-get update && apt-get install --assume-yes \
     binutils-riscv64-linux-gnu binutils-riscv64-unknown-elf \
     picolibc-riscv64-unknown-elf newlib-source \
     #gdb-riscv64-linux-gnu \
-    clang lld mold make \
+    clang lld mold make llvm-bolt \
+    #perf bloaty \
     git \
     less patch \
     python3 \
@@ -35,7 +36,13 @@ RUN apt-get update && apt-get install --assume-yes \
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt rust-src rust-analyzer \
     && cargo install --locked just \
-    && cargo install --locked wild-linker
+    && cargo install --locked wild-linker \
+    && cargo install --locked flamegraph \
+    && cargo install --locked cargo-bloat \
+    && cargo install --locked cargo-show-asm \
+    && cargo install --locked cargo-deny \
+    && cargo install --locked cargo-audit \
+    && cargo install --locked cargo-fuzz
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
     && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME}
