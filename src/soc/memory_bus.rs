@@ -53,7 +53,7 @@ pub trait Bus<AddrType> {
     -> Result<(), IODeviceError>;
 
     // // instruction read/write
-    // fn instruction_read(&self, address: AddrType) -> InstructionTypeCompressed;
+    // fn instruction_read(&self, address: AddrType) -> Result<(), IODeviceError>;
 }
 
 pub trait RawBus<AddrType> {
@@ -101,9 +101,9 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
         self.memory.reset();
     }
 
-    fn read_bytes(&self, address: AddrType) -> Result<(), IODeviceError> {
-        Err(IODeviceError::LazyError)
-    }
+    // fn read(&self, address: AddrType) -> Result<(), IODeviceError> {
+    //     Err(IODeviceError::LazyError)
+    // }
 
     // pub fn fill_with_nops(&mut self) {
     //     self.memory_reset();

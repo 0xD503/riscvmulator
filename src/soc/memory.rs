@@ -182,13 +182,12 @@ pub trait MemoryDevice<AddrType>: Send + Sync {
     fn write_u32(&self, offset: usize, value: u32);
     fn write_u64(&self, offset: usize, value: u64);
 
-    // fn read(
-    //     &self,
-    //     address: AddrType,
-    //     dest: &mut [Byte],
-    // ) -> Result<(), IODeviceError>;
-    // fn write(&self, address: AddrType, value: u64)
-    // -> Result<(), IODeviceError>;
+    fn read(
+        &self,
+        offset: usize,
+        dest: &mut [Byte],
+    ) -> Result<(), IODeviceError>;
+    fn write(&self, offset: usize, value: u64) -> Result<(), IODeviceError>;
 }
 
 #[derive(Default)]
@@ -268,6 +267,30 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
 }
 
 impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
+    fn read(
+        &self,
+        offset: usize,
+        dest: &mut [Byte],
+    ) -> Result<(), IODeviceError> {
+        trace!("Reading memory at offset: {offset:#018X?}");
+
+        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
+            todo!("Is it even possible???: {err}");
+        });
+
+        // bus makes bounds check, so we assume that `offset` is always correct
+        debug_assert!(offset + dest.len() <= byte_array.len());
+
+        // let bytes = byte_array[offset..offset + dest.len()].try_into().unwrap();
+        // // TODO: notice, so far emulator only supports little-endian
+        // dest = Byte::from_le_bytes(&bytes);
+        // // Err(IODeviceError::LazyError)
+        Ok(())
+    }
+    fn write(&self, offset: usize, value: u64) -> Result<(), IODeviceError> {
+        Err(IODeviceError::LazyError)
+    }
+
     fn read_u8(&self, offset: usize) -> u8 {
         self.read_impl(offset)
     }
