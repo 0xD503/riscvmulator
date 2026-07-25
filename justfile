@@ -93,6 +93,9 @@ doc:
 check:
   {{RUN_IN_CONTAINER}}cargo check --profile=release-checked
 
+audit:
+  {{RUN_IN_CONTAINER}}cargo audit
+
 
 ## legal
 
