@@ -14,7 +14,7 @@ rust-version = "1.97"
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 # toml = "1.1.2"
-log = { version = "0.4.29", features = [ "max_level_trace", "release_max_level_trace" ] }
+log = { version = "0.4.29", features = [ "max_level_trace", "release_max_level_info" ] }
 env_logger = "0.11.10"
 clap = { version = "4.6.0", features = ["derive"] }
 elf = { version = "0.8.0" }
@@ -26,6 +26,36 @@ figment = { version = "0.10.19", features = ["toml", "env"] }
 # ## use fixed `major`/`minor`, but latest `patch` version
 # #channel = "1.999"
 
+
+## profile settings
+
+[profile.dev]
+split-debuginfo = "unpacked"   # decreases link-time
+
 [profile.release]
-lto = true
+opt-level = 3
+panic = "unwind"
+#strip = "symbols"  # don't strip before PLO/PGO
+## LTO
+lto = "fat"
 codegen-units = 1
+
+## same as release, but adds debinfo
+[profile.release-with-debinfo]
+inherits = "release"
+debug = "full"
+split-debuginfo = "unpacked"   # decreases link-time
+strip = "none"
+
+## same as release-with-debinfo, but with additional checks
+[profile.release-checked]
+inherits = "release-with-debinfo"
+debug-assertions = true
+overflow-checks = true
+
+## optimized for binary size
+[profile.release-size]
+inherits = "release"
+opt-level = "z"
+strip = "symbols"
+panic = "abort"
