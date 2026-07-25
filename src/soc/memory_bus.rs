@@ -41,19 +41,16 @@ pub trait Bus<AddrType> {
         value: u64,
     ) -> Result<(), IODeviceError>;
 
-    // fn read<MemValType: MemoryValue>(&self, address: AddrType) -> MemValType;
-    // fn write<MemValType: MemoryValue>(
-    //     &self,
-    //     address: AddrType,
-    //     value: MemValType,
-    // );
-
     // instruction read/write
     fn instruction_read(&self, address: AddrType) -> InstructionTypeCompressed;
-    // fn instruction_read<MemValType: MemoryValue>(
-    //     &self,
-    //     address: AddrType,
-    // ) -> MemValType;
+
+    fn read(
+        &self,
+        address: AddrType,
+        dest: &mut [Byte],
+    ) -> Result<(), IODeviceError>;
+    fn write(&self, address: AddrType, value: u64)
+    -> Result<(), IODeviceError>;
 }
 
 pub trait RawBus<AddrType> {
@@ -101,6 +98,10 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
         self.memory.reset();
     }
 
+    fn read_bytes(&self, address: AddrType) -> Result<(), IODeviceError> {
+        Err(IODeviceError::LazyError)
+    }
+
     // pub fn fill_with_nops(&mut self) {
     //     self.memory_reset();
     //     for addr in
@@ -119,6 +120,17 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
 }
 
 impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
+    fn read(
+        &self,
+        address: XLen,
+        dest: &mut [Byte],
+    ) -> Result<(), IODeviceError> {
+        Err(IODeviceError::LazyError)
+    }
+    fn write(&self, address: XLen, value: u64) -> Result<(), IODeviceError> {
+        Err(IODeviceError::LazyError)
+    }
+
     fn read_u8(&self, address: XLen) -> Result<u8, IODeviceError> {
         if (self.ram_base..=(self.ram_end - size_of::<u8>() as XLen))
             .contains(&address)

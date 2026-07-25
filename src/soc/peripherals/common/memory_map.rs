@@ -16,7 +16,7 @@ impl MemoryMap {
         }
     }
 
-    pub fn read_bytes(
+    pub fn read(
         &self,
         offset: usize,
         dest: &mut [u8],

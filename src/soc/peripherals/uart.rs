@@ -37,7 +37,7 @@ impl Device for UART {
         &self.meta
     }
 
-    fn read_bytes(
+    fn read(
         &self,
         offset: usize,
         dest: &mut [Byte],
@@ -46,12 +46,12 @@ impl Device for UART {
             error!("failed to read device state: {err}");
             IODeviceError::Read(offset as XLen)
         })?;
-        guarded_state_read.memory_map.read_bytes(offset, dest)?;
+        guarded_state_read.memory_map.read(offset, dest)?;
 
         Ok(())
     }
 
-    fn write_bytes(
+    fn write(
         &self,
         offset: usize,
         value: &[Byte],

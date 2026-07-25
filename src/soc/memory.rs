@@ -6,6 +6,7 @@ use std::sync::RwLock;
 
 use log::trace;
 
+use crate::IODeviceError;
 use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, SignedByte, SignedDoubleWord, SignedHalfWord,
     SignedWord, SignedXLen, Word, XLen,
@@ -165,7 +166,7 @@ impl MemoryValueType for DoubleWord {
 //     }
 // }
 
-pub trait MemoryDevice: Send + Sync {
+pub trait MemoryDevice<AddrType>: Send + Sync {
     // we cannot make `read()`/`write()` methods to be generic because of the
     // `dyn` traits compatibility requirement. So we declare methods for each
     // type. Read more at:
@@ -180,6 +181,14 @@ pub trait MemoryDevice: Send + Sync {
     fn write_u16(&self, offset: usize, value: u16);
     fn write_u32(&self, offset: usize, value: u32);
     fn write_u64(&self, offset: usize, value: u64);
+
+    // fn read(
+    //     &self,
+    //     address: AddrType,
+    //     dest: &mut [Byte],
+    // ) -> Result<(), IODeviceError>;
+    // fn write(&self, address: AddrType, value: u64)
+    // -> Result<(), IODeviceError>;
 }
 
 #[derive(Default)]
@@ -258,7 +267,7 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
     }
 }
 
-impl<AddrType: Send + Sync> MemoryDevice for Memory<AddrType> {
+impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
     fn read_u8(&self, offset: usize) -> u8 {
         self.read_impl(offset)
     }
