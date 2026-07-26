@@ -79,9 +79,6 @@ impl Executor {
         let mem_read_result = bus.read(self.memory_address, &mut dest);
         self.handle_memory_read::<false, Word>(&mem_read_result, &dest);
     }
-    // fn read_memory_unsigned_u64(&mut self, bus: &SystemBus<BusAddrType>) {
-    //     self.result = bus.read_u64(self.memory_address).zero_extend();
-    // }
 
     pub fn memory_operation(
         &mut self,
