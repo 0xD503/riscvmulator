@@ -30,7 +30,7 @@ impl Executor {
         } else {
             // info!("");
 
-            //
+            // self.call_trap_handler();
 
             todo!("handle trap");
         }
