@@ -28,6 +28,21 @@ impl Executor {
                 self.result = ValType::from_le_bytes(dest).zero_extend();
             }
         } else {
+            match mem_read_result.as_ref().unwrap_err() {
+                IODeviceError::LoadAccessFault(address) => {
+                    //
+                    todo!("handle LAF");
+                }
+                IODeviceError::InstructionAccessFault(address) => {
+                    //
+                    todo!("handle IAF");
+                }
+
+                _ => {
+                    error!("unknown error on memory read");
+                    unreachable!("How???");
+                }
+            }
             // info!("");
 
             // self.call_trap_handler();
@@ -151,7 +166,17 @@ impl Executor {
 
             if let Err(err) = result {
                 // info!("ISA exception, {err}");
-                todo!("handle trap {err}");
+                match err {
+                    IODeviceError::StoreAMOAccessFault(address) => {
+                        //
+                        todo!("handle SAF");
+                    }
+
+                    _ => {
+                        error!("unknown error on memory read");
+                        unreachable!("How???");
+                    }
+                }
             }
         }
     }
