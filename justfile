@@ -105,6 +105,9 @@ audit:
 legal:
   {{RUN_IN_CONTAINER}}cargo deny check
 
+generate-about: legal
+  {{RUN_IN_CONTAINER}}cargo about generate about.hbs -o THIRD_PARTY_LICENSES.html
+
 
 ## clean
 
