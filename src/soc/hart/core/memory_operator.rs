@@ -37,34 +37,6 @@ impl Executor {
             todo!("handle trap");
         }
     }
-    // fn handle_memory_read_signed<ValType: MemoryValue>(
-    //     &mut self,
-    //     mem_read_result: &Result<ValType, DeviceIOError>,
-    // ) {
-    //     if let Ok(non_extended_value) = mem_read_result {
-    //         self.result = non_extended_value.sign_extend();
-    //     } else {
-    //         // info!("");
-
-    //         //
-
-    //         todo!("handle trap");
-    //     }
-    // }
-    // fn handle_memory_read_unsigned<ValType: MemoryValue>(
-    //     &mut self,
-    //     mem_read_result: &Result<ValType, DeviceIOError>,
-    // ) {
-    //     if let Ok(non_extended_value) = mem_read_result {
-    //         self.result = non_extended_value.zero_extend();
-    //     } else {
-    //         // info!("");
-
-    //         //
-
-    //         todo!("handle trap");
-    //     }
-    // }
 
     fn read_memory_signed_byte(&mut self, bus: &SystemBus<BusAddrType>) {
         let mut dest = [0u8; size_of::<Byte>()];
@@ -111,19 +83,6 @@ impl Executor {
     }
     // fn read_memory_unsigned_u64(&mut self, bus: &SystemBus<BusAddrType>) {
     //     self.result = bus.read_u64(self.memory_address).zero_extend();
-    // }
-
-    // fn read_memory_signed<ValType: MemoryValue>(
-    //     &mut self,
-    //     bus: &SystemBus<BusAddrType>,
-    // ) {
-    //     self.result = bus.read::<ValType>(self.memory_address).sign_extend();
-    // }
-    // fn read_memory_unsigned<ValType: MemoryValue>(
-    //     &mut self,
-    //     bus: &SystemBus<BusAddrType>,
-    // ) {
-    //     self.result = bus.read::<ValType>(self.memory_address).zero_extend();
     // }
 
     pub fn memory_operation(

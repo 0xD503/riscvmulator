@@ -167,16 +167,6 @@ impl MemoryValueType for DoubleWord {
 // }
 
 pub trait MemoryDevice<AddrType>: Send + Sync {
-    // we cannot make `read()`/`write()` methods to be generic because of the
-    // `dyn` traits compatibility requirement. So we declare methods for each
-    // type. Read more at:
-    // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
-
-    fn read_u8(&self, offset: usize) -> u8;
-    fn read_u16(&self, offset: usize) -> u16;
-    fn read_u32(&self, offset: usize) -> u32;
-    fn read_u64(&self, offset: usize) -> u64;
-
     fn read(
         &self,
         offset: usize,
@@ -219,26 +209,6 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
 
     pub fn reset(&self) {
         self.fill(MEM_RESET_VALUE);
-    }
-
-    fn read_impl<MemValType: MemoryValueType>(
-        &self,
-        offset: usize,
-    ) -> MemValType {
-        trace!("Reading memory at offset: {offset:#018X?}");
-
-        let byte_array = self.byte_array.read().unwrap_or_else(|err| {
-            todo!("Is it even possible???: {err}");
-        });
-
-        // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + size_of::<MemValType>() <= byte_array.len());
-
-        let bytes = byte_array[offset..offset + size_of::<MemValType>()]
-            .try_into()
-            .unwrap();
-        // TODO: notice, so far emulator only supports little-endian
-        MemValType::from_le_bytes(bytes)
     }
 }
 
@@ -285,19 +255,6 @@ impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
             .copy_from_slice(value);
 
         Ok(())
-    }
-
-    fn read_u8(&self, offset: usize) -> u8 {
-        self.read_impl(offset)
-    }
-    fn read_u16(&self, offset: usize) -> u16 {
-        self.read_impl(offset)
-    }
-    fn read_u32(&self, offset: usize) -> u32 {
-        self.read_impl(offset)
-    }
-    fn read_u64(&self, offset: usize) -> u64 {
-        self.read_impl(offset)
     }
 }
 

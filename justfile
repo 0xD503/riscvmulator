@@ -43,6 +43,9 @@ run-dev:
 run-dev-trace:
   {{RUN_IN_CONTAINER_TRACE}}cargo run --profile=release-checked
 
+run-linux: build-dev test
+  {{RUN_IN_CONTAINER_DEBUG}}cargo run --profile=release-checked
+
 asm:
   {{RUN_IN_CONTAINER_DEBUG}}cargo asm --profile=release
 

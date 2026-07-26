@@ -5,7 +5,10 @@ use log::error;
 use crate::{
     BusAddrType, Device, IODeviceError, XLen,
     constants::arch::Byte,
-    soc::peripherals::common::{device::DeviceMeta, memory_map::MemoryMap},
+    soc::peripherals::common::{
+        device::{Addressable, DeviceMeta},
+        memory_map::MemoryMap,
+    },
 };
 
 #[derive(Debug)]
@@ -36,24 +39,26 @@ impl Device for UART {
     fn meta(&self) -> &DeviceMeta {
         &self.meta
     }
+}
 
+impl Addressable<BusAddrType> for UART {
     fn read(
         &self,
-        offset: usize,
+        offset: BusAddrType,
         dest: &mut [Byte],
     ) -> Result<(), IODeviceError> {
         let guarded_state_read = self.guarded_state.read().map_err(|err| {
             error!("failed to read device state: {err}");
             IODeviceError::ReadPoisoned(offset as XLen)
         })?;
-        guarded_state_read.memory_map.read(offset, dest)?;
+        guarded_state_read.memory_map.read(offset as usize, dest)?;
 
         Ok(())
     }
 
     fn write(
         &self,
-        offset: usize,
+        offset: BusAddrType,
         value: &[Byte],
     ) -> Result<(), IODeviceError> {
         let mut guarded_state_write =
@@ -61,7 +66,9 @@ impl Device for UART {
                 error!("failed to write device state: {err}");
                 IODeviceError::WritePoisoned(offset as XLen)
             })?;
-        guarded_state_write.memory_map.write(offset, value)?;
+        guarded_state_write
+            .memory_map
+            .write(offset as usize, value)?;
 
         Ok(())
     }

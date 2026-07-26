@@ -83,19 +83,36 @@ impl FetchUnit {
         // second way
         //
         // we may have a compressed instruction, so we need to check quadrant
-        let current_instruction: InstructionTypeCompressed =
-            bus.instruction_read(pc.read());
+        let mut current_instruction_dest =
+            [0u8; size_of::<InstructionTypeCompressed>()];
+
+        bus.instruction_read(pc.read(), &mut current_instruction_dest)
+            .unwrap_or_else(|err| {
+                todo!("Is it even possible???: {err}");
+            });
+        let current_instruction =
+            InstructionTypeCompressed::from_le_bytes(current_instruction_dest);
         let quadrant =
             self.extract_quadrant(current_instruction as InstructionType);
         match quadrant {
             OpcodeQuadrant::Quadrant11 => {
                 // non-compressed instruction, read more batches
+                // save first batch (lower)
                 self.current_instruction =
                     current_instruction as InstructionType;
-                self.current_instruction |= (bus
-                    .instruction_read(pc.read() + InstructionSize::I16 as XLen)
-                    as InstructionType)
-                    << InstructionTypeCompressed::BITS;
+                // read high part of instruction
+                bus.instruction_read(
+                    pc.read() + InstructionSize::I16 as XLen,
+                    &mut current_instruction_dest,
+                )
+                .unwrap_or_else(|err| {
+                    todo!("Is it even possible???: {err}");
+                });
+                self.current_instruction |=
+                    (InstructionTypeCompressed::from_le_bytes(
+                        current_instruction_dest,
+                    ) as InstructionType)
+                        << InstructionTypeCompressed::BITS;
                 self.instruction_size = InstructionSize::I32;
                 trace!(
                     "Fetched instruction: {:#010X?}",

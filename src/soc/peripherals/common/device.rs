@@ -99,74 +99,15 @@ impl<AddrType> Devices<AddrType> {
 
     //     device_tree_read_guard.range(..=addr).next_back();
     // }
+}
 
-    // TODO: remake read/write methods to generics
-
-    // pub fn read_bytes(
-    //     &self,
-    //     addr: XLen,
-    //     dest: &mut [Byte],
-    // ) -> Result<(), IODeviceError> {
-    //     let result;
-
-    //     let device_tree_read_guard = self.tree.read().unwrap_or_else(|err| {
-    //         todo!("Is it even possible???: {err}");
-    //     });
-    //     let closest_dev = device_tree_read_guard.range(..=addr).next_back();
-
-    //     if let Some(device_entry) = closest_dev {
-    //         let device = device_entry.1;
-    //         let device_addr_range =
-    //             device.base_addr()..=(device.end_addr() - dest.len() as XLen);
-    //         if device_addr_range.contains(&addr) {
-    //             let offset = (addr - device.base_addr()) as usize;
-    //             result = device.read_bytes(offset, dest);
-    //         } else {
-    //             result = Err(IODeviceError::Read(addr))
-    //         }
-    //     } else {
-    //         result = Err(IODeviceError::Read(addr))
-    //     }
-
-    //     result
-    // }
-
-    // pub fn write(
-    //     &self,
-    //     addr: XLen,
-    //     value: &[Byte],
-    // ) -> Result<(), IODeviceError> {
-    //     let result;
-
-    //     let device_tree_read_guard = self.tree.read().unwrap_or_else(|err| {
-    //         todo!("Is it even possible???: {err}");
-    //     });
-    //     let closest_dev = device_tree_read_guard.range(..=addr).next_back();
-
-    //     if let Some(device_entry) = closest_dev {
-    //         let device = device_entry.1;
-    //         let device_addr_range =
-    //             device.base_addr()..=(device.end_addr() - value.len() as XLen);
-    //         if device_addr_range.contains(&addr) {
-    //             let offset = (addr - device.base_addr()) as usize;
-    //             result = device.write(offset, value);
-    //         } else {
-    //             result = Err(IODeviceError::Write(addr))
-    //         }
-    //     } else {
-    //         result = Err(IODeviceError::Write(addr))
-    //     }
-
-    //     result
-    // }
-
+impl<AddrType> Addressable<BusAddrType> for Devices<AddrType> {
     fn read(
         &self,
-        addr: XLen, // TODO: fix to usize????
+        addr: BusAddrType, // TODO: fix to usize????
         dest: &mut [Byte],
     ) -> Result<(), IODeviceError> {
         let result;
-        // let mut call_trap = false;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
             todo!("Is it even possible???: {err}");
@@ -178,28 +119,21 @@ impl<AddrType> Devices<AddrType> {
             let device_addr_range = device.base_addr()
                 ..=(device.end_addr() - dest.len() as BusAddrType);
             if device_addr_range.contains(&addr) {
-                let offset = (addr - device.base_addr()) as usize;
-
+                let offset = addr - device.base_addr();
                 result = device.read(offset, dest);
             } else {
                 // Load Access Fault
                 result = Err(IODeviceError::LoadAccessFault(addr));
-                // call_trap = true;
             }
         } else {
             // Load Access Fault
             result = Err(IODeviceError::LoadAccessFault(addr));
-            // call_trap = true;
         }
-
-        // if call_trap {
-        //     todo!();
-        // }
 
         result
     }
 
-    pub fn write(&self, addr: XLen, value: u8) -> Result<(), IODeviceError> {
+    fn write(&self, addr: XLen, value: &[Byte]) -> Result<(), IODeviceError> {
         let result;
 
         let device_tree = self.tree.read().unwrap_or_else(|err| {
@@ -209,16 +143,16 @@ impl<AddrType> Devices<AddrType> {
 
         if let Some(device_entry) = closest_dev {
             let device = device_entry.1;
-            let device_addr_range = device.base_addr()
-                ..=(device.end_addr() - size_of::<u8>() as XLen);
+            let device_addr_range =
+                device.base_addr()..=(device.end_addr() - value.len() as XLen);
             if device_addr_range.contains(&addr) {
-                let offset = (addr - device.base_addr()) as usize;
-                result = device.write_u8(offset, value);
+                let offset = addr - device.base_addr();
+                result = device.write(offset, value);
             } else {
-                result = Err(IODeviceError::Write(addr))
+                result = Err(IODeviceError::StoreAMOAccessFault(addr))
             }
         } else {
-            result = Err(IODeviceError::Write(addr))
+            result = Err(IODeviceError::StoreAMOAccessFault(addr))
         }
 
         result
@@ -227,12 +161,14 @@ impl<AddrType> Devices<AddrType> {
 
 #[derive(Debug)]
 pub enum IODeviceError {
-    Read(XLen),
-    Write(XLen),
-    ReadPoisoned(XLen),
-    WritePoisoned(XLen),
-    LoadAccessFault(XLen),
-    StoreAMOAccessFault(XLen),
+    InstructionAddrMisaligned(BusAddrType),
+    InstructionAccessFault(BusAddrType),
+    Read(BusAddrType),
+    Write(BusAddrType),
+    ReadPoisoned(BusAddrType),
+    WritePoisoned(BusAddrType),
+    LoadAccessFault(BusAddrType),
+    StoreAMOAccessFault(BusAddrType),
     Attach(String),
     Detach(String),
     Poisoned,
@@ -250,6 +186,12 @@ impl IODeviceError {
 impl fmt::Display for IODeviceError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
+            Self::InstructionAddrMisaligned(addr) => {
+                writeln!(formatter, "instruction address misaligned: {addr}")
+            }
+            Self::InstructionAccessFault(addr) => {
+                writeln!(formatter, "instruction access fault: {addr}")
+            }
             Self::Read(addr) => {
                 writeln!(formatter, "failed to read device at addr: {addr}")
             }
@@ -321,80 +263,18 @@ impl DeviceMeta {
     }
 }
 
-pub trait Device: Send + Sync + Debug {
-    fn meta(&self) -> &DeviceMeta;
-
+pub trait Addressable<AddrType> {
     fn read(
         &self,
-        offset: usize,
+        at: AddrType,
         dest: &mut [Byte],
     ) -> Result<(), IODeviceError>;
 
-    fn write(&self, offset: usize, value: &[Byte])
-    -> Result<(), IODeviceError>;
+    fn write(&self, at: AddrType, value: &[Byte]) -> Result<(), IODeviceError>;
+}
 
-    // we cannot make `read()`/`write()` methods to be generic because of the
-    // `dyn` traits compatibility requirement. So we declare methods for each
-    // type. Read more at:
-    // https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility
-
-    fn read_u8(&self, offset: usize) -> Result<u8, IODeviceError> {
-        let mut dest = [0u8; size_of::<u8>()];
-        self.read(offset, &mut dest)?;
-
-        Ok(u8::from_le_bytes(dest))
-    }
-    fn read_u16(&self, offset: usize) -> Result<u16, IODeviceError> {
-        let mut dest = [0u8; size_of::<u16>()];
-        self.read(offset, &mut dest)?;
-
-        Ok(u16::from_le_bytes(dest))
-    }
-    fn read_u32(&self, offset: usize) -> Result<u32, IODeviceError> {
-        let mut dest = [0u8; size_of::<u32>()];
-        self.read(offset, &mut dest)?;
-
-        Ok(u32::from_le_bytes(dest))
-    }
-    fn read_u64(&self, offset: usize) -> Result<u64, IODeviceError> {
-        let mut dest = [0u8; size_of::<u64>()];
-        self.read(offset, &mut dest)?;
-
-        Ok(u64::from_le_bytes(dest))
-    }
-
-    fn write_u8(&self, offset: usize, value: u8) -> Result<(), IODeviceError> {
-        let src = u8::to_le_bytes(value);
-
-        self.write(offset, &src)
-    }
-    fn write_u16(
-        &self,
-        offset: usize,
-        value: u16,
-    ) -> Result<(), IODeviceError> {
-        let src = u16::to_le_bytes(value);
-
-        self.write(offset, &src)
-    }
-    fn write_u32(
-        &self,
-        offset: usize,
-        value: u32,
-    ) -> Result<(), IODeviceError> {
-        let src = u32::to_le_bytes(value);
-
-        self.write(offset, &src)
-    }
-    fn write_u64(
-        &self,
-        offset: usize,
-        value: u64,
-    ) -> Result<(), IODeviceError> {
-        let src = u64::to_le_bytes(value);
-
-        self.write(offset, &src)
-    }
+pub trait Device: Addressable<BusAddrType> + Send + Sync + Debug {
+    fn meta(&self) -> &DeviceMeta;
 
     fn base_addr(&self) -> BusAddrType {
         self.meta().base_addr
