@@ -3,23 +3,12 @@ use log::{error, trace};
 use crate::BusAddrType;
 use crate::constants::arch::{Byte, XLen};
 use crate::soc::hart::extensions::compressed::constants::InstructionTypeCompressed;
-use crate::soc::memory::{Memory, MemoryDevice, MemoryValueType};
+use crate::soc::memory::{Memory, MemoryValueType};
 use crate::soc::peripherals::common::device::{
     Addressable, Devices, IODeviceError, RawDevice,
 };
 
-pub trait Bus<AddrType> {
-    fn read(
-        &self,
-        address: AddrType,
-        dest: &mut [Byte],
-    ) -> Result<(), IODeviceError>;
-    fn write(
-        &self,
-        address: AddrType,
-        value: &[Byte],
-    ) -> Result<(), IODeviceError>;
-
+pub trait Bus<AddrType>: Addressable<BusAddrType> {
     // instruction read/write
     fn instruction_read(
         &self,
@@ -73,6 +62,28 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
 }
 
 impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
+    fn instruction_read(
+        &self,
+        address: BusAddrType,
+        dest: &mut [Byte],
+    ) -> Result<(), IODeviceError> {
+        let offset = address - self.ram_base;
+        if (self.ram_base
+            ..=(self.ram_end - size_of::<InstructionTypeCompressed>() as XLen))
+            .contains(&address)
+        {
+            trace!("Reading instruction from memory at addr: {address:#018X?}");
+
+            self.memory.read(offset, dest)
+        } else {
+            trace!("Reading instruction from MMIO at addr: {address:#018X?}");
+
+            self.devices.read(offset, dest)
+        }
+    }
+}
+
+impl<AddrType: Send + Sync> Addressable<BusAddrType> for SystemBus<AddrType> {
     fn read(
         &self,
         address: BusAddrType,
@@ -83,7 +94,7 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         {
             trace!("Reading memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
+            let offset = address - self.ram_base;
             self.memory.read(offset, dest)
         } else {
             trace!("Reading MMIO at addr: {address:#018X?}");
@@ -101,33 +112,12 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         {
             trace!("Writing memory at addr: {address:#018X?}");
 
-            let offset = (address - self.ram_base) as usize;
+            let offset = address - self.ram_base;
             self.memory.write(offset, value)
         } else {
             trace!("Writing to MMIO at addr: {address:#018X?}");
 
             self.devices.write(address, value)
-        }
-    }
-
-    fn instruction_read(
-        &self,
-        address: BusAddrType,
-        dest: &mut [Byte],
-    ) -> Result<(), IODeviceError> {
-        if (self.ram_base
-            ..=(self.ram_end - size_of::<InstructionTypeCompressed>() as XLen))
-            .contains(&address)
-        {
-            trace!("Reading instruction from memory at addr: {address:#018X?}");
-
-            let offset = (address - self.ram_base) as usize;
-            self.memory.read(offset, dest)
-        } else {
-            error!(
-                "an attempt to read instruction from unimplemented address space: {address:#018X}"
-            );
-            Err(IODeviceError::InstructionAccessFault(address))
         }
     }
 }

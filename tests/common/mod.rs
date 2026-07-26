@@ -1,5 +1,5 @@
 use riscvmulator::{
-    Bus, ExitCode, HookAction, PeriodicalTaskArgs, Word,
+    Addressable, ExitCode, HookAction, PeriodicalTaskArgs, Word,
     init::{emulator_create, emulator_prepare_loop},
 };
 

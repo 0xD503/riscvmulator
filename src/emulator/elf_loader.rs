@@ -1,7 +1,7 @@
 use crate::BusAddrType;
 use crate::constants::arch::XLen;
 use crate::soc::SoC;
-use crate::soc::memory_bus::Bus;
+use crate::soc::peripherals::common::device::Addressable;
 use elf::ElfBytes;
 use elf::abi::PT_LOAD;
 use elf::endian::AnyEndian;

@@ -20,4 +20,6 @@ pub use globals::exit_codes::ExitCode;
 pub use hooks::{HookAction, PeriodicalTaskArgs};
 pub use soc::memory::MemoryValueType;
 pub use soc::memory_bus::Bus;
-pub use soc::peripherals::common::device::{Device, DeviceMeta, IODeviceError};
+pub use soc::peripherals::common::device::{
+    Addressable, Device, DeviceMeta, IODeviceError,
+};

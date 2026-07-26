@@ -3,8 +3,8 @@ use crate::constants::arch::{BusAddrType, DoubleWord, HalfWord, Word};
 use crate::soc::hart::core::decoder::Decoder;
 use crate::soc::hart::core::executor::Executor;
 use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
-use crate::soc::memory_bus::{Bus, SystemBus};
-use crate::soc::peripherals::common::device::IODeviceError;
+use crate::soc::memory_bus::SystemBus;
+use crate::soc::peripherals::common::device::{Addressable, IODeviceError};
 
 use log::{error, trace};
 
@@ -23,11 +23,9 @@ impl Executor {
     ) {
         if mem_read_result.is_ok() {
             if SIGNED {
-                self.result = ValType::from_le_bytes(dest.try_into().unwrap())
-                    .sign_extend();
+                self.result = ValType::from_le_bytes(dest).sign_extend();
             } else {
-                self.result = ValType::from_le_bytes(dest.try_into().unwrap())
-                    .zero_extend();
+                self.result = ValType::from_le_bytes(dest).zero_extend();
             }
         } else {
             // info!("");

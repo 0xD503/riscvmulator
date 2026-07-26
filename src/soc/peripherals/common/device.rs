@@ -5,7 +5,7 @@ use std::{
     sync::RwLock,
 };
 
-use log::{error, trace};
+use log::error;
 
 use crate::{
     constants::arch::{BusAddrType, Byte, XLen},

@@ -6,12 +6,12 @@ use std::sync::RwLock;
 
 use log::trace;
 
-use crate::IODeviceError;
 use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, SignedByte, SignedDoubleWord, SignedHalfWord,
     SignedWord, SignedXLen, Word, XLen,
 };
 use crate::constants::soc::MEM_RESET_VALUE;
+use crate::{Addressable, BusAddrType, IODeviceError};
 
 use super::peripherals::common::device::RawDevice;
 
@@ -166,16 +166,6 @@ impl MemoryValueType for DoubleWord {
 //     }
 // }
 
-pub trait MemoryDevice<AddrType>: Send + Sync {
-    fn read(
-        &self,
-        offset: usize,
-        dest: &mut [Byte],
-    ) -> Result<(), IODeviceError>;
-    fn write(&self, offset: usize, value: &[Byte])
-    -> Result<(), IODeviceError>;
-}
-
 #[derive(Default)]
 pub struct Memory<AddrType>
 where
@@ -212,10 +202,10 @@ impl<AddrType: Send + Sync> Memory<AddrType> {
     }
 }
 
-impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
+impl<AddrType: Send + Sync> Addressable<BusAddrType> for Memory<AddrType> {
     fn read(
         &self,
-        offset: usize,
+        offset: BusAddrType,
         dest: &mut [Byte],
     ) -> Result<(), IODeviceError> {
         trace!("Reading memory at offset: {offset:#018X?}");
@@ -226,9 +216,12 @@ impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
             });
 
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + dest.len() <= byte_array_guard_read.len());
+        debug_assert!(
+            offset as usize + dest.len() <= byte_array_guard_read.len()
+        );
 
-        let src = byte_array_guard_read[offset..offset + dest.len()]
+        let src = byte_array_guard_read
+            [offset as usize..offset as usize + dest.len()]
             .try_into()
             .unwrap();
         // TODO: notice, so far emulator only supports little-endian
@@ -238,7 +231,7 @@ impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
     }
     fn write(
         &self,
-        offset: usize,
+        offset: BusAddrType,
         value: &[Byte],
     ) -> Result<(), IODeviceError> {
         trace!("Writing memory at offset: {offset:#018X?}");
@@ -249,9 +242,11 @@ impl<AddrType: Send + Sync> MemoryDevice<AddrType> for Memory<AddrType> {
             });
 
         // bus makes bounds check, so we assume that `offset` is always correct
-        debug_assert!(offset + value.len() <= byte_array_guard_write.len());
+        debug_assert!(
+            offset as usize + value.len() <= byte_array_guard_write.len()
+        );
 
-        byte_array_guard_write[offset..offset + value.len()]
+        byte_array_guard_write[offset as usize..offset as usize + value.len()]
             .copy_from_slice(value);
 
         Ok(())
