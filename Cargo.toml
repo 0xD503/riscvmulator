@@ -1,8 +1,12 @@
+[workspace]
+members = [".", "crates/riscvmulator-soc", "crates/riscvmulator-emulator"]
+resolver = "3"
+
 [package]
 name = "riscvmulator"
 version = "0.1.0"
 edition = "2024"
-description = "RISC-V emulator"
+description = "RISC-V emulator binary"
 readme = "README.md"
 repository = "https://github.com/0xD503/riscvmulator.git"
 license = "MIT OR Apache-2.0"
