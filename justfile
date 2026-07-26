@@ -35,7 +35,7 @@ run-dev-container:
   fi
 
 build-dev:
-  {{RUN_IN_CONTAINER}}cargo build --profile=release-checked
+  {{RUN_IN_CONTAINER}}cargo build --workspace --profile=release-checked
 
 run-dev:
   {{RUN_IN_CONTAINER_DEBUG}}cargo run --profile=release-checked
@@ -43,14 +43,14 @@ run-dev:
 run-dev-trace:
   {{RUN_IN_CONTAINER_TRACE}}cargo run --profile=release-checked
 
-run-linux: build-dev test
+run-linux-dev: build-dev test
   {{RUN_IN_CONTAINER_DEBUG}}cargo run --profile=release-checked
 
-asm:
-  {{RUN_IN_CONTAINER_DEBUG}}cargo asm --profile=release
+asm *args:
+  {{RUN_IN_CONTAINER_DEBUG}}cargo asm --profile=release {{args}}
 
 build-deb:
-  {{RUN_IN_CONTAINER}}cargo build
+  {{RUN_IN_CONTAINER}}cargo build --workspace
 
 run-deb:
   {{RUN_IN_CONTAINER_DEBUG}}cargo run
@@ -62,7 +62,7 @@ run-deb-trace:
 ## release
 
 build:
-  {{RUN_IN_CONTAINER}}cargo build --profile=release
+  {{RUN_IN_CONTAINER}}cargo build --workspace --profile=release
 
 run:
   {{RUN_IN_CONTAINER}}cargo run --profile=release
@@ -79,22 +79,22 @@ run-release-container:
 ## quality
 
 test:
-  {{RUN_IN_CONTAINER_DEBUG}}cargo test --profile=release-checked
+  {{RUN_IN_CONTAINER_DEBUG}}cargo test --workspace --profile=release-checked
 
 bench:
-  {{RUN_IN_CONTAINER_DEBUG}}cargo bench
+  {{RUN_IN_CONTAINER_DEBUG}}cargo bench --workspace  --profile=release-checked
 
 lint:
-  {{RUN_IN_CONTAINER}}cargo clippy --profile=release-checked -- -D warnings
+  {{RUN_IN_CONTAINER}}cargo clippy --workspace --profile=release-checked -- -D warnings
 
 fmt:
-  {{RUN_IN_CONTAINER}}cargo fmt
+  {{RUN_IN_CONTAINER}}cargo fmt --all
 
 doc:
-  {{RUN_IN_CONTAINER}}cargo doc --profile=release --no-deps --open
+  {{RUN_IN_CONTAINER}}cargo doc --workspace --profile=release --no-deps
 
 check:
-  {{RUN_IN_CONTAINER}}cargo check --profile=release-checked
+  {{RUN_IN_CONTAINER}}cargo check --workspace --profile=release-checked
 
 audit:
   {{RUN_IN_CONTAINER}}cargo audit
@@ -103,10 +103,10 @@ audit:
 ## legal
 
 legal:
-  {{RUN_IN_CONTAINER}}cargo deny check
+  {{RUN_IN_CONTAINER}}cargo deny --workspace check
 
 generate-about: legal
-  {{RUN_IN_CONTAINER}}cargo about generate about.hbs -o THIRD_PARTY_LICENSES.html
+  {{RUN_IN_CONTAINER}}cargo about generate --workspace about.hbs -o THIRD_PARTY_LICENSES.html
 
 
 ## clean
