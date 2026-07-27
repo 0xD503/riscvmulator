@@ -19,18 +19,17 @@ use log::info;
 use crate::BusAddrType;
 use crate::Device;
 use crate::IODeviceError;
-use crate::config::DeviceCfg;
 use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
-use crate::globals::exit_codes::ExitCode;
 use crate::hooks::{HookAction, PeriodicalTask, PeriodicalTaskArgs};
-use crate::soc::hart::Hart;
-// use crate::soc::peripherals::clint::CLINT;
-use crate::soc::peripherals::common::constants::{
+
+use riscvmulator_soc::config::DeviceCfg;
+use riscvmulator_soc::globals::exit_codes::ExitCode;
+use riscvmulator_soc::soc::hart::Hart;
+use riscvmulator_soc::soc::peripherals::common::constants::{
     DEV_KIND_CLINT, DEV_KIND_PLIC, DEV_KIND_UART,
 };
-// use crate::soc::peripherals::plic::PLIC;
-use crate::soc::peripherals::uart::UART;
-use crate::{config::Config, soc::SoC};
+use riscvmulator_soc::soc::peripherals::uart::UART;
+use riscvmulator_soc::{config::Config, soc::SoC};
 
 use self::elf_loader::{ElfData, ElfError, load_elf};
 
@@ -160,7 +159,7 @@ impl Emulator {
         &mut self,
         devices: Vec<DeviceCfg>,
     ) -> Result<(), IODeviceError> {
-        let bus = Arc::clone(&self.soc.bus);
+        let bus = Arc::clone(&self.soc.bus());
         for device in devices {
             let dev_kind = &device.kind;
             if let Some(device_creator) =
@@ -172,7 +171,7 @@ impl Emulator {
                     device.kind,
                     device.name,
                 );
-                bus.devices.attach(device_handle)?;
+                bus.devices().attach(device_handle)?;
             } else {
                 error!("unknown device kind: {dev_kind}, won't be attached");
                 return Err(IODeviceError::Attach(dev_kind.to_string()));
@@ -186,9 +185,10 @@ impl Emulator {
     fn spawn_hart_threads(&mut self) {
         // `drain(..)` returns iterator to all items of vector and passes
         // ownership for each item on iteration
-        for mut hart in self.soc.harts.drain(..) {
+        let bus = Arc::clone(&self.soc.bus());
+        for mut hart in self.soc.harts_mut().drain(..) {
             let start_trigger = Arc::clone(&self.start_trigger);
-            let bus = Arc::clone(&self.soc.bus);
+            let bus = Arc::clone(&bus);
             let halted = Arc::clone(&self.halted);
             let run_loop_stopped = Arc::clone(&self.run_loop_stopped);
             // thread::Builder::name(self, "core {i}")
@@ -211,7 +211,7 @@ impl Emulator {
         let tasks = Arc::clone(&self.periodical_tasks);
         let halted = Arc::clone(&self.halted);
         let run_loop_stopped = Arc::clone(&self.run_loop_stopped);
-        let args = PeriodicalTaskArgs::new(Arc::clone(&self.soc.bus));
+        let args = PeriodicalTaskArgs::new(Arc::clone(&self.soc.bus()));
         let event_sender = Arc::clone(&self.emulator_event_sender);
 
         self.periodical_tasks_join_handles.push(thread::spawn(move || {
@@ -325,7 +325,7 @@ impl Emulator {
 
     fn loop_tear_down(&mut self) {
         // give ownership of harts back to SoC
-        self.soc.harts = self
+        *self.soc.harts_mut() = self
             .hart_join_handles
             .drain(..)
             .map(|hart_thread| {

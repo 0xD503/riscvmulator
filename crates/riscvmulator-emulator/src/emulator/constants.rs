@@ -1,4 +1,4 @@
-use crate::globals::exit_codes::ExitCode;
+use riscvmulator_soc::globals::exit_codes::ExitCode;
 
 pub const PERIODICAL_TASKS_PERIOD_MS: u64 = 125;
 

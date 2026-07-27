@@ -7,11 +7,11 @@ use std::sync::RwLock;
 use log::trace;
 
 use crate::constants::arch::{
-    Byte, DoubleWord, HalfWord, SignedByte, SignedDoubleWord, SignedHalfWord,
-    SignedWord, SignedXLen, Word, XLen,
+    BusAddrType, Byte, DoubleWord, HalfWord, SignedByte, SignedDoubleWord,
+    SignedHalfWord, SignedWord, SignedXLen, Word, XLen,
 };
 use crate::constants::soc::MEM_RESET_VALUE;
-use crate::{Addressable, BusAddrType, IODeviceError};
+use crate::soc::peripherals::common::device::{Addressable, IODeviceError};
 
 use super::peripherals::common::device::RawDevice;
 

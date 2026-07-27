@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::{
-    BusAddrType, globals::exit_codes::ExitCode, soc::memory_bus::SystemBus,
-};
+use crate::BusAddrType;
+use riscvmulator_soc::globals::exit_codes::ExitCode;
+use riscvmulator_soc::soc::memory_bus::SystemBus;
 
 pub(crate) type PeriodicalTask =
     Box<dyn FnMut(&PeriodicalTaskArgs) -> HookAction + Send>;

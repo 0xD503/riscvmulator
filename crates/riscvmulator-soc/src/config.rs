@@ -78,11 +78,28 @@ impl Default for MemoryCfg {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct DeviceCfg {
-    pub(super) base_addr: BusAddrType,
-    pub(super) size_bytes: usize,
-    pub(super) kind: String,
-    pub(super) name: String,
+    pub base_addr: BusAddrType,
+    pub size_bytes: usize,
+    pub kind: String,
+    pub name: String,
     irq_line: Option<IRQ_Line>,
+}
+
+impl DeviceCfg {
+    pub fn base_addr(&self) -> BusAddrType {
+        self.base_addr
+    }
+    pub fn size_bytes(&self) -> usize {
+        self.size_bytes
+    }
+
+    pub fn kind(&self) -> &String {
+        &self.kind
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
 }
 
 // impl Default for DeviceCfg {
@@ -95,7 +112,7 @@ pub struct DeviceCfg {
 #[serde(deny_unknown_fields)]
 pub struct BusCfg {
     pub(super) memory: MemoryCfg,
-    pub(super) devices: Vec<DeviceCfg>,
+    pub devices: Vec<DeviceCfg>,
 }
 
 impl Default for BusCfg {
@@ -111,8 +128,8 @@ impl Default for BusCfg {
 #[serde(deny_unknown_fields)]
 pub struct SocCfg {
     pub(super) hart: HartCfg,
-    pub(super) bus: BusCfg,
-    pub(super) harts_num: u32,
+    pub bus: BusCfg,
+    pub harts_num: u32,
     xtal_frequency_hz: u64,
 }
 
@@ -129,9 +146,9 @@ impl Default for SocCfg {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct LoggingCfg {
-    pub(crate) level: String,
-    pub(crate) style: String,
+pub struct LoggingCfg {
+    pub level: String,
+    pub style: String,
 }
 
 impl Default for LoggingCfg {
@@ -148,7 +165,7 @@ impl Default for LoggingCfg {
 pub struct EmulatorCfg {
     pub input_file: Option<String>,
     throttle_frequency: u64,
-    pub(crate) logging: LoggingCfg,
+    pub logging: LoggingCfg,
 }
 
 impl Default for EmulatorCfg {
@@ -164,8 +181,8 @@ impl Default for EmulatorCfg {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub(crate) soc: SocCfg,
-    pub(crate) emulator: EmulatorCfg,
+    pub soc: SocCfg,
+    pub emulator: EmulatorCfg,
 }
 
 impl Default for Config {
@@ -235,6 +252,14 @@ impl Config {
         config.resolve();
 
         Ok(config)
+    }
+
+    pub fn emulator(&self) -> &EmulatorCfg {
+        &self.emulator
+    }
+
+    pub fn soc(&self) -> &SocCfg {
+        &self.soc
     }
 
     fn validate(&self) -> Result<(), ConfigError> {

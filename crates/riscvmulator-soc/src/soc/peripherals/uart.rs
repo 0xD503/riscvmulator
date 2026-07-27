@@ -3,10 +3,9 @@ use std::sync::RwLock;
 use log::error;
 
 use crate::{
-    BusAddrType, Device, IODeviceError, XLen,
-    constants::arch::Byte,
+    constants::arch::{BusAddrType, Byte, XLen},
     soc::peripherals::common::{
-        device::{Addressable, DeviceMeta},
+        device::{Addressable, Device, DeviceMeta, IODeviceError},
         memory_map::MemoryMap,
     },
 };

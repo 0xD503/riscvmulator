@@ -53,7 +53,7 @@ impl Hart {
         }
     }
 
-    pub(crate) fn set_pc(&mut self, value: XLen) {
+    pub fn set_pc(&mut self, value: XLen) {
         self.context.arch_state.PC.write(value);
     }
 
@@ -92,7 +92,7 @@ impl Hart {
     //     //, fetch_unit: &FetchUnit
     // }
 
-    pub(crate) fn step(&mut self, bus: &SystemBus<BusAddrType>) {
+    pub fn step(&mut self, bus: &SystemBus<BusAddrType>) {
         trace!("Current PC: {:#018X}", self.context.arch_state.PC.read());
 
         self.fetch(bus);

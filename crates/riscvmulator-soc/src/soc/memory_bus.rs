@@ -1,7 +1,6 @@
 use log::{error, trace};
 
-use crate::BusAddrType;
-use crate::constants::arch::{Byte, XLen};
+use crate::constants::arch::{BusAddrType, Byte, XLen};
 use crate::soc::hart::extensions::compressed::constants::InstructionTypeCompressed;
 use crate::soc::memory::{Memory, MemoryValueType};
 use crate::soc::peripherals::common::device::{
@@ -51,6 +50,10 @@ impl<AddrType: Send + Sync> SystemBus<AddrType> {
 
     pub fn reset(&self) {
         self.memory.reset();
+    }
+
+    pub fn devices(&self) -> &Devices<AddrType> {
+        &self.devices
     }
 
     // fn compute_offset_within_device(

@@ -1,4 +1,4 @@
-use crate::config::{
+use riscvmulator_soc::config::{
     Config, ConfigError,
     constants::{DEFAULT_LOG_LEVEL, DEFAULT_LOG_STYLE},
 };

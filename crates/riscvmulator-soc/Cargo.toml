@@ -11,7 +11,10 @@ categories.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-#
+serde = { workspace = true }
+figment = { workspace = true }
+log = { workspace = true }
+clap = { workspace = true }
 
 [lints]
 workspace = true

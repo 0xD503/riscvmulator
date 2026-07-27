@@ -3,10 +3,10 @@ use log::error;
 use crate::ExitCode;
 use crate::emulator::Emulator;
 
-use super::config::{Config, ConfigError};
 use super::logger::init_logger;
-use super::parse_args::parse_args;
 use crate::emulator::elf_loader::ElfData;
+use riscvmulator_soc::config::{Config, ConfigError};
+use riscvmulator_soc::parse_args::parse_args;
 
 fn config_creator(
     custom_config: bool,

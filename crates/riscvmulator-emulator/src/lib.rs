@@ -1,25 +1,19 @@
 #![forbid(unsafe_code)]
 
-mod constants;
-mod globals;
 mod hooks;
 mod logger;
-mod parse_args;
-mod soc;
-mod utils;
 
 mod debug;
 
-pub mod config;
 pub mod emulator;
 pub mod init;
 
 // public re-exports
-pub use constants::arch::{BusAddrType, Byte, Word, XLen};
-pub use globals::exit_codes::ExitCode;
 pub use hooks::{HookAction, PeriodicalTaskArgs};
-pub use soc::memory::MemoryValueType;
-pub use soc::memory_bus::Bus;
-pub use soc::peripherals::common::device::{
+pub use riscvmulator_soc::constants::arch::{BusAddrType, Byte, Word, XLen};
+pub use riscvmulator_soc::globals::exit_codes::ExitCode;
+pub use riscvmulator_soc::soc::memory::MemoryValueType;
+pub use riscvmulator_soc::soc::memory_bus::Bus;
+pub use riscvmulator_soc::soc::peripherals::common::device::{
     Addressable, Device, DeviceMeta, IODeviceError,
 };

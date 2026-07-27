@@ -15,7 +15,7 @@ use self::hart::Hart;
 use self::memory_bus::{Bus, SystemBus};
 
 pub struct SoC {
-    pub(crate) harts: Vec<Hart>,
+    harts: Vec<Hart>,
     // memory and memory mapped IO
     // von Neumann architechture, so common bus is used for instructions/data
     pub(crate) bus: Arc<SystemBus<BusAddrType>>,
@@ -47,6 +47,18 @@ impl SoC {
                 cfg.bus.memory.size_bytes,
             )),
         }
+    }
+
+    pub fn harts(&self) -> &Vec<Hart> {
+        &self.harts
+    }
+
+    pub fn harts_mut(&mut self) -> &mut Vec<Hart> {
+        &mut self.harts
+    }
+
+    pub fn bus(&self) -> &Arc<SystemBus<BusAddrType>> {
+        &self.bus
     }
 
     // pub fn step(&mut self) {

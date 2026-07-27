@@ -1,5 +1,4 @@
-use crate::Byte;
-use crate::constants::arch::{BusAddrType, DoubleWord, HalfWord, Word};
+use crate::constants::arch::{BusAddrType, Byte, DoubleWord, HalfWord, Word};
 use crate::soc::hart::core::decoder::Decoder;
 use crate::soc::hart::core::executor::Executor;
 use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};

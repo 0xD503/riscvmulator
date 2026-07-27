@@ -1,8 +1,8 @@
 use log::trace;
 
-use crate::{
-    Byte, IODeviceError, soc::peripherals::common::constants::DEV_MEM_INIT_VAL,
-};
+use crate::constants::arch::Byte;
+use crate::soc::peripherals::common::constants::DEV_MEM_INIT_VAL;
+use crate::soc::peripherals::common::device::IODeviceError;
 
 #[derive(Debug)]
 pub struct MemoryMap {

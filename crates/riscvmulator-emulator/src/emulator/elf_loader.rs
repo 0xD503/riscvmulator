@@ -1,7 +1,5 @@
 use crate::BusAddrType;
-use crate::constants::arch::XLen;
-use crate::soc::SoC;
-use crate::soc::peripherals::common::device::Addressable;
+
 use elf::ElfBytes;
 use elf::abi::PT_LOAD;
 use elf::endian::AnyEndian;
@@ -12,7 +10,10 @@ use std::fmt::{Display, Formatter};
 use std::fs;
 use std::path::Path;
 
-use crate::globals::exit_codes::ExitCode;
+use riscvmulator_soc::constants::arch::XLen;
+use riscvmulator_soc::globals::exit_codes::ExitCode;
+use riscvmulator_soc::soc::SoC;
+use riscvmulator_soc::soc::peripherals::common::device::Addressable;
 
 pub struct ElfData {
     pub e_entry: XLen,
@@ -66,7 +67,7 @@ pub(crate) fn load_elf(
     for phdr in phdrs {
         let mut start_addr = phdr.p_paddr;
         for offset in phdr.p_offset..phdr.p_offset + phdr.p_filesz {
-            soc.bus
+            soc.bus()
                 .write(
                     {
                         let tmp = start_addr;
@@ -78,7 +79,7 @@ pub(crate) fn load_elf(
                 .unwrap();
         }
     }
-    for hart in soc.harts.iter_mut() {
+    for hart in soc.harts_mut().iter_mut() {
         hart.set_pc(file.ehdr.e_entry);
     }
 
