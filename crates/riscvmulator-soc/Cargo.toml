@@ -1,12 +1,17 @@
 [package]
 name = "riscvmulator-soc"
-version = "0.1.0"
-edition = "2024"
-description = "RISC-V system on crystal library"
-# readme = "README.md"
-# repository = "https://github.com/0xD503/riscvmulator.git"
-license = "MIT OR Apache-2.0"
-keywords = [ "emulator", "risc-v", "riscv", "cpu" ]
-categories = [ "emulators" ]
-# ## use fixed `major`/`minor`, but latest `patch` version
-# rust-version = "1.97"
+description = "RISC-V system on chip library"
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+#
+
+[lints]
+workspace = true
