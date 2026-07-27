@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 use riscvmulator_emulator::{
     Addressable, ExitCode, HookAction, PeriodicalTaskArgs, Word,
     init::{emulator_create, emulator_prepare_loop},
@@ -13,13 +15,17 @@ fn test_teardown() {
     //
 }
 
-pub fn run_test(test_path: &'static str) {
+pub fn run_test(test_path: impl AsRef<Path>) {
     test_setup();
+
+    let mut path =
+        PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../../"));
+    path.push(test_path);
 
     let custom_config = false;
     let initialize_logger = false;
     let mut emulator =
-        emulator_create(custom_config, initialize_logger, Some(test_path))
+        emulator_create(custom_config, initialize_logger, Some(path))
             .expect("failed to create emulator");
 
     let elf_data = emulator_prepare_loop(&mut emulator)

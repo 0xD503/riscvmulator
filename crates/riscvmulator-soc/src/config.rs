@@ -4,6 +4,7 @@ use std::{
     error::Error,
     fmt::{self, Formatter},
     fs,
+    path::PathBuf,
 };
 
 use figment::{
@@ -163,7 +164,7 @@ impl Default for LoggingCfg {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct EmulatorCfg {
-    pub input_file: Option<String>,
+    pub input_file: Option<PathBuf>,
     throttle_frequency: u64,
     pub logging: LoggingCfg,
 }
@@ -326,11 +327,11 @@ impl Config {
         // TODO: autoresolves
     }
 
-    pub fn input_file(&self) -> Option<String> {
+    pub fn input_file(&self) -> Option<PathBuf> {
         self.emulator.input_file.clone()
     }
 
-    pub fn set_input_elf_path(&mut self, path: String) {
+    pub fn set_input_elf_path(&mut self, path: PathBuf) {
         self.emulator.input_file = Some(path);
     }
 

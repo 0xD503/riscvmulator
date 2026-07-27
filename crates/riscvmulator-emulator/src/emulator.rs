@@ -4,6 +4,7 @@ pub(crate) mod elf_loader;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::Path;
+use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::SendError;
@@ -50,7 +51,7 @@ pub struct Emulator {
     periodical_tasks: Arc<Mutex<Vec<PeriodicalTask>>>, //
     periodical_tasks_join_handles: Vec<JoinHandle<()>>,
 
-    input_file: Option<String>,
+    input_file: Option<PathBuf>,
 
     devices_available_for_use: HashMap<
         String, /* device_kind */
@@ -142,7 +143,7 @@ impl Emulator {
         load_result
     }
 
-    pub fn input_file(&self) -> Option<String> {
+    pub fn input_file(&self) -> Option<PathBuf> {
         self.input_file.clone()
     }
 

@@ -94,7 +94,7 @@ doc:
   {{RUN_IN_CONTAINER}}cargo doc --workspace --profile=release --no-deps
 
 check:
-  {{RUN_IN_CONTAINER}}cargo check --workspace --profile=release-checked
+  {{RUN_IN_CONTAINER}}cargo check --workspace --all-targets --profile=release-checked
 
 audit:
   {{RUN_IN_CONTAINER}}cargo audit

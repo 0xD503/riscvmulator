@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use log::error;
 
 use crate::ExitCode;
@@ -11,7 +13,7 @@ use riscvmulator_soc::parse_args::parse_args;
 fn config_creator(
     custom_config: bool,
     initialize_logger: bool,
-    test_path: Option<&'static str>,
+    test_path: Option<PathBuf>,
 ) -> Result<Config, ConfigError> {
     let mut config;
     if custom_config {
@@ -27,7 +29,7 @@ fn config_creator(
 
     if let Some(path) = test_path {
         if let Ok(cfg) = config.as_mut() {
-            cfg.set_input_elf_path(path.to_string());
+            cfg.set_input_elf_path(path);
         }
     }
 
@@ -37,7 +39,7 @@ fn config_creator(
 pub fn emulator_create(
     custom_config: bool,
     initialize_logger: bool,
-    test_path: Option<&'static str>,
+    test_path: Option<PathBuf>,
 ) -> Result<Emulator, ExitCode> {
     let emu_config =
         config_creator(custom_config, initialize_logger, test_path).map_err(
