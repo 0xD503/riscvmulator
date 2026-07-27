@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
-use riscvmulator::ExitCode;
-use riscvmulator::init::{emulator_create, emulator_prepare_loop};
+use riscvmulator_emulator::ExitCode;
+use riscvmulator_emulator::init::{emulator_create, emulator_prepare_loop};
 
 fn main() -> Result<(), ExitCode> {
     let custom_config = true;

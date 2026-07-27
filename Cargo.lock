@@ -403,12 +403,22 @@ dependencies = [
  "env_logger",
  "figment",
  "log",
+ "riscvmulator-emulator",
  "serde",
 ]
 
 [[package]]
 name = "riscvmulator-emulator"
 version = "0.1.0"
+dependencies = [
+ "clap",
+ "elf",
+ "env_logger",
+ "figment",
+ "log",
+ "riscvmulator-soc",
+ "serde",
+]
 
 [[package]]
 name = "riscvmulator-soc"
