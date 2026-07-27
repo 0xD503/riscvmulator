@@ -70,18 +70,18 @@ impl<AddrType: Send + Sync> Bus<XLen> for SystemBus<AddrType> {
         address: BusAddrType,
         dest: &mut [Byte],
     ) -> Result<(), IODeviceError> {
-        let offset = address - self.ram_base;
         if (self.ram_base
             ..=(self.ram_end - size_of::<InstructionTypeCompressed>() as XLen))
             .contains(&address)
         {
             trace!("Reading instruction from memory at addr: {address:#018X?}");
 
+            let offset = address - self.ram_base;
             self.memory.read(offset, dest)
         } else {
             trace!("Reading instruction from MMIO at addr: {address:#018X?}");
 
-            self.devices.read(offset, dest)
+            self.devices.read(address, dest)
         }
     }
 }
