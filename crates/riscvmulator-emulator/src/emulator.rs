@@ -20,17 +20,18 @@ use log::info;
 use crate::BusAddrType;
 use crate::Device;
 use crate::IODeviceError;
+use crate::config::Config;
 use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
 use crate::hooks::{HookAction, PeriodicalTask, PeriodicalTaskArgs};
 
 use riscvmulator_soc::config::DeviceCfg;
 use riscvmulator_soc::globals::exit_codes::ExitCode;
+use riscvmulator_soc::soc::SoC;
 use riscvmulator_soc::soc::hart::Hart;
 use riscvmulator_soc::soc::peripherals::common::constants::{
     DEV_KIND_CLINT, DEV_KIND_PLIC, DEV_KIND_UART,
 };
 use riscvmulator_soc::soc::peripherals::uart::UART;
-use riscvmulator_soc::{config::Config, soc::SoC};
 
 use self::elf_loader::{ElfData, ElfError, load_elf};
 

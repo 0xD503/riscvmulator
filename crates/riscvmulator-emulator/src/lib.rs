@@ -1,7 +1,11 @@
 #![forbid(unsafe_code)]
 
+mod config;
+mod globals;
 mod hooks;
 mod logger;
+mod parse_args;
+mod utils;
 
 mod debug;
 

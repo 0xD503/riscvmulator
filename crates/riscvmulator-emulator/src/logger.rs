@@ -1,6 +1,7 @@
-use riscvmulator_soc::config::{
-    Config, ConfigError,
-    constants::{DEFAULT_LOG_LEVEL, DEFAULT_LOG_STYLE},
+use crate::config::{Config, ConfigError};
+
+use riscvmulator_soc::config::constants::{
+    DEFAULT_LOG_LEVEL, DEFAULT_LOG_STYLE,
 };
 
 pub fn init_logger(config: &Result<Config, ConfigError>) {

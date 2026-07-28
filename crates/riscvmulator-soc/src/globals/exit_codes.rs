@@ -2,8 +2,6 @@ use std::process::Termination;
 
 use log::error;
 
-use crate::config::ConfigError;
-
 #[derive(Debug, PartialEq)]
 pub enum ExitCode {
     Success = 0,
@@ -38,16 +36,6 @@ impl Termination for ExitCode {
             ExitCode::Error => std::process::ExitCode::FAILURE,
 
             _ => std::process::ExitCode::FAILURE,
-        }
-    }
-}
-
-impl From<ConfigError> for ExitCode {
-    fn from(config_err: ConfigError) -> Self {
-        match config_err {
-            ConfigError::Read(_) => Self::ConfigRead,
-            ConfigError::Build(_) => Self::ConfigBuild,
-            ConfigError::Validation(_) => Self::ConfigValidation,
         }
     }
 }

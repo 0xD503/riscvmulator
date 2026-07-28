@@ -6,9 +6,10 @@ use crate::ExitCode;
 use crate::emulator::Emulator;
 
 use super::logger::init_logger;
+use crate::config::{Config, ConfigError};
 use crate::emulator::elf_loader::ElfData;
-use riscvmulator_soc::config::{Config, ConfigError};
-use riscvmulator_soc::parse_args::parse_args;
+
+use crate::parse_args::parse_args;
 
 fn config_creator(
     custom_config: bool,

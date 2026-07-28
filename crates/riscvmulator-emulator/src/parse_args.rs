@@ -1,10 +1,9 @@
 use clap::Parser;
-// use log::debug;
 use serde::Serialize;
 
 use crate::utils;
 
-use super::globals::exit_codes::ExitCode;
+use riscvmulator_soc::globals::exit_codes::ExitCode;
 
 #[allow(non_camel_case_types)]
 #[derive(Parser, Serialize, Clone, Debug)]
