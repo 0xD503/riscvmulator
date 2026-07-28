@@ -1,4 +1,4 @@
-mod constants;
+pub mod constants;
 pub(crate) mod elf_loader;
 
 use std::collections::HashMap;
@@ -187,7 +187,7 @@ impl Emulator {
     fn spawn_hart_threads(&mut self) {
         // `drain(..)` returns iterator to all items of vector and passes
         // ownership for each item on iteration
-        let bus = Arc::clone(&self.soc.bus());
+        let bus = Arc::clone(self.soc.bus());
         for mut hart in self.soc.harts_mut().drain(..) {
             let start_trigger = Arc::clone(&self.start_trigger);
             let bus = Arc::clone(&bus);
@@ -213,7 +213,7 @@ impl Emulator {
         let tasks = Arc::clone(&self.periodical_tasks);
         let halted = Arc::clone(&self.halted);
         let run_loop_stopped = Arc::clone(&self.run_loop_stopped);
-        let args = PeriodicalTaskArgs::new(Arc::clone(&self.soc.bus()));
+        let args = PeriodicalTaskArgs::new(Arc::clone(self.soc.bus()));
         let event_sender = Arc::clone(&self.emulator_event_sender);
 
         self.periodical_tasks_join_handles.push(thread::spawn(move || {

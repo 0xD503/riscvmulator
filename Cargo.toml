@@ -21,6 +21,7 @@ figment = { version = "0.10.19", features = ["toml", "env"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
+unnameable_types = "warn"
 
 [package]
 name = "riscvmulator"
