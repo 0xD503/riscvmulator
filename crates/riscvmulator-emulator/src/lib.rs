@@ -1,14 +1,13 @@
 #![forbid(unsafe_code)]
 
-mod config;
+mod debug;
 mod globals;
 mod hooks;
 mod logger;
 mod parse_args;
 mod utils;
 
-mod debug;
-
+pub mod config;
 pub mod emulator;
 pub mod init;
 

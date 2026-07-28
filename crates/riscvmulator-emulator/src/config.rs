@@ -13,13 +13,47 @@ use figment::{
 };
 use serde::{Deserialize, Serialize};
 
-use riscvmulator_soc::config::{EmulatorCfg, SocCfg};
+use riscvmulator_soc::config::SocCfg;
 use riscvmulator_soc::constants::arch::XLen;
 use riscvmulator_soc::globals::exit_codes::ExitCode;
 
 use self::constants::*;
 
 use crate::parse_args::CLI_Args;
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct LoggingCfg {
+    pub level: String,
+    pub style: String,
+}
+
+impl Default for LoggingCfg {
+    fn default() -> Self {
+        Self {
+            level: DEFAULT_LOG_LEVEL.to_string(),
+            style: DEFAULT_LOG_STYLE.to_string(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct EmulatorCfg {
+    pub input_file: Option<PathBuf>,
+    throttle_frequency: u64,
+    pub logging: LoggingCfg,
+}
+
+impl Default for EmulatorCfg {
+    fn default() -> Self {
+        Self {
+            input_file: None,
+            throttle_frequency: DEFAULT_THROTTLE_FREQ,
+            logging: Default::default(),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]

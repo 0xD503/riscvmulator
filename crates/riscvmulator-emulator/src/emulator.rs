@@ -161,7 +161,7 @@ impl Emulator {
         &mut self,
         devices: Vec<DeviceCfg>,
     ) -> Result<(), IODeviceError> {
-        let bus = Arc::clone(&self.soc.bus());
+        let bus = Arc::clone(self.soc.bus());
         for device in devices {
             let dev_kind = &device.kind;
             if let Some(device_creator) =

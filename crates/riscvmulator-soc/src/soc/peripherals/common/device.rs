@@ -39,6 +39,9 @@ impl<AddrType> Devices<AddrType> {
                 IODeviceError::Poisoned
             })?;
 
+        let device_error_attach =
+            IODeviceError::Attach(device.kind().to_string());
+
         // device validation
         if (device.end_addr() - size_of::<XLen>() as BusAddrType)
             < device.base_addr()
@@ -47,10 +50,9 @@ impl<AddrType> Devices<AddrType> {
             error!(
                 "{dev_name} device memory space size should be >= size of XLen"
             );
+            return Err(device_error_attach);
         }
         let device_base_addr = device.base_addr();
-        let device_error_attach =
-            IODeviceError::Attach(device.kind().to_string());
         if device_tree_guarded_write.contains_key(&device_base_addr) {
             error!(
                 "device with base address {device_base_addr} already exists"

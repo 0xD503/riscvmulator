@@ -1,7 +1,5 @@
 pub mod constants;
 
-use std::path::PathBuf;
-
 use serde::{Deserialize, Serialize};
 
 use super::constants::arch::XLen;
@@ -127,40 +125,6 @@ impl Default for SocCfg {
             bus: BusCfg::default(),
             harts_num: DEFAULT_HARTS_NUM,
             xtal_frequency_hz: DEFAULT_XTAL_FREQ_HZ,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct LoggingCfg {
-    pub level: String,
-    pub style: String,
-}
-
-impl Default for LoggingCfg {
-    fn default() -> Self {
-        Self {
-            level: DEFAULT_LOG_LEVEL.to_string(),
-            style: DEFAULT_LOG_STYLE.to_string(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct EmulatorCfg {
-    pub input_file: Option<PathBuf>,
-    throttle_frequency: u64,
-    pub logging: LoggingCfg,
-}
-
-impl Default for EmulatorCfg {
-    fn default() -> Self {
-        Self {
-            input_file: None,
-            throttle_frequency: DEFAULT_THROTTLE_FREQ,
-            logging: Default::default(),
         }
     }
 }
