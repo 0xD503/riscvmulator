@@ -29,10 +29,10 @@ RUN apt-get update && apt-get install --assume-yes \
     less patch \
     python3 \
     #sshd \
-    ## convenience tools
+    ## convenience tools \
     tmux emacs-nox ripgrep fd-find fzf htop lldb \
     vim gdb \
-    ## clean apt cache and install some crates
+    ## clean apt cache and install some crates \
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt rust-src rust-analyzer \
     && rustup target add riscv64gc-unknown-none-elf \
@@ -60,9 +60,22 @@ WORKDIR ${WD}
 ## context
 ## this is a trick to pre‑build dependencies without the full app code
 COPY Cargo.toml Cargo.lock .
-RUN mkdir src && echo "fn main() {}" > src/main.rs
+COPY crates/riscvmulator-soc/Cargo.toml crates/riscvmulator-soc/
+COPY crates/riscvmulator-emulator/Cargo.toml crates/riscvmulator-emulator/
+COPY crates_guest/riscvmulator-simple_firmware/Cargo.toml \
+     crates_guest/riscvmulator-simple_firmware/
+RUN mkdir -p src \
+             crates/riscvmulator-soc/src \
+             crates/riscvmulator-emulator/src \
+             crates_guest/riscvmulator-simple_firmware/src \
+    && echo "fn main() {}" > src/main.rs \
+    && echo "fn main() {}" > crates_guest/riscvmulator-simple_firmware/src/main.rs \
+    && touch src/lib.rs \
+             crates/riscvmulator-soc/src/lib.rs \
+             crates/riscvmulator-emulator/src/lib.rs \
+             crates_guest/riscvmulator-simple_firmware/src/lib.rs
 RUN cargo build --${BUILD_TYPE}
-RUN rm -rf src
+RUN rm -rf src crates crates_guest
 
 ## copy the actual app sources to WORKDIR and build the app
 ## we `touch` file becuse the timestamp on src/main.rs might not change after
