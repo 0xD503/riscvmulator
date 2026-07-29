@@ -37,7 +37,7 @@
 - [ ] get rid of heap allocations outside of initialization/deinitializations
 - [ ] fix security vulnerabilities (if present)
 - [ ] add CI/CD (forgejo/GitHub Actions compatible)
-- [ ] zero `bss` zone during ELF loading
+- [ ] ~~zero `bss` zone during ELF loading~~
 
 ## Refactor
 
@@ -69,3 +69,4 @@
     - [ ] core parking
     - [ ] stack init
     - [ ] boot-state seeding: setting a0 = hartid, a1 = dtb, PC, and initial CSRs (mhartid, etc.)
+    - [ ] `bss` zeroing

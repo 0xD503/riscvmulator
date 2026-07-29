@@ -81,7 +81,8 @@ RUN rm -rf src crates crates_guest
 ## we `touch` file becuse the timestamp on src/main.rs might not change after
 ## removal if content is identical. `touch` guarantees forced build rerun
 COPY . .
-RUN touch src/main.rs && cargo build --${BUILD_TYPE}
+RUN find src crates crates_guest -name "*.rs" -exec touch {} + \
+    && cargo build --${BUILD_TYPE}
 
 ## mark "inside dev container" for the justfile's RUN_IN_CONTAINER detection
 ENV IN_DEV_CONTAINER=1
