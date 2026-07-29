@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install --assume-yes \
     ## clean apt cache and install some crates
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt rust-src rust-analyzer \
+    && rustup target add riscv64gc-unknown-none-elf \
     && cargo install --locked just \
     && cargo install --locked wild-linker \
     && cargo install --locked flamegraph \

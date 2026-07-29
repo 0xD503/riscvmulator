@@ -10,5 +10,9 @@ keywords = [ "emulator", "risc-v", "riscv", "cpu", "firmware" ]
 categories.workspace = true
 rust-version.workspace = true
 
+[dependencies]
+riscv = { version = "0.16.1" }
+riscv-rt = { version = "0.18.0" }
+
 [lints]
 workspace = true
