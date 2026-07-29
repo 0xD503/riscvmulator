@@ -1,0 +1,14 @@
+[package]
+name = "riscvmulator-simple_firmware"
+description = "A simple firmware for RISC-V CPU. Runs in machine mode, used for basic bootstrap/debugging"
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = [ "emulator", "risc-v", "riscv", "cpu", "firmware" ]
+categories.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true

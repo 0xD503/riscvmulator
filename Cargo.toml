@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/riscvmulator-soc", "crates/riscvmulator-emulator"]
+members = ["crates/riscvmulator-soc", "crates/riscvmulator-emulator", "crates_guest/riscvmulator-simple_firmware"]
 resolver = "3"
 
 [workspace.package]
@@ -38,6 +38,7 @@ rust-version.workspace = true
 
 [dependencies]
 riscvmulator-emulator = { path = "crates/riscvmulator-emulator" }
+riscvmulator-simple_firmware = { path = "crates_guest/riscvmulator-simple_firmware" }
 
 [lints]
 workspace = true

@@ -399,6 +399,7 @@ name = "riscvmulator"
 version = "0.1.0"
 dependencies = [
  "riscvmulator-emulator",
+ "riscvmulator-simple_firmware",
 ]
 
 [[package]]
@@ -413,6 +414,10 @@ dependencies = [
  "riscvmulator-soc",
  "serde",
 ]
+
+[[package]]
+name = "riscvmulator-simple_firmware"
+version = "0.1.0"
 
 [[package]]
 name = "riscvmulator-soc"
