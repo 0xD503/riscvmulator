@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use riscvmulator_emulator::{
-    Addressable, ExitCode, HookAction, PeriodicalTaskArgs, Word,
+    Addressable, ExitCode, HookAction, PeriodicTaskArgs, Word,
     init::{emulator_create, emulator_prepare_loop},
 };
 
@@ -34,7 +34,7 @@ pub fn run_test(test_path: impl AsRef<Path>) {
 
     // add HTIF memory address spy/watcher
     let tohost_addr = elf_data.tohost_addr;
-    let htif_spy = move |args: &PeriodicalTaskArgs| {
+    let htif_spy = move |args: &PeriodicTaskArgs| {
         let mut dest = [0u8; size_of::<Word>()];
 
         let mem_read_result = args.bus.read(tohost_addr, &mut dest);

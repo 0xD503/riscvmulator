@@ -22,7 +22,7 @@ use crate::Device;
 use crate::IODeviceError;
 use crate::config::Config;
 use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
-use crate::hooks::{HookAction, PeriodicTask, PeriodicalTaskArgs};
+use crate::hooks::{HookAction, PeriodicTask, PeriodicTaskArgs};
 
 use riscvmulator_soc::config::DeviceCfg;
 use riscvmulator_soc::globals::exit_codes::ExitCode;
@@ -213,7 +213,7 @@ impl Emulator {
         let tasks = Arc::clone(&self.periodical_tasks);
         let halted = Arc::clone(&self.halted);
         let run_loop_stopped = Arc::clone(&self.run_loop_stopped);
-        let args = PeriodicalTaskArgs::new(Arc::clone(self.soc.bus()));
+        let args = PeriodicTaskArgs::new(Arc::clone(self.soc.bus()));
         let event_sender = Arc::clone(&self.emulator_event_sender);
 
         self.periodical_tasks_join_handles.push(thread::spawn(move || {

@@ -16,7 +16,7 @@ pub use crate::emulator::{Emulator, EmulatorError, constants::EmulatorEvent};
 pub use crate::parse_args::CLI_Args;
 pub use emulator::elf_loader::{ElfData, ElfError};
 
-pub use hooks::{HookAction, PeriodicalTaskArgs};
+pub use hooks::{HookAction, PeriodicTask, PeriodicTaskArgs};
 pub use riscvmulator_soc::config::SocCfg;
 pub use riscvmulator_soc::constants::arch::{BusAddrType, Byte, Word, XLen};
 pub use riscvmulator_soc::globals::exit_codes::ExitCode;

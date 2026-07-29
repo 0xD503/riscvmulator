@@ -7,12 +7,12 @@ use log::trace;
 use self::core::Context;
 use self::core::registers::{RegisterFileInterface, RegisterInterface};
 
+use self::core::decoder::constants::InstructionSize;
 use crate::config::SocCfg;
 use crate::constants::arch::{BusAddrType, XLen};
 use crate::constants::soc::INITIAL_INSTRUCTION;
 use crate::soc::hart::core::ArchState;
 use crate::soc::hart::core::decoder::Decoder;
-use crate::soc::hart::core::decoder::constants::InstructionSize;
 use crate::soc::hart::core::executor::Executor;
 use crate::soc::hart::core::fetch_unit::FetchUnit;
 use crate::soc::hart::core::gp_registers::{Register, RegisterFile};
