@@ -14,7 +14,6 @@ use figment::{
 use serde::{Deserialize, Serialize};
 
 use riscvmulator_soc::config::SocCfg;
-use riscvmulator_soc::constants::arch::XLen;
 use riscvmulator_soc::globals::exit_codes::ExitCode;
 
 use self::constants::*;
@@ -122,8 +121,9 @@ impl Config {
                 .merge(Serialized::default("emulator.input_file", input_file));
         }
 
-        let mut config: Config =
-            config.extract().map_err(ConfigError::Build)?;
+        let mut config: Config = config
+            .extract()
+            .map_err(|err| ConfigError::Build(err.to_string()))?;
 
         config.validate()?;
         config.resolve();
@@ -142,36 +142,9 @@ impl Config {
     fn validate(&self) -> Result<(), ConfigError> {
         let mut errors_list = Vec::new();
 
-        if self.soc.bus.memory.size_bytes == 0 {
-            errors_list.push("memory size should be > 0".to_string());
-        }
-        if self.soc.harts_num < 1 {
-            errors_list.push("number of harts should be >= 1".to_string());
-        }
-        if !self.soc.hart.extension_I {
-            errors_list.push(
-                "RISC-V base integer extension is not enabled".to_string(),
-            );
-        }
-        for dev in &self.soc.bus.devices {
-            if dev.size_bytes < size_of::<XLen>() {
-                let dev_name = &dev.name;
-                errors_list.push(format!(
-                    "{dev_name} device space size should be >= size of XLen"
-                ));
-            }
-            if let Some(irq_line) = &dev.irq_line {
-                if irq_line.0 == 0 {
-                    let dev_name = &dev.name;
-                    errors_list.push(format!(
-                        "{dev_name}: IRQ line shouldn't be == 0"
-                    ));
-                }
-            }
-        }
-        if self.soc.xtal_frequency_hz == 0 {
-            errors_list.push("XTAL frequency should be > 0 Hz".to_string());
-        }
+        let mut soc_validation_errors =
+            self.soc.validate().err().unwrap_or_default();
+        errors_list.append(&mut soc_validation_errors);
 
         if self.emulator.logging.level != "off"
             && self.emulator.logging.level != "error"
@@ -180,15 +153,19 @@ impl Config {
             && self.emulator.logging.level != "debug"
             && self.emulator.logging.level != "trace"
         {
-            let level = &self.emulator.logging.level;
-            errors_list.push(format!("{level}: invalid log level"));
+            errors_list.push(format!(
+                "{}: invalid log level",
+                &self.emulator.logging.level
+            ));
         }
         if self.emulator.logging.style != "auto"
             && self.emulator.logging.style != "always"
             && self.emulator.logging.style != "never"
         {
-            let style = &self.emulator.logging.style;
-            errors_list.push(format!("{style}: invalid log style"));
+            errors_list.push(format!(
+                "{}: invalid log style",
+                &self.emulator.logging.style
+            ));
         }
 
         if errors_list.is_empty() {
@@ -219,7 +196,7 @@ impl Config {
 #[derive(Debug)]
 pub enum ConfigError {
     Read(Option<String>),
-    Build(figment::Error),
+    Build(String),
     Validation(Vec<String>),
 }
 

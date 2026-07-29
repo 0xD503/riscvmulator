@@ -41,7 +41,7 @@ pub type BusAddrType = XLen;
 
 #[allow(non_camel_case_types)]
 #[derive(Serialize, Deserialize, Debug)]
-pub struct IRQ_Line(pub u32);
+pub struct IRQ_Line(pub(crate) u32);
 
 pub const RISCV_NUM_OF_REGISTERS: usize = 32;
 pub const RISCV_NUM_OF_REGISTERS_EMBEDDED: usize = 16;

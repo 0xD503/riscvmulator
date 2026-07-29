@@ -22,7 +22,7 @@ use crate::Device;
 use crate::IODeviceError;
 use crate::config::Config;
 use crate::emulator::constants::{EmulatorEvent, PERIODICAL_TASKS_PERIOD_MS};
-use crate::hooks::{HookAction, PeriodicalTask, PeriodicalTaskArgs};
+use crate::hooks::{HookAction, PeriodicTask, PeriodicalTaskArgs};
 
 use riscvmulator_soc::config::DeviceCfg;
 use riscvmulator_soc::globals::exit_codes::ExitCode;
@@ -49,7 +49,7 @@ pub struct Emulator {
     emulator_event_sender: Arc<Sender<EmulatorEvent>>,
     emulator_event_receiver: Receiver<EmulatorEvent>,
 
-    periodical_tasks: Arc<Mutex<Vec<PeriodicalTask>>>, //
+    periodical_tasks: Arc<Mutex<Vec<PeriodicTask>>>, //
     periodical_tasks_join_handles: Vec<JoinHandle<()>>,
 
     input_file: Option<PathBuf>,
@@ -126,7 +126,7 @@ impl Emulator {
         exit_code
     }
 
-    pub fn add_periodical_task(&mut self, task: PeriodicalTask) {
+    pub fn add_periodic_task(&mut self, task: PeriodicTask) {
         self.periodical_tasks.lock().unwrap().push(task);
     }
 

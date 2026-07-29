@@ -12,9 +12,9 @@ pub mod config;
 pub mod init;
 
 // public re-exports
-pub use crate::emulator::elf_loader::{ElfData, ElfError};
 pub use crate::emulator::{Emulator, EmulatorError, constants::EmulatorEvent};
 pub use crate::parse_args::CLI_Args;
+pub use emulator::elf_loader::{ElfData, ElfError};
 
 pub use hooks::{HookAction, PeriodicalTaskArgs};
 pub use riscvmulator_soc::config::SocCfg;

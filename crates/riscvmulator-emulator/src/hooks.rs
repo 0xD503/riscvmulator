@@ -4,7 +4,7 @@ use crate::BusAddrType;
 use riscvmulator_soc::globals::exit_codes::ExitCode;
 use riscvmulator_soc::soc::memory_bus::SystemBus;
 
-pub(crate) type PeriodicalTask =
+pub type PeriodicTask =
     Box<dyn FnMut(&PeriodicalTaskArgs) -> HookAction + Send>;
 
 pub struct PeriodicalTaskArgs {

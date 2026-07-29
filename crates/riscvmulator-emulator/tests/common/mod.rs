@@ -51,7 +51,7 @@ pub fn run_test(test_path: impl AsRef<Path>) {
             HookAction::None
         }
     };
-    emulator.add_periodical_task(Box::new(htif_spy));
+    emulator.add_periodic_task(Box::new(htif_spy));
 
     assert_eq!(emulator.run(), Ok(()));
 

@@ -3,7 +3,7 @@ use crate::BusAddrType;
 use elf::ElfBytes;
 use elf::abi::PT_LOAD;
 use elf::endian::AnyEndian;
-use elf::segment::ProgramHeader;
+// use elf::segment::ProgramHeader;
 use log::error;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
@@ -17,7 +17,7 @@ use riscvmulator_soc::soc::peripherals::common::device::Addressable;
 
 pub struct ElfData {
     pub e_entry: XLen,
-    pub p_hdrs: Vec<ProgramHeader>,
+    // pub p_hdrs: Vec<ProgramHeader>,
     pub tohost_addr: BusAddrType,
 }
 
@@ -85,7 +85,7 @@ pub(crate) fn load_elf(
 
     Ok(ElfData {
         e_entry: file.ehdr.e_entry,
-        p_hdrs: all_load_phdrs,
+        // p_hdrs: all_load_phdrs,
         tohost_addr,
     })
 }
