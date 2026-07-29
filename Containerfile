@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install --assume-yes \
     binutils-riscv64-linux-gnu binutils-riscv64-unknown-elf \
     picolibc-riscv64-unknown-elf newlib-source \
     #gdb-riscv64-linux-gnu \
-    clang lld mold make llvm-bolt \
+    clang lld mold make llvm llvm-bolt \
     #perf bloaty \
     git \
     less patch \

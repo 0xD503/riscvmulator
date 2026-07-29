@@ -2,4 +2,4 @@
 target = "riscv64gc-unknown-none-elf"
 
 [target.riscv64gc-unknown-none-elf]
-rustflags = ["-C", "link-arg=-Tmemory_layout.x"]
+rustflags = ["-C", "link-arg=-Tlink_rules/memory_layout.x"]

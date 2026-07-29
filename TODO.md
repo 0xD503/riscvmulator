@@ -37,6 +37,7 @@
 - [ ] get rid of heap allocations outside of initialization/deinitializations
 - [ ] fix security vulnerabilities (if present)
 - [ ] add CI/CD (forgejo/GitHub Actions compatible)
+- [ ] zero `bss` zone during ELF loading
 
 ## Refactor
 

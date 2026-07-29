@@ -15,7 +15,7 @@ riscv = { version = "0.16.1" }
 riscv-rt = { version = "0.18.0" }
 
 [workspace.lints.rust]
-unsafe_code = "warn"
+unsafe_code = "allow"
 unnameable_types = "deny"
 private_interfaces = "deny"
 
@@ -32,8 +32,8 @@ categories.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-riscv.workspace = true
-riscv-rt.workspace = true
+# riscv.workspace = true
+# riscv-rt.workspace = true
 
 [lints]
 workspace = true
