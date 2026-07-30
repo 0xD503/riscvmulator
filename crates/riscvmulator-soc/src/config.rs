@@ -124,6 +124,18 @@ impl SocCfg {
                 "RISC-V base integer extension is not enabled".to_string(),
             );
         }
+        if self.hart.extension_D {
+            // extension `D` requires extension `F`
+            if !self.hart.extension_F {
+                errors_list.push(
+                    concat!(
+                        "RISC-V double-precision FP extension requires",
+                        " single-precision FP to be enabled as well"
+                    )
+                    .to_string(),
+                );
+            }
+        }
         for dev in &self.bus.devices {
             if dev.size_bytes < size_of::<XLen>() {
                 let dev_name = &dev.name;
