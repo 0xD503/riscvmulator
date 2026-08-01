@@ -33,10 +33,10 @@ fn mulh() {
     run_test("3rd_party/riscv-tests/isa/rv64um-p-mulh");
 }
 
-// #[test]
-// fn mulhsu() {
-//     run_test("3rd_party/riscv-tests/isa/rv64um-p-mulhsu");
-// }
+#[test]
+fn mulhsu() {
+    run_test("3rd_party/riscv-tests/isa/rv64um-p-mulhsu");
+}
 
 #[test]
 fn mulhu() {

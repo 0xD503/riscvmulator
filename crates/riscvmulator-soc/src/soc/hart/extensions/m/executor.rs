@@ -30,7 +30,11 @@ impl Executor {
     ) {
         trace!("Executing MULHSU...");
 
-        todo!();
+        let extended_rs1: i128 =
+            decoder.source_register_1 as SignedXLen as i128;
+        let extended_rs2: u128 = decoder.source_register_2 as u128;
+        self.result =
+            ((extended_rs1 * extended_rs2 as i128) >> XLen::BITS) as XLen;
     }
 
     pub(crate) fn instruction_multiply_high_unsigned(
