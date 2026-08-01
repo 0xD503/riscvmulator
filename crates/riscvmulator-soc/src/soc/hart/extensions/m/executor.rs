@@ -1,18 +1,25 @@
 use log::trace;
 
-use crate::soc::hart::core::{decoder::Decoder, executor::Executor};
+use crate::{
+    constants::arch::XLen,
+    soc::hart::core::{decoder::Decoder, executor::Executor},
+};
 
 impl Executor {
     pub(crate) fn instruction_multiply_low(&mut self, decoder: &Decoder) {
         trace!("Executing MUL...");
 
-        todo!();
+        self.result = decoder
+            .source_register_1
+            .wrapping_mul(decoder.source_register_2);
     }
 
     pub(crate) fn instruction_multiply_high(&mut self, decoder: &Decoder) {
         trace!("Executing MULH...");
 
-        todo!();
+        let extended_rs1: i128 = decoder.source_register_1 as i128;
+        let extended_rs2: i128 = decoder.source_register_2 as i128;
+        self.result = ((extended_rs1 * extended_rs2) >> XLen::BITS) as XLen;
     }
 
     pub(crate) fn instruction_multiply_high_signed_unsigned(
