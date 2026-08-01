@@ -2,9 +2,13 @@ pub mod constants;
 
 use self::constants::{
     BRANCH_Funct3, FenceMode, Funct7, I_Funct12, JALR_Funct3, MISC_MEM_Funct3,
-    OP_32_Funct3, OP_Funct3, OP_IMM_32_Funct3, OP_IMM_Funct3, OP_IMM_Funct7,
-    OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode, OpcodeToInstructionFormat,
-    STORE_Funct3, SYSTEM_Funct3, SYSTEM_Imm_transfer_control_return_from,
+    OP_IMM_Funct3, OP_IMM_Funct7, OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode,
+    OpcodeToInstructionFormat, STORE_Funct3, SYSTEM_Funct3,
+    SYSTEM_Imm_transfer_control_return_from,
+};
+use crate::soc::hart::extensions;
+use crate::soc::hart::extensions::base::constants::{
+    OP_32_Funct3, OP_IMM_32_Funct3,
 };
 
 use super::executor::constants::ExecutableCommand;
@@ -109,53 +113,85 @@ impl Decoder {
 
         match self.opcode {
             Opcode::OP => match self.r_funct7 {
-                Funct7::F0 => match OP_Funct3::from(self.funct3) {
-                    OP_Funct3::ARITH => {
-                        self.command_to_execute = ExecutableCommand::ADD;
+                Funct7::F0 => {
+                    match extensions::base::constants::OP_Funct3::from(
+                        self.funct3,
+                    ) {
+                        extensions::base::constants::OP_Funct3::ARITH => {
+                            self.command_to_execute = ExecutableCommand::ADD;
+                        }
+                        extensions::base::constants::OP_Funct3::SLL => {
+                            self.shamt = self.extract_r_shamt();
+                            self.command_to_execute = ExecutableCommand::SLL;
+                        }
+                        extensions::base::constants::OP_Funct3::SLT => {
+                            self.command_to_execute = ExecutableCommand::SLT;
+                        }
+                        extensions::base::constants::OP_Funct3::SLTU => {
+                            self.command_to_execute = ExecutableCommand::SLTU;
+                        }
+                        extensions::base::constants::OP_Funct3::XOR => {
+                            self.command_to_execute = ExecutableCommand::XOR;
+                        }
+                        extensions::base::constants::OP_Funct3::SRX => {
+                            self.shamt = self.extract_r_shamt();
+                            self.command_to_execute = ExecutableCommand::SRL;
+                        }
+                        extensions::base::constants::OP_Funct3::OR => {
+                            self.command_to_execute = ExecutableCommand::OR;
+                        }
+                        extensions::base::constants::OP_Funct3::AND => {
+                            self.command_to_execute = ExecutableCommand::AND;
+                        }
                     }
-                    OP_Funct3::SLL => {
-                        self.shamt = self.extract_r_shamt();
-                        self.command_to_execute = ExecutableCommand::SLL;
-                    }
-                    OP_Funct3::SLT => {
-                        self.command_to_execute = ExecutableCommand::SLT;
-                    }
-                    OP_Funct3::SLTU => {
-                        self.command_to_execute = ExecutableCommand::SLTU;
-                    }
-                    OP_Funct3::XOR => {
-                        self.command_to_execute = ExecutableCommand::XOR;
-                    }
-                    OP_Funct3::SRX => {
-                        self.shamt = self.extract_r_shamt();
-                        self.command_to_execute = ExecutableCommand::SRL;
-                    }
-                    OP_Funct3::OR => {
-                        self.command_to_execute = ExecutableCommand::OR;
-                    }
-                    OP_Funct3::AND => {
-                        self.command_to_execute = ExecutableCommand::AND;
-                    }
-                },
-                Funct7::F1 => match OP_Funct3::from(self.funct3) {
-                    OP_Funct3::ARITH => {
-                        self.command_to_execute = ExecutableCommand::SUB;
-                    }
-                    OP_Funct3::SRX => {
-                        self.shamt = self.extract_r_shamt();
-                        self.command_to_execute = ExecutableCommand::SRA;
-                    }
+                }
+                Funct7::F1 => {
+                    match extensions::base::constants::OP_Funct3::from(
+                        self.funct3,
+                    ) {
+                        extensions::base::constants::OP_Funct3::ARITH => {
+                            self.command_to_execute = ExecutableCommand::SUB;
+                        }
+                        extensions::base::constants::OP_Funct3::SRX => {
+                            self.shamt = self.extract_r_shamt();
+                            self.command_to_execute = ExecutableCommand::SRA;
+                        }
 
-                    _ => {
-                        error!("unreachable!");
-                        unreachable!("unreachable!");
+                        _ => {
+                            error!("unreachable!");
+                            unreachable!("unreachable!");
+                        }
                     }
-                },
-                Funct7::F_MULDIV => match OP_Funct3::from(self.funct3) {
-                    _ => {
-                        todo!();
+                }
+                Funct7::F_MULDIV => {
+                    match extensions::m::constants::OP_Funct3::from(self.funct3)
+                    {
+                        extensions::m::constants::OP_Funct3::MUL => {
+                            todo!();
+                        }
+                        extensions::m::constants::OP_Funct3::MULH => {
+                            todo!();
+                        }
+                        extensions::m::constants::OP_Funct3::MULHSU => {
+                            todo!();
+                        }
+                        extensions::m::constants::OP_Funct3::MULHU => {
+                            todo!();
+                        }
+                        extensions::m::constants::OP_Funct3::DIV => {
+                            todo!();
+                        }
+                        extensions::m::constants::OP_Funct3::DIVU => {
+                            todo!();
+                        }
+                        extensions::m::constants::OP_Funct3::REM => {
+                            todo!();
+                        }
+                        extensions::m::constants::OP_Funct3::REMU => {
+                            todo!();
+                        }
                     }
-                },
+                }
             },
             Opcode::OP_32 => match self.r_funct7 {
                 Funct7::F0 => match OP_32_Funct3::from(self.funct3) {
