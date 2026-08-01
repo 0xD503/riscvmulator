@@ -39,7 +39,9 @@ impl Executor {
     ) {
         trace!("Executing MULHU...");
 
-        todo!();
+        let extended_rs1: u128 = decoder.source_register_1 as u128;
+        let extended_rs2: u128 = decoder.source_register_2 as u128;
+        self.result = ((extended_rs1 * extended_rs2) >> XLen::BITS) as XLen;
     }
 
     pub(crate) fn instruction_divide(&mut self, decoder: &Decoder) {
