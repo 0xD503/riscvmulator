@@ -248,6 +248,7 @@ pub enum Funct7 {
     #[default]
     F0 = 0b0000000,
     F1 = 0b0100000,
+    F_MULDIV = 0b0000001,
 }
 
 impl From<InstructionType> for Funct7 {

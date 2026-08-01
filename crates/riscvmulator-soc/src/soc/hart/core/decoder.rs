@@ -108,113 +108,96 @@ impl Decoder {
         self.r_funct7 = self.extract_r_funct7(fetch_unit);
 
         match self.opcode {
-            Opcode::OP => match OP_Funct3::from(self.funct3) {
-                OP_Funct3::ARITH => match self.r_funct7 {
-                    Funct7::F0 => {
+            Opcode::OP => match self.r_funct7 {
+                Funct7::F0 => match OP_Funct3::from(self.funct3) {
+                    OP_Funct3::ARITH => {
                         self.command_to_execute = ExecutableCommand::ADD;
                     }
-                    Funct7::F1 => {
-                        self.command_to_execute = ExecutableCommand::SUB;
-                    }
-                },
-                OP_Funct3::SLL => match self.r_funct7 {
-                    Funct7::F0 => {
+                    OP_Funct3::SLL => {
                         self.shamt = self.extract_r_shamt();
                         self.command_to_execute = ExecutableCommand::SLL;
                     }
-
-                    _ => {
-                        error!("unreachable!");
-                        unreachable!("unreachable!");
-                    }
-                },
-                OP_Funct3::SLT => match self.r_funct7 {
-                    Funct7::F0 => {
+                    OP_Funct3::SLT => {
                         self.command_to_execute = ExecutableCommand::SLT;
                     }
-
-                    _ => {
-                        error!("unreachable!");
-                        unreachable!("unreachable!");
-                    }
-                },
-                OP_Funct3::SLTU => match self.r_funct7 {
-                    Funct7::F0 => {
+                    OP_Funct3::SLTU => {
                         self.command_to_execute = ExecutableCommand::SLTU;
                     }
-
-                    _ => {
-                        error!("unreachable!");
-                        unreachable!("unreachable!");
-                    }
-                },
-                OP_Funct3::XOR => match self.r_funct7 {
-                    Funct7::F0 => {
+                    OP_Funct3::XOR => {
                         self.command_to_execute = ExecutableCommand::XOR;
                     }
-
-                    _ => {
-                        error!("unreachable!");
-                        unreachable!("unreachable!");
+                    OP_Funct3::SRX => {
+                        self.shamt = self.extract_r_shamt();
+                        self.command_to_execute = ExecutableCommand::SRL;
                     }
-                },
-                OP_Funct3::SRX => {
-                    self.shamt = self.extract_r_shamt();
-                    match self.r_funct7 {
-                        Funct7::F0 => {
-                            self.command_to_execute = ExecutableCommand::SRL;
-                        }
-                        Funct7::F1 => {
-                            self.command_to_execute = ExecutableCommand::SRA;
-                        }
-                    }
-                }
-                OP_Funct3::OR => match self.r_funct7 {
-                    Funct7::F0 => {
+                    OP_Funct3::OR => {
                         self.command_to_execute = ExecutableCommand::OR;
                     }
+                    OP_Funct3::AND => {
+                        self.command_to_execute = ExecutableCommand::AND;
+                    }
+                },
+                Funct7::F1 => match OP_Funct3::from(self.funct3) {
+                    OP_Funct3::ARITH => {
+                        self.command_to_execute = ExecutableCommand::SUB;
+                    }
+                    OP_Funct3::SRX => {
+                        self.shamt = self.extract_r_shamt();
+                        self.command_to_execute = ExecutableCommand::SRA;
+                    }
 
                     _ => {
                         error!("unreachable!");
                         unreachable!("unreachable!");
                     }
                 },
-                OP_Funct3::AND => match self.r_funct7 {
-                    Funct7::F0 => {
-                        self.command_to_execute = ExecutableCommand::AND;
-                    }
-
+                Funct7::F_MULDIV => match OP_Funct3::from(self.funct3) {
                     _ => {
-                        error!("unreachable!");
-                        unreachable!("unreachable!");
+                        todo!();
                     }
                 },
             },
-            Opcode::OP_32 => match OP_32_Funct3::from(self.funct3) {
-                OP_32_Funct3::ARITHW => match self.r_funct7 {
-                    Funct7::F0 => {
+            Opcode::OP_32 => match self.r_funct7 {
+                Funct7::F0 => match OP_32_Funct3::from(self.funct3) {
+                    OP_32_Funct3::ARITHW => {
                         self.command_to_execute = ExecutableCommand::ADDW;
                     }
-                    Funct7::F1 => {
-                        self.command_to_execute = ExecutableCommand::SUBW;
+                    OP_32_Funct3::SLLW => {
+                        self.shamt = self.extract_r_shamt_rv64w();
+                        self.command_to_execute = ExecutableCommand::SLLW;
+                    }
+                    OP_32_Funct3::SRXW => {
+                        self.shamt = self.extract_r_shamt_rv64w();
+                        debug!("New shamt: {}", self.shamt);
+                        self.command_to_execute = ExecutableCommand::SRLW;
                     }
                 },
-                OP_32_Funct3::SLLW => {
-                    self.shamt = self.extract_r_shamt_rv64w();
-                    self.command_to_execute = ExecutableCommand::SLLW;
-                }
-                OP_32_Funct3::SRXW => {
-                    self.shamt = self.extract_r_shamt_rv64w();
-                    debug!("New shamt: {}", self.shamt);
-                    match self.r_funct7 {
-                        Funct7::F0 => {
-                            self.command_to_execute = ExecutableCommand::SRLW;
-                        }
-                        Funct7::F1 => {
-                            self.command_to_execute = ExecutableCommand::SRAW;
-                        }
+                Funct7::F1 => match OP_32_Funct3::from(self.funct3) {
+                    OP_32_Funct3::ARITHW => {
+                        self.command_to_execute = ExecutableCommand::SUBW;
                     }
-                }
+                    // // TODO: possibly duplicate, check spec
+                    // OP_32_Funct3::SLLW => {
+                    //     self.shamt = self.extract_r_shamt_rv64w();
+                    //     self.command_to_execute = ExecutableCommand::SLLW;
+                    // }
+                    OP_32_Funct3::SRXW => {
+                        self.shamt = self.extract_r_shamt_rv64w();
+                        debug!("New shamt: {}", self.shamt);
+                        self.command_to_execute = ExecutableCommand::SRAW;
+                    }
+
+                    _ => {
+                        error!("unreachable!");
+                        unreachable!("unreachable!");
+                    }
+                },
+                Funct7::F_MULDIV => match OP_32_Funct3::from(self.funct3) {
+                    _ => {
+                        error!("unreachable!");
+                        unreachable!("unreachable!");
+                    }
+                },
             },
 
             _ => {
