@@ -35,7 +35,7 @@ pub(crate) fn load_elf(
                 _ => ElfError::ParseHeader(err),
             },
         )?;
-    let mut tohost_addr = 0x8000_1000;
+    let mut tohost_addr = 0x0000_0000;
 
     let all_load_phdrs = file.segments().ok_or(ElfError::SegmentsLoad)?;
     let all_load_phdrs: Vec<_> = all_load_phdrs

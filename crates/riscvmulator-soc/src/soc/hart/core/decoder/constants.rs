@@ -256,6 +256,7 @@ impl From<InstructionType> for Funct7 {
         match value {
             0b0000000 => Funct7::F0,
             0b0100000 => Funct7::F1,
+            0b0000001 => Funct7::F_MULDIV,
 
             _ => {
                 error!("Unknown funct7: {value:#09b}");

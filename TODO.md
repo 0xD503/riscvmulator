@@ -38,6 +38,7 @@
 - [ ] fix security vulnerabilities (if present)
 - [ ] add CI/CD (forgejo/GitHub Actions compatible)
 - [ ] ~~zero `bss` zone during ELF loading~~
+- [ ] fix stalls when thread gets destroyed by panic
 
 ## Refactor
 
