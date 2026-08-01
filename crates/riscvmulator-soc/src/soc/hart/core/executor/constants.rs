@@ -79,4 +79,14 @@ pub enum ExecutableCommand {
     CSRRWI = 59, // CSR read/write immediate
     CSRRSI = 60, // CSR read/set immediate
     CSRRCI = 61, // CSR read/clear immediate
+
+    /// `M` extension instrurctions
+    MUL = 62,
+    MULH = 63,
+    MULHSU = 64,
+    MULHU = 65,
+    DIV = 66,
+    DIVU = 67,
+    REM = 68,
+    REMU = 69,
 }

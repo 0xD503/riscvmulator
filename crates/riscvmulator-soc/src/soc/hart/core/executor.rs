@@ -235,6 +235,32 @@ impl Executor {
                     control_status_registers,
                 );
             }
+
+            // M extension instructoins
+            ExecutableCommand::MUL => {
+                self.instruction_multiply_low(decoder);
+            }
+            ExecutableCommand::MULH => {
+                self.instruction_multiply_high(decoder);
+            }
+            ExecutableCommand::MULHSU => {
+                self.instruction_multiply_high_signed_unsigned(decoder);
+            }
+            ExecutableCommand::MULHU => {
+                self.instruction_multiply_high_unsigned(decoder);
+            }
+            ExecutableCommand::DIV => {
+                self.instruction_divide(decoder);
+            }
+            ExecutableCommand::DIVU => {
+                self.instruction_divide_unsigned(decoder);
+            }
+            ExecutableCommand::REM => {
+                self.instruction_remainder(decoder);
+            }
+            ExecutableCommand::REMU => {
+                self.instruction_remainder_unsigned(decoder);
+            }
         }
     }
 
@@ -256,7 +282,7 @@ impl Executor {
     }
 
     // use wrapping operation in order to allow overruns
-    fn update_memory_address(&mut self, decoder: &Decoder) {
+    pub(crate) fn update_memory_address(&mut self, decoder: &Decoder) {
         self.memory_address = XLen::wrapping_add(
             decoder.source_register_1,
             decoder.immediate.sign_extend(),

@@ -164,33 +164,10 @@ impl Decoder {
                     }
                 }
                 Funct7::F_MULDIV => {
-                    match extensions::m::constants::OP_Funct3::from(self.funct3)
-                    {
-                        extensions::m::constants::OP_Funct3::MUL => {
-                            todo!();
-                        }
-                        extensions::m::constants::OP_Funct3::MULH => {
-                            todo!();
-                        }
-                        extensions::m::constants::OP_Funct3::MULHSU => {
-                            todo!();
-                        }
-                        extensions::m::constants::OP_Funct3::MULHU => {
-                            todo!();
-                        }
-                        extensions::m::constants::OP_Funct3::DIV => {
-                            todo!();
-                        }
-                        extensions::m::constants::OP_Funct3::DIVU => {
-                            todo!();
-                        }
-                        extensions::m::constants::OP_Funct3::REM => {
-                            todo!();
-                        }
-                        extensions::m::constants::OP_Funct3::REMU => {
-                            todo!();
-                        }
-                    }
+                    // TODO: gate if `M` extension enabled
+                    // if misa_m_enabled() {
+                    self.decode_m();
+                    // }
                 }
             },
             Opcode::OP_32 => match self.r_funct7 {
