@@ -205,12 +205,12 @@ impl Decoder {
                         unreachable!("unreachable!");
                     }
                 },
-                Funct7::F_MULDIV => match OP_32_Funct3::from(self.funct3) {
-                    _ => {
-                        error!("unreachable!");
-                        unreachable!("unreachable!");
-                    }
-                },
+                Funct7::F_MULDIV => {
+                    // TODO: gate if `M` extension enabled
+                    // if misa_m_enabled() {
+                    self.decode_m_32();
+                    // }
+                }
             },
 
             _ => {

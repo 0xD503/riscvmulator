@@ -261,6 +261,22 @@ impl Executor {
             ExecutableCommand::REMU => {
                 self.instruction_remainder_unsigned(decoder);
             }
+            // M32
+            ExecutableCommand::MULW => {
+                self.instruction_multiply_low_word(decoder);
+            }
+            ExecutableCommand::DIVW => {
+                self.instruction_divide_word(decoder);
+            }
+            ExecutableCommand::DIVUW => {
+                self.instruction_divide_unsigned_word(decoder);
+            }
+            ExecutableCommand::REMW => {
+                self.instruction_remainder_word(decoder);
+            }
+            ExecutableCommand::REMUW => {
+                self.instruction_remainder_unsigned_word(decoder);
+            }
         }
     }
 

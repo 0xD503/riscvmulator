@@ -31,4 +31,23 @@ impl Decoder {
             }
         }
     }
+    pub(crate) fn decode_m_32(&mut self) {
+        match super::constants::OP_32_Funct3::from(self.funct3) {
+            super::constants::OP_32_Funct3::MULW => {
+                self.command_to_execute = ExecutableCommand::MULW;
+            }
+            super::constants::OP_32_Funct3::DIVW => {
+                self.command_to_execute = ExecutableCommand::DIVW;
+            }
+            super::constants::OP_32_Funct3::DIVUW => {
+                self.command_to_execute = ExecutableCommand::DIVUW;
+            }
+            super::constants::OP_32_Funct3::REMW => {
+                self.command_to_execute = ExecutableCommand::REMW;
+            }
+            super::constants::OP_32_Funct3::REMUW => {
+                self.command_to_execute = ExecutableCommand::REMUW;
+            }
+        }
+    }
 }

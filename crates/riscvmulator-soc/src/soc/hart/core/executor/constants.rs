@@ -89,4 +89,10 @@ pub enum ExecutableCommand {
     DIVU = 67,
     REM = 68,
     REMU = 69,
+    // M32
+    MULW = 70,
+    DIVW = 71,
+    DIVUW = 72,
+    REMW = 73,
+    REMUW = 74,
 }

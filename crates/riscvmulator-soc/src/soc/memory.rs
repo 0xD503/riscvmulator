@@ -238,7 +238,7 @@ impl<AddrType: Send + Sync> Addressable<BusAddrType> for Memory<AddrType> {
         // trace!(
         //     "Writing memory at offset: {offset:#018X?}, value: {value:#018X?}..."
         // );
-        dbg!("value: {value:#018X?}");
+        // dbg!("value: {value:#018X?}");
 
         let mut byte_array_guard_write =
             self.byte_array.write().unwrap_or_else(|err| {

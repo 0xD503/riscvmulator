@@ -34,3 +34,30 @@ impl From<InstructionType> for OP_Funct3 {
         }
     }
 }
+
+#[allow(non_camel_case_types)]
+#[allow(clippy::upper_case_acronyms)]
+pub enum OP_32_Funct3 {
+    MULW = 0b000,
+    DIVW = 0b100,
+    DIVUW = 0b101,
+    REMW = 0b110,
+    REMUW = 0b111,
+}
+
+impl From<InstructionType> for OP_32_Funct3 {
+    fn from(value: InstructionType) -> Self {
+        match value {
+            0b000 => OP_32_Funct3::MULW,
+            0b100 => OP_32_Funct3::DIVW,
+            0b101 => OP_32_Funct3::DIVUW,
+            0b110 => OP_32_Funct3::REMW,
+            0b111 => OP_32_Funct3::REMUW,
+
+            _ => {
+                error!("Unknown funct3: {value:#05b}");
+                unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}

@@ -3,10 +3,10 @@ mod peripherals;
 
 use common::run_test;
 
-// #[test]
-// fn div() {
-//     run_test("3rd_party/riscv-tests/isa/rv64um-p-div");
-// }
+#[test]
+fn div() {
+    run_test("3rd_party/riscv-tests/isa/rv64um-p-div");
+}
 
 // #[test]
 // fn divu() {
