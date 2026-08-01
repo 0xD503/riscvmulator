@@ -1,7 +1,7 @@
 use log::trace;
 
 use crate::{
-    constants::arch::XLen,
+    constants::arch::{SignedXLen, XLen},
     soc::hart::core::{decoder::Decoder, executor::Executor},
 };
 
@@ -17,8 +17,10 @@ impl Executor {
     pub(crate) fn instruction_multiply_high(&mut self, decoder: &Decoder) {
         trace!("Executing MULH...");
 
-        let extended_rs1: i128 = decoder.source_register_1 as i128;
-        let extended_rs2: i128 = decoder.source_register_2 as i128;
+        let extended_rs1: i128 =
+            decoder.source_register_1 as SignedXLen as i128;
+        let extended_rs2: i128 =
+            decoder.source_register_2 as SignedXLen as i128;
         self.result = ((extended_rs1 * extended_rs2) >> XLen::BITS) as XLen;
     }
 

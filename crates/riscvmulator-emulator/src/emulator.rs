@@ -332,7 +332,10 @@ impl Emulator {
             .drain(..)
             .map(|hart_thread| {
                 hart_thread.join().unwrap_or_else(|err| {
-                    todo!("Is it even possible???: {err:#?}");
+                    // self.emulator_event_sender
+                    //     .send(EmulatorEvent::Stop(ExitCode::ThreadPoisoned))
+                    //     .unwrap();
+                    todo!("FIX process stalling on thread poisoning: {err:#?}");
                 })
             })
             .collect();

@@ -18,7 +18,7 @@ pub enum ExitCode {
     StringTable = 96,
 
     NoInputFileProvided = 97,
-    // DeviceWriteError = 98,
+    ThreadPoisoned = 98,
     //
     // HookStopSignal = 99,
     //
