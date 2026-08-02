@@ -93,13 +93,25 @@ impl Executor {
     pub(crate) fn instruction_remainder(&mut self, decoder: &Decoder) {
         trace!("Executing REM...");
 
-        todo!();
+        if self.is_div_by_zero(decoder) {
+            self.result = decoder.source_register_1;
+        } else if self.is_div_overflow(decoder) {
+            self.result = 0;
+        } else {
+            self.result = (decoder.source_register_1 as SignedXLen
+                % decoder.source_register_2 as SignedXLen)
+                as XLen;
+        }
     }
 
     pub(crate) fn instruction_remainder_unsigned(&mut self, decoder: &Decoder) {
         trace!("Executing REMU...");
 
-        todo!();
+        if self.is_div_by_zero(decoder) {
+            self.result = decoder.source_register_1;
+        } else {
+            self.result = decoder.source_register_1 % decoder.source_register_2;
+        }
     }
     // M32
     pub(crate) fn instruction_multiply_low_word(&mut self, decoder: &Decoder) {

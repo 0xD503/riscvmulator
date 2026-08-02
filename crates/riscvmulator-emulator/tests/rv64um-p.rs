@@ -48,15 +48,15 @@ fn mulhu() {
 //     run_test("3rd_party/riscv-tests/isa/rv64um-p-mulw");
 // }
 
-// #[test]
-// fn rem() {
-//     run_test("3rd_party/riscv-tests/isa/rv64um-p-rem");
-// }
+#[test]
+fn rem() {
+    run_test("3rd_party/riscv-tests/isa/rv64um-p-rem");
+}
 
-// #[test]
-// fn remu() {
-//     run_test("3rd_party/riscv-tests/isa/rv64um-p-remu");
-// }
+#[test]
+fn remu() {
+    run_test("3rd_party/riscv-tests/isa/rv64um-p-remu");
+}
 
 // #[test]
 // fn remuw() {
