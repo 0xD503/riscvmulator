@@ -1,7 +1,7 @@
 use log::trace;
 
 use crate::{
-    constants::arch::{SignedXLen, XLen},
+    constants::arch::{SignedXLen, SignedXLen32, XLen, XLen32},
     soc::hart::core::{decoder::Decoder, executor::Executor},
 };
 
@@ -114,10 +114,16 @@ impl Executor {
         }
     }
     // M32
+    /// MULW is an RV64 instruction that multiplies the lower 32 bits of the
+    /// source registers, placing the sign extension of the lower 32 bits of the
+    /// result into the destination register
     pub(crate) fn instruction_multiply_low_word(&mut self, decoder: &Decoder) {
         trace!("Executing MULW...");
 
-        todo!();
+        self.result = (((decoder.source_register_1 & XLen32::MAX as XLen)
+            * (decoder.source_register_2 & XLen32::MAX as XLen))
+            & XLen32::MAX as XLen) as XLen32
+            as SignedXLen32 as SignedXLen as XLen;
     }
     pub(crate) fn instruction_divide_word(&mut self, decoder: &Decoder) {
         trace!("Executing DIVW...");
