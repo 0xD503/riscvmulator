@@ -125,8 +125,8 @@ impl Executor {
 
         self.result = (((decoder.source_register_1 & XLen32::MAX as XLen)
             * (decoder.source_register_2 & XLen32::MAX as XLen))
-            & XLen32::MAX as XLen) as XLen32
-            as SignedXLen32 as SignedXLen as XLen;
+            & XLen32::MAX as XLen)
+            .sign_extend();
     }
     pub(crate) fn instruction_divide_word(&mut self, decoder: &Decoder) {
         trace!("Executing DIVW...");
@@ -140,7 +140,7 @@ impl Executor {
         } else {
             self.result = ((decoder.source_register_1 as SignedXLen32)
                 .wrapping_div(decoder.source_register_2 as SignedXLen32))
-                as SignedXLen32 as SignedXLen as XLen;
+                as SignedXLen as XLen;
         }
     }
     pub(crate) fn instruction_divide_unsigned_word(
