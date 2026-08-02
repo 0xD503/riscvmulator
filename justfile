@@ -79,6 +79,7 @@ run-release-container:
 ## quality
 
 test:
+  {{RUN_IN_CONTAINER_DEBUG}}scripts/riscv_tests.temp.sh
   {{RUN_IN_CONTAINER_DEBUG}}cargo test --workspace --profile=release-checked
 
 bench:

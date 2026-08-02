@@ -47,7 +47,15 @@ RUN apt-get update && apt-get install --assume-yes \
     && cargo install --locked cargo-fuzz
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
-    && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME}
+    && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME} \
+    ## switch ASLR for debuggers \
+    && echo "settings set target.disable-aslr false" \
+        > /home/${DEV_USERNAME}/.lldbinit \
+    && echo "set disable-randomization off" \
+        > /home/${DEV_USERNAME}/.gdbinit \
+    && chown ${DEV_UID}:${DEV_GID} \
+        /home/${DEV_USERNAME}/.lldbinit \
+        /home/${DEV_USERNAME}/.gdbinit
 
 ## set WORKDIR
 WORKDIR ${WD}
