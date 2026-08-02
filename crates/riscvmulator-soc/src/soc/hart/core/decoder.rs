@@ -6,7 +6,7 @@ use self::constants::{
     OpcodeToInstructionFormat, STORE_Funct3, SYSTEM_Funct3,
     SYSTEM_Imm_transfer_control_return_from,
 };
-use crate::soc::hart::core::{ArchState, Context};
+use crate::soc::hart::core::ArchState;
 use crate::soc::hart::extensions;
 use crate::soc::hart::extensions::base::constants::{
     OP_32_Funct3, OP_IMM_32_Funct3,

@@ -15,23 +15,29 @@ fn config_creator(
     custom_config: bool,
     initialize_logger: bool,
     test_path: Option<PathBuf>,
+    test_cfg_file_name: Option<PathBuf>,
 ) -> Result<Config, ConfigError> {
     let mut config;
     if custom_config {
         let args = parse_args();
         config = Config::build(&args);
     } else {
-        config = Ok(Config::default());
+        if let Some(path) = test_path {
+            if let Some(cfg_name) = test_cfg_file_name {
+                config = Config::build_from_cfg_file(cfg_name);
+                if let Ok(cfg) = config.as_mut() {
+                    cfg.set_input_elf_path(path);
+                }
+            } else {
+                config = Err(ConfigError::PathNotGiven);
+            }
+        } else {
+            config = Ok(Config::default());
+        }
     }
 
     if initialize_logger {
         init_logger(&config);
-    }
-
-    if let Some(path) = test_path {
-        if let Ok(cfg) = config.as_mut() {
-            cfg.set_input_elf_path(path);
-        }
     }
 
     config
@@ -41,13 +47,18 @@ pub fn emulator_create(
     use_custom_config: bool,
     initialize_logger: bool,
     test_path: Option<PathBuf>,
+    test_cfg_file_name: Option<PathBuf>,
 ) -> Result<Emulator, ExitCode> {
-    let emu_config =
-        config_creator(use_custom_config, initialize_logger, test_path)
-            .map_err(|err| {
-                error!("{err}");
-                err.exit_code()
-            })?;
+    let emu_config = config_creator(
+        use_custom_config,
+        initialize_logger,
+        test_path,
+        test_cfg_file_name,
+    )
+    .map_err(|err| {
+        error!("{err}");
+        err.exit_code()
+    })?;
 
     let emulator = Emulator::build_from_config(emu_config).map_err(|err| {
         error!("{err}");

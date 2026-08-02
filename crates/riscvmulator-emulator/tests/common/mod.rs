@@ -16,18 +16,31 @@ fn test_teardown() {
     //
 }
 
-pub fn run_test(test_path: impl AsRef<Path>) {
+pub fn run_test(file_name: impl AsRef<Path>, cfg_file_name: impl AsRef<Path>) {
     test_setup();
 
-    let mut path =
-        PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../../"));
-    path.push(test_path);
+    const REPO_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
+    const CRATE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
+
+    let mut path_to_test = PathBuf::from(REPO_ROOT);
+    path_to_test.push(file_name);
+
+    let mut path_to_cfg = PathBuf::from(CRATE_ROOT);
+    path_to_cfg.push("tests/cfg");
+    path_to_cfg.push(cfg_file_name);
+
+    dbg!(format!("GREPME Current test path: {:?}", path_to_test));
+    dbg!(format!("GREPME Current cfg path: {:?}", path_to_cfg));
 
     let custom_config = false;
     let initialize_logger = false;
-    let mut emulator =
-        emulator_create(custom_config, initialize_logger, Some(path))
-            .expect("failed to create emulator");
+    let mut emulator = emulator_create(
+        custom_config,
+        initialize_logger,
+        Some(path_to_test),
+        Some(path_to_cfg),
+    )
+    .expect("failed to create emulator");
 
     let elf_data = emulator_prepare_loop(&mut emulator)
         .expect("expected successful ELF load/read")

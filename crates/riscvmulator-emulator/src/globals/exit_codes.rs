@@ -8,6 +8,7 @@ impl From<ConfigError> for ExitCode {
             ConfigError::Read(_) => Self::ConfigRead,
             ConfigError::Build(_) => Self::ConfigBuild,
             ConfigError::Validation(_) => Self::ConfigValidation,
+            ConfigError::PathNotGiven => Self::ConfigPathNotGiven,
         }
     }
 }

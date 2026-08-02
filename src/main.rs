@@ -8,9 +8,14 @@ fn main() -> Result<(), ExitCode> {
     let initialize_logger = true;
     // take test path from config/envvar/CLI arg if was given
     let test_path = None;
+    let test_cfg_file_name = None;
 
-    let mut emulator =
-        emulator_create(custom_config, initialize_logger, test_path)?;
+    let mut emulator = emulator_create(
+        custom_config,
+        initialize_logger,
+        test_path,
+        test_cfg_file_name,
+    )?;
     emulator_prepare_loop(&mut emulator)?;
 
     emulator.run()

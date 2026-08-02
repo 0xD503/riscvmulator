@@ -297,6 +297,7 @@ impl Emulator {
 
     fn loop_start(&mut self) {
         // TODO: it cause stalls during integration testing
+        // TODO: add traceback printing
         // this hook will be executed in case some `Hart` thread panics
         // it will send `Stop` event in order to complete execution
         let panic_hook_event_sender = Arc::clone(&self.emulator_event_sender);

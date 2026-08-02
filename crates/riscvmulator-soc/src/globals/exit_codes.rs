@@ -11,16 +11,17 @@ pub enum ExitCode {
     ConfigRead = 90,
     ConfigBuild = 91,
     ConfigValidation = 92,
+    ConfigPathNotGiven = 93,
 
-    ElfRead = 93,
-    ElfParseHeader = 94,
-    SegmentsLoad = 95,
-    StringTable = 96,
+    ElfRead = 94,
+    ElfParseHeader = 95,
+    SegmentsLoad = 96,
+    StringTable = 97,
 
-    NoInputFileProvided = 97,
-    ThreadPoisoned = 98,
+    NoInputFileProvided = 98,
+    ThreadPoisoned = 99,
     //
-    // HookStopSignal = 99,
+    // HookStopSignal = ,
     //
     EmulatorModePrepFailure = 110,
 }

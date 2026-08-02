@@ -4,7 +4,7 @@ use std::{
     error::Error,
     fmt::{self, Formatter},
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use figment::{
@@ -71,18 +71,30 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn build(cli_args: &CLI_Args) -> Result<Config, ConfigError> {
-        // debug!("Building emulator config");
+    fn build_figment() -> Figment {
+        Figment::from(Serialized::defaults(Config::default()))
+    }
 
-        let mut config = Figment::from(Serialized::defaults(Config::default()));
-        if let Some(conf_file) = &cli_args.config_file {
-            let file_content = fs::read_to_string(conf_file)
-                .map_err(|_| ConfigError::Read(Some(conf_file.clone())))?;
-            config = config.merge(Toml::string(&file_content));
-        } else {
-            // info!("Configuration file was not provided");
+    fn build_figment_with_cli_args(
+        cli_args: &CLI_Args,
+    ) -> Result<Figment, ConfigError> {
+        let mut config_figment = Config::build_figment();
+        if let Some(conf_file_name) = &cli_args.config_file {
+            let file_content = fs::read_to_string(conf_file_name)
+                .map_err(|_| ConfigError::Read(Some(conf_file_name.clone())))?;
+            // read values from config file and override default ones
+            config_figment = config_figment.merge(Toml::string(&file_content));
         }
-        config = config.merge(
+
+        Ok(config_figment)
+    }
+
+    pub fn build(cli_args: &CLI_Args) -> Result<Config, ConfigError> {
+        // read CLI args and config file (if provided)
+        let mut config_figment = Config::build_figment_with_cli_args(cli_args)?;
+
+        // read environment variables and override default/config ones
+        config_figment = config_figment.merge(
             Env::prefixed(CONFIG_ENV_VAR_PREFIX)
                 // if you want to use environment variable, it should use
                 // double undescores (`__`) to substitute dots `.` in
@@ -92,36 +104,63 @@ impl Config {
                 // `RVMULATOR_SOC__BUS__MEMORY__SIZE_BYTES`
                 .split("__"),
         );
-        // overrides provided by CLI args
+
+        // overrides provided values by CLI args
+
         if let Some(harts_num) = &cli_args.harts_num {
-            config =
-                config.merge(Serialized::default("soc.harts_num", harts_num));
+            config_figment = config_figment
+                .merge(Serialized::default("soc.harts_num", harts_num));
         }
         if let Some(memory_size) = &cli_args.memory_size {
-            config = config.merge(Serialized::default(
+            config_figment = config_figment.merge(Serialized::default(
                 "soc.bus.memory.size_bytes",
                 memory_size,
             ));
         }
 
         if let Some(throttle_frequency) = &cli_args.throttle_frequency {
-            config = config.merge(Serialized::default(
+            config_figment = config_figment.merge(Serialized::default(
                 "emulator.throttle_frequency",
                 throttle_frequency,
             ));
         }
         if let Some(log_level) = &cli_args.log_level {
-            config = config.merge(Serialized::default(
+            config_figment = config_figment.merge(Serialized::default(
                 "emulator.logging.level",
                 log_level,
             ));
         }
         if let Some(input_file) = &cli_args.input_file {
-            config = config
+            config_figment = config_figment
                 .merge(Serialized::default("emulator.input_file", input_file));
         }
 
-        let mut config: Config = config
+        let mut config: Config = config_figment
+            .extract()
+            .map_err(|err| ConfigError::Build(err.to_string()))?;
+
+        config.validate()?;
+        config.resolve();
+
+        Ok(config)
+    }
+
+    /// this builder doesn't read evironment variables and CLI args
+    pub fn build_from_cfg_file(
+        cfg_file_name: impl AsRef<Path>,
+    ) -> Result<Config, ConfigError> {
+        let mut config_figment = Config::build_figment();
+
+        let file_content =
+            fs::read_to_string(&cfg_file_name).map_err(|_| {
+                ConfigError::Read(Some(
+                    cfg_file_name.as_ref().display().to_string(),
+                ))
+            })?;
+        // read values from config file and override default ones
+        config_figment = config_figment.merge(Toml::string(&file_content));
+
+        let mut config: Config = config_figment
             .extract()
             .map_err(|err| ConfigError::Build(err.to_string()))?;
 
@@ -187,10 +226,6 @@ impl Config {
     pub fn set_input_elf_path(&mut self, path: PathBuf) {
         self.emulator.input_file = Some(path);
     }
-
-    // pub fn set_config_file_path(&mut self, path: String) {
-    //     self.emulator.config_file_path = Some(path);
-    // }
 }
 
 #[derive(Debug)]
@@ -198,6 +233,7 @@ pub enum ConfigError {
     Read(Option<String>),
     Build(String),
     Validation(Vec<String>),
+    PathNotGiven,
 }
 
 impl ConfigError {
@@ -206,6 +242,7 @@ impl ConfigError {
             Self::Read(_) => ExitCode::ConfigRead as i32,
             Self::Build(_) => ExitCode::ConfigBuild as i32,
             Self::Validation(_) => ExitCode::ConfigValidation as i32,
+            Self::PathNotGiven => ExitCode::ConfigPathNotGiven as i32,
         }
     }
 }
@@ -232,6 +269,9 @@ impl fmt::Display for ConfigError {
                     writeln!(formatter, "{err}")?;
                 }
                 Ok(())
+            }
+            Self::PathNotGiven => {
+                writeln!(formatter, "path to config file wasn't given")
             }
         }
     }

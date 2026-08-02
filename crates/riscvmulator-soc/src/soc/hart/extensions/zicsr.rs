@@ -125,12 +125,6 @@ impl<const REGS_NUM: usize> CSRFile<REGS_NUM> {
         if cfg.hart.extension_C {
             misa_value |= MISA_EXTENSIONS_C_COMPRESSED;
         }
-        if cfg.hart.extension_Zifencei {
-            // misa_value |= MISA_EXTENSIONS_M_MULTIPLY_DIVIDE_INT;
-        }
-        if cfg.hart.extension_Zicsr {
-            // misa_value |= MISA_EXTENSIONS_Z;
-        }
         set_misa_raw(self, misa_value);
 
         set_mhartid_raw(self, hartid);
