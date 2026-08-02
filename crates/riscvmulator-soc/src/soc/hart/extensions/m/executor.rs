@@ -128,7 +128,18 @@ impl Executor {
     pub(crate) fn instruction_divide_word(&mut self, decoder: &Decoder) {
         trace!("Executing DIVW...");
 
-        todo!();
+        if self.is_div_by_zero(decoder) {
+            // self.result = XLen32::MAX as SignedXLen32 as SignedXLen as XLen;
+            self.result = XLen::MAX;
+        } else if self.is_div_overflow(decoder) {
+            self.result = (decoder.source_register_1 & XLen32::MAX as XLen)
+                as XLen32 as SignedXLen32
+                as SignedXLen as XLen;
+        } else {
+            self.result = ((decoder.source_register_1 as SignedXLen32)
+                .wrapping_div(decoder.source_register_2 as SignedXLen32))
+                as SignedXLen32 as SignedXLen as XLen;
+        }
     }
     pub(crate) fn instruction_divide_unsigned_word(
         &mut self,
