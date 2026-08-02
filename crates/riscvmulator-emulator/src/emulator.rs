@@ -28,9 +28,7 @@ use riscvmulator_soc::config::DeviceCfg;
 use riscvmulator_soc::globals::exit_codes::ExitCode;
 use riscvmulator_soc::soc::SoC;
 use riscvmulator_soc::soc::hart::Hart;
-use riscvmulator_soc::soc::peripherals::common::constants::{
-    DEV_KIND_CLINT, DEV_KIND_PLIC, DEV_KIND_UART,
-};
+use riscvmulator_soc::soc::peripherals::common::constants::DEV_KIND_UART;
 use riscvmulator_soc::soc::peripherals::uart::UART;
 
 use self::elf_loader::{ElfData, ElfError, load_elf};

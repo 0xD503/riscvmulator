@@ -14,14 +14,33 @@ use crate::constants::arch::{BusAddrType, IRQ_Line};
 pub struct HartCfg {
     pub(super) pc_reset_value: XLen,
 
-    extension_I: bool,
-    extension_M: bool,
-    extension_A: bool,
-    extension_F: bool,
-    extension_D: bool,
-    extension_C: bool,
-    extension_Zifencei: bool,
-    extension_Zicsr: bool,
+    pub(super) extension_A: bool, // atomics
+    // pub(super) extension_B: bool,
+    pub(super) extension_C: bool, // compressed instructions
+    pub(super) extension_D: bool, // FP double precision
+    // pub(super) extension_E: bool,
+    pub(super) extension_F: bool, // FP single precision
+    // pub(super) extension_G: bool,
+    // pub(super) extension_H: bool,
+    pub(super) extension_I: bool, // base integer ISA
+    // pub(super) extension_J: bool,
+    // pub(super) extension_K: bool,
+    // pub(super) extension_L: bool,
+    pub(super) extension_M: bool, // multiply/divide
+    // pub(super) extension_O: bool,
+    // pub(super) extension_P: bool,
+    // pub(super) extension_Q: bool,
+    // pub(super) extension_R: bool,
+    // pub(super) extension_S: bool,
+    // pub(super) extension_T: bool,
+    // pub(super) extension_U: bool,
+    // pub(super) extension_V: bool,
+    // pub(super) extension_W: bool,
+    // pub(super) extension_X: bool,
+    // pub(super) extension_Y: bool,
+    // pub(super) extension_Z: bool,
+    pub(super) extension_Zifencei: bool, // FENCE_I
+    pub(super) extension_Zicsr: bool,    // CSR
 }
 
 impl Default for HartCfg {

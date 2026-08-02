@@ -33,7 +33,7 @@ impl ArchState {
         self.gp_register_file.reset();
         self.PC.reset(cfg.hart.pc_reset_value);
         self.control_status_registers
-            .reset_and_bringup_hw_state(hartid);
+            .reset_and_bringup_hw_state(cfg, hartid);
     }
 }
 

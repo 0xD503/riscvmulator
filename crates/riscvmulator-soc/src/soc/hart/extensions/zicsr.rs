@@ -1,5 +1,6 @@
 use log::trace;
 
+use crate::config::SocCfg;
 use crate::constants::arch::{RISCV_CSR_INITIAL_VALUE, XLen};
 use crate::soc::hart::core::registers::{
     RawRegisterFileInterface, RawRegisterInterface, RegisterFileInterface,
@@ -8,7 +9,10 @@ use crate::soc::hart::core::registers::{
 
 pub mod constants;
 use crate::soc::hart::privileged::constants::{
-    MCause_Code, MISA_MXL, MISA_MXL_OFFSET, MStatus_MPP, MXLen,
+    MCause_Code, MISA_EXTENSIONS_A_ATOMIC, MISA_EXTENSIONS_C_COMPRESSED,
+    MISA_EXTENSIONS_D_FP_DOUBLE, MISA_EXTENSIONS_F_FP_FLOAT,
+    MISA_EXTENSIONS_I_BASE_INTEGER, MISA_EXTENSIONS_M_MULTIPLY_DIVIDE_INT,
+    MISA_MXL, MISA_MXL_OFFSET, MStatus_MPP, MXLen,
 };
 use crate::soc::hart::privileged::machine::misa::{
     set_mhartid_raw, set_misa_raw, set_mstatus_raw,
@@ -89,7 +93,7 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
 }
 
 impl<const REGS_NUM: usize> CSRFile<REGS_NUM> {
-    pub fn reset_and_bringup_hw_state(&mut self, hartid: usize) {
+    pub fn reset_and_bringup_hw_state(&mut self, cfg: &SocCfg, hartid: usize) {
         self.reset();
 
         // prepare and set `mstatus`
@@ -99,10 +103,34 @@ impl<const REGS_NUM: usize> CSRFile<REGS_NUM> {
         set_mstatus_raw(self, mstatus_value);
 
         // prepare and set `misa`
-        let misa_value: MXLen;
+        let mut misa_value: MXLen;
         // MXL (Machine XLEN) field encodes the native base integer ISA width
         // TODO: currently only RV64I is supported
         misa_value = (MISA_MXL::XLEN_64 as MXLen) << MISA_MXL_OFFSET;
+        if cfg.hart.extension_I {
+            misa_value |= MISA_EXTENSIONS_I_BASE_INTEGER;
+        }
+        if cfg.hart.extension_M {
+            misa_value |= MISA_EXTENSIONS_M_MULTIPLY_DIVIDE_INT;
+        }
+        if cfg.hart.extension_A {
+            misa_value |= MISA_EXTENSIONS_A_ATOMIC;
+        }
+        if cfg.hart.extension_F {
+            misa_value |= MISA_EXTENSIONS_F_FP_FLOAT;
+        }
+        if cfg.hart.extension_D {
+            misa_value |= MISA_EXTENSIONS_D_FP_DOUBLE;
+        }
+        if cfg.hart.extension_C {
+            misa_value |= MISA_EXTENSIONS_C_COMPRESSED;
+        }
+        if cfg.hart.extension_Zifencei {
+            // misa_value |= MISA_EXTENSIONS_M_MULTIPLY_DIVIDE_INT;
+        }
+        if cfg.hart.extension_Zicsr {
+            // misa_value |= MISA_EXTENSIONS_Z;
+        }
         set_misa_raw(self, misa_value);
 
         set_mhartid_raw(self, hartid);
