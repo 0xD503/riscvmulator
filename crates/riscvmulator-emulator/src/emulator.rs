@@ -15,6 +15,7 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use std::{error::Error, fmt::Formatter};
 
+use ctrlc;
 use log::error;
 use log::info;
 

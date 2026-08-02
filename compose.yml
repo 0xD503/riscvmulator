@@ -53,6 +53,11 @@ services:
     command: ${USER_SHELL}
     ## map host identity to container user so bind-mount files stay user's
     userns_mode: "${DEV_USERNS_MODE:-keep-id}"
+    ## facilitate debuggers usage
+    security_opt:
+      - seccomp=unconfined
+    cap_add:
+      - SYS_PTRACE
 
 ## declare named volumes to keep them between container runs
 volumes:

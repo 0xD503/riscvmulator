@@ -7,7 +7,7 @@
 - implement D extension
 - implement C extension
 
-## Fixes
+## Fixes/Features
 
 - [ ] add UTs
 - [ ] add benchmarks (compare with Spike)
@@ -29,6 +29,10 @@
 - [ ] fix security vulnerabilities (if present)
 - [ ] add CI/CD (forgejo/GitHub Actions compatible)
 - [ ] fix stalls when thread gets destroyed by panic
+- [ ] cross-platform support
+    - [x] Linux
+    - [ ] MacOS
+    - [ ] Windows
 
 ## Refactor
 
