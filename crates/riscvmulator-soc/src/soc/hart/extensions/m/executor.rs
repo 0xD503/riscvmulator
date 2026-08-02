@@ -2,7 +2,10 @@ use log::trace;
 
 use crate::{
     constants::arch::{SignedXLen, SignedXLen32, XLen, XLen32},
-    soc::hart::core::{decoder::Decoder, executor::Executor},
+    soc::{
+        hart::core::{decoder::Decoder, executor::Executor},
+        memory::MemoryValueType,
+    },
 };
 
 impl Executor {
@@ -129,7 +132,6 @@ impl Executor {
         trace!("Executing DIVW...");
 
         if self.is_div_by_zero(decoder) {
-            // self.result = XLen32::MAX as SignedXLen32 as SignedXLen as XLen;
             self.result = XLen::MAX;
         } else if self.is_div_overflow(decoder) {
             self.result = (decoder.source_register_1 & XLen32::MAX as XLen)
@@ -147,7 +149,13 @@ impl Executor {
     ) {
         trace!("Executing DIVUW...");
 
-        todo!();
+        if self.is_div_by_zero(decoder) {
+            self.result = XLen::MAX;
+        } else {
+            self.result = ((decoder.source_register_1 as XLen32)
+                .wrapping_div(decoder.source_register_2 as XLen32))
+            .sign_extend();
+        }
     }
     pub(crate) fn instruction_remainder_word(&mut self, decoder: &Decoder) {
         trace!("Executing REMW...");
