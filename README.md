@@ -2,7 +2,7 @@
 
 ## Development stage
 
-RV64I is complete, passes `rv64ui-p` tests. The rest extensions are under development.
+RV64IM are complete.
 
 ## Specifications
 

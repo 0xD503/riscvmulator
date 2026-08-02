@@ -2,13 +2,6 @@
 
 ## Following action
 
-- implement device framework
-    - validate devices from config
-- separate project into crates
-    - ??
-- implement extensions framework
-    - ??
-- implement M extension
 - implement A extension
 - implement F extension
 - implement D extension

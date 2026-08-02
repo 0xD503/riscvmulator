@@ -137,9 +137,8 @@ impl Executor {
 
         if self.is_div_by_zero_32(decoder) {
             self.result = -1 as SignedXLen32 as SignedXLen as XLen;
-        } else if self.is_div_overflow(decoder) {
-            self.result =
-                (decoder.source_register_1 & XLen32::MAX as XLen).sign_extend();
+        } else if self.is_div_overflow_32(decoder) {
+            self.result = (decoder.source_register_1 as XLen32).sign_extend();
         } else {
             self.result = ((decoder.source_register_1 as SignedXLen32)
                 .wrapping_div(decoder.source_register_2 as SignedXLen32))
