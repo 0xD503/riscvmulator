@@ -14,7 +14,7 @@ RV64I is complete, passes `rv64ui-p` tests. The rest extensions are under develo
 
 - [ ] `RV32I`
 - [x] `RV64I`
-- [ ] `M` extension (mul/div)
+- [x] `M` extension (mul/div)
 - [ ] `A` extension (atomics)
 - [ ] `F` extension (floating point)
 - [ ] `D` extension
@@ -36,7 +36,7 @@ compliance tests.
 - [x] rv64ui-p-\*
 - [ ] rv64mi-p-\*
 - [ ] rv64si-p-\*
-- [ ] rv64um-p-\*
+- [x] rv64um-p-\*
 - [ ] rv64ua-p-\*
 - [ ] rv64uf-p-\*
 - [ ] rv64ud-p-\*

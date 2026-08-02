@@ -52,21 +52,22 @@ impl Executor {
     }
 
     fn is_div_by_zero(&self, decoder: &Decoder) -> bool {
-        if decoder.source_register_2 == 0 {
-            true
-        } else {
-            false
-        }
+        decoder.source_register_2 == 0
     }
 
     fn is_div_overflow(&self, decoder: &Decoder) -> bool {
-        if decoder.source_register_2 as SignedXLen == -1
+        decoder.source_register_2 as SignedXLen == -1
             && decoder.source_register_1 as SignedXLen == SignedXLen::MIN
-        {
-            true
-        } else {
-            false
-        }
+    }
+
+    fn is_div_by_zero_32(&self, decoder: &Decoder) -> bool {
+        decoder.source_register_2 as XLen32 == 0
+    }
+
+    fn is_div_overflow_32(&self, decoder: &Decoder) -> bool {
+        decoder.source_register_2 as XLen32 as SignedXLen32 == -1
+            && decoder.source_register_1 as XLen32 as SignedXLen32
+                == SignedXLen32::MIN
     }
 
     pub(crate) fn instruction_divide(&mut self, decoder: &Decoder) {
@@ -134,8 +135,8 @@ impl Executor {
     pub(crate) fn instruction_divide_word(&mut self, decoder: &Decoder) {
         trace!("Executing DIVW...");
 
-        if self.is_div_by_zero(decoder) {
-            self.result = XLen::MAX;
+        if self.is_div_by_zero_32(decoder) {
+            self.result = -1 as SignedXLen32 as SignedXLen as XLen;
         } else if self.is_div_overflow(decoder) {
             self.result =
                 (decoder.source_register_1 & XLen32::MAX as XLen).sign_extend();
@@ -151,7 +152,7 @@ impl Executor {
     ) {
         trace!("Executing DIVUW...");
 
-        if self.is_div_by_zero(decoder) {
+        if self.is_div_by_zero_32(decoder) {
             self.result = XLen::MAX;
         } else {
             self.result = ((decoder.source_register_1 as XLen32)
@@ -162,9 +163,9 @@ impl Executor {
     pub(crate) fn instruction_remainder_word(&mut self, decoder: &Decoder) {
         trace!("Executing REMW...");
 
-        if self.is_div_by_zero(decoder) {
-            self.result = decoder.source_register_1;
-        } else if self.is_div_overflow(decoder) {
+        if self.is_div_by_zero_32(decoder) {
+            self.result = (decoder.source_register_1 as XLen32).sign_extend();
+        } else if self.is_div_overflow_32(decoder) {
             self.result = 0;
         } else {
             self.result = ((decoder.source_register_1 as SignedXLen32)
@@ -178,8 +179,8 @@ impl Executor {
     ) {
         trace!("Executing REMUW...");
 
-        if self.is_div_by_zero(decoder) {
-            self.result = decoder.source_register_1;
+        if self.is_div_by_zero_32(decoder) {
+            self.result = (decoder.source_register_1 as XLen32).sign_extend();
         } else {
             self.result = ((decoder.source_register_1 as XLen32)
                 % (decoder.source_register_2 as XLen32))

@@ -298,7 +298,7 @@ impl Executor {
     }
 
     // use wrapping operation in order to allow overruns
-    pub(crate) fn update_memory_address(&mut self, decoder: &Decoder) {
+    fn update_memory_address(&mut self, decoder: &Decoder) {
         self.memory_address = XLen::wrapping_add(
             decoder.source_register_1,
             decoder.immediate.sign_extend(),
