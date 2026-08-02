@@ -1,0 +1,37 @@
+[emulator]
+## 0 means as fast as possible
+#throttle_frequency = 0
+
+[emulator.logging]
+level = "info"
+style = "auto"
+
+[soc]
+harts_num = 1
+#xtal_frequency_hz = 16384
+
+[soc.hart]
+pc_reset_value = 0x8000_0000
+
+## RV64GC == RV64IMAFDC
+extension_I = true
+extension_M = true
+extension_A = true
+extension_F = true
+extension_D = true
+extension_C = true
+extension_Zifencei = true
+extension_Zicsr = true
+
+[soc.bus]
+
+[soc.bus.memory]
+base_addr = 0x8000_0000
+size_bytes = 16384     ## 16 KB
+
+# [[soc.bus.devices]]
+# kind = "uart"
+# name = "uart0"
+# base_addr = 0x1000_0000
+# size_bytes = 100
+# irq_line = 10

@@ -6,10 +6,12 @@ use self::constants::{
     OpcodeToInstructionFormat, STORE_Funct3, SYSTEM_Funct3,
     SYSTEM_Imm_transfer_control_return_from,
 };
+use crate::soc::hart::core::{ArchState, Context};
 use crate::soc::hart::extensions;
 use crate::soc::hart::extensions::base::constants::{
     OP_32_Funct3, OP_IMM_32_Funct3,
 };
+use crate::soc::hart::privileged::machine::misa;
 
 use super::executor::constants::ExecutableCommand;
 
@@ -89,6 +91,7 @@ pub struct FENCE_Context {
 impl Decoder {
     fn decode_r_format(
         &mut self,
+        arch_state: &ArchState,
         fetch_unit: &FetchUnit,
         register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) {
@@ -164,10 +167,13 @@ impl Decoder {
                     }
                 }
                 Funct7::F_MULDIV => {
-                    // TODO: gate if `M` extension enabled
-                    // if misa_m_enabled() {
-                    self.decode_m();
-                    // }
+                    if misa::is_m_enabled(&arch_state.control_status_registers)
+                    {
+                        self.decode_m();
+                    } else {
+                        error!("Illegal instruction trap");
+                        todo!("Illegal instruction trap");
+                    }
                 }
             },
             Opcode::OP_32 => match self.r_funct7 {
@@ -206,10 +212,13 @@ impl Decoder {
                     }
                 },
                 Funct7::F_MULDIV => {
-                    // TODO: gate if `M` extension enabled
-                    // if misa_m_enabled() {
-                    self.decode_m_32();
-                    // }
+                    if misa::is_m_enabled(&arch_state.control_status_registers)
+                    {
+                        self.decode_m_32();
+                    } else {
+                        error!("Illegal instruction trap");
+                        todo!("Illegal instruction trap");
+                    }
                 }
             },
 
@@ -754,6 +763,7 @@ impl Decoder {
 
     pub(crate) fn decode(
         &mut self,
+        arch_state: &ArchState,
         fetch_unit: &FetchUnit,
         register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) {
@@ -765,7 +775,7 @@ impl Decoder {
                     OpcodeToInstructionFormat::R_51_OP
                     | OpcodeToInstructionFormat::R_59_OP_32
                     | OpcodeToInstructionFormat::R_83_OP_FP =>
-                    self.decode_r_format(fetch_unit, register_file),
+                    self.decode_r_format(arch_state, fetch_unit, register_file),
                     OpcodeToInstructionFormat::I_3_LOAD
                     | OpcodeToInstructionFormat::I_7_LOAD_FP
                     | OpcodeToInstructionFormat::I_19_OP_IMM

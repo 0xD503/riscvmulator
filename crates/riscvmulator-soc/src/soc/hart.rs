@@ -65,6 +65,7 @@ impl Hart {
 
     fn decode(&mut self) {
         self.context.decoder.decode(
+            &self.context.arch_state,
             &self.context.fetch_unit,
             &self.context.arch_state.gp_register_file,
         );

@@ -3,6 +3,7 @@ pub(crate) mod elf_loader;
 
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::panic;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
@@ -295,6 +296,16 @@ impl Emulator {
     }
 
     fn loop_start(&mut self) {
+        // TODO: it cause stalls during integration testing
+        // this hook will be executed in case some `Hart` thread panics
+        // it will send `Stop` event in order to complete execution
+        let panic_hook_event_sender = Arc::clone(&self.emulator_event_sender);
+        panic::set_hook(Box::new(move |traceback| {
+            eprintln!("hart paniced, reason: {traceback}");
+            _ = panic_hook_event_sender
+                .send(EmulatorEvent::Stop(ExitCode::ThreadPoisoned));
+        }));
+
         // it doesn't run actually, it takes ownership of hart
         // threads from SoC, puts them waitin on a barrier until
         // real run trigger

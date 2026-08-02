@@ -38,17 +38,16 @@ fn config_creator(
 }
 
 pub fn emulator_create(
-    custom_config: bool,
+    use_custom_config: bool,
     initialize_logger: bool,
     test_path: Option<PathBuf>,
 ) -> Result<Emulator, ExitCode> {
     let emu_config =
-        config_creator(custom_config, initialize_logger, test_path).map_err(
-            |err| {
+        config_creator(use_custom_config, initialize_logger, test_path)
+            .map_err(|err| {
                 error!("{err}");
                 err.exit_code()
-            },
-        )?;
+            })?;
 
     let emulator = Emulator::build_from_config(emu_config).map_err(|err| {
         error!("{err}");
