@@ -1,4 +1,4 @@
-#[allow(non_camel_case_types, dead_code)]
+#[allow(non_camel_case_types)]
 pub enum CSRRegisterName {
     // user lever (unprivilleged) CSRs
 

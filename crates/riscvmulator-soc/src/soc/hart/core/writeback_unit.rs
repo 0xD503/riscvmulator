@@ -1,10 +1,11 @@
 // use super::
 
-use crate::constants::arch::XLen;
 use crate::soc::hart::Hart;
 use crate::soc::hart::core::registers::RegisterFileInterface;
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
-use crate::soc::hart::privileged::machine::MCause_Code;
+use crate::{
+    constants::arch::XLen, soc::hart::privileged::constants::MCause_Code,
+};
 
 use log::{error, trace};
 

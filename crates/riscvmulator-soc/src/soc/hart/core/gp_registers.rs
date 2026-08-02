@@ -50,8 +50,8 @@ impl RegisterInterface for Register {
         self.value = value;
     }
 
-    fn reset(&mut self) {
-        self.value = RISCV_X0_ZERO_REGISTER_VALUE;
+    fn reset(&mut self, value: XLen) {
+        self.value = value;
     }
 }
 
@@ -89,7 +89,7 @@ impl<const REGS_NUM: usize> RegisterFileInterface for RegisterFile<REGS_NUM> {
 
     fn reset(&mut self) {
         for register in self.registers.iter_mut() {
-            register.reset();
+            register.reset(RISCV_X0_ZERO_REGISTER_VALUE);
         }
     }
 }

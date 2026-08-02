@@ -17,7 +17,7 @@ use crate::config::SocCfg;
 use crate::constants::arch::{RISCV_NUM_OF_CSR, RISCV_NUM_OF_REGISTERS};
 use crate::soc::hart::core::fetch_unit::FetchUnit;
 use crate::soc::hart::core::registers::{
-    RawRegisterInterface, RegisterFileInterface,
+    RegisterFileInterface, RegisterInterface,
 };
 
 #[allow(non_snake_case)]
@@ -31,8 +31,9 @@ pub struct ArchState {
 impl ArchState {
     pub(crate) fn reset(&mut self, cfg: &SocCfg, hartid: usize) {
         self.gp_register_file.reset();
-        self.PC.write_raw(cfg.hart.pc_reset_value);
-        self.control_status_registers.bringup_hw_state(hartid);
+        self.PC.reset(cfg.hart.pc_reset_value);
+        self.control_status_registers
+            .reset_and_bringup_hw_state(hartid);
     }
 }
 

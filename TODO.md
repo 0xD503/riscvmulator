@@ -22,15 +22,12 @@
 - [ ] un'`pub` everything that shouldn't be `pub`
 - [ ] ~~get rid off `try_into()` if possible~~ check what is better to use: `into` vs `try_into`
 - [ ] comments should be 80-cut as well as code
-- [ ] separate code into crates
 - [ ] scripts/commands for building `riscv-tests` and `riscv-arch-test`
 - [ ] make `just` commands usable: pass arguments, customize with arguments
-- [ ] add cargo-deny list
 - [ ] clean out of stale commented out code/comments
 - [ ] get rid of heap allocations outside of initialization/deinitializations
 - [ ] fix security vulnerabilities (if present)
 - [ ] add CI/CD (forgejo/GitHub Actions compatible)
-- [ ] ~~zero `bss` zone during ELF loading~~
 - [ ] fix stalls when thread gets destroyed by panic
 
 ## Refactor

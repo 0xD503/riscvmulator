@@ -14,7 +14,7 @@ use crate::constants::arch::{
 };
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
-use crate::soc::hart::privileged::machine::{
+use crate::soc::hart::privileged::constants::{
     MCause_Code, MSTATUS_MPP_MASK, MSTATUS_MPP_OFFSET, MStatus_MPP,
 };
 use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};

@@ -1,4 +1,4 @@
-#[allow(non_camel_case_types, dead_code)]
+#[allow(non_camel_case_types)]
 pub enum GPRegisterName {
     x0_zero,  // always zero
     x1_ra,    // return address

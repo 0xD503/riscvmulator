@@ -7,10 +7,12 @@ use crate::soc::hart::core::registers::{
 };
 
 pub mod constants;
+use crate::soc::hart::privileged::constants::{
+    MCause_Code, MISA_MXL, MISA_MXL_OFFSET, MStatus_MPP, MXLen,
+};
 use crate::soc::hart::privileged::machine::misa::{
     set_mhartid_raw, set_misa_raw, set_mstatus_raw,
 };
-use crate::soc::hart::privileged::machine::{MCause_Code, MStatus_MPP, MXLen};
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone)]
@@ -49,8 +51,8 @@ impl RegisterInterface for CSR {
         self.value = value;
     }
 
-    fn reset(&mut self) {
-        self.value = RISCV_CSR_INITIAL_VALUE;
+    fn reset(&mut self, value: XLen) {
+        self.value = value;
     }
 }
 
@@ -81,21 +83,27 @@ impl<const REGS_NUM: usize> RegisterFileInterface for CSRFile<REGS_NUM> {
 
     fn reset(&mut self) {
         for register in self.registers.iter_mut() {
-            register.reset();
+            register.reset(RISCV_CSR_INITIAL_VALUE);
         }
     }
 }
 
 impl<const REGS_NUM: usize> CSRFile<REGS_NUM> {
-    pub fn bringup_hw_state(&mut self, hartid: usize) {
+    pub fn reset_and_bringup_hw_state(&mut self, hartid: usize) {
         self.reset();
 
+        // prepare and set `mstatus`
+        // set priviliege mode to `M`
         let mstatus_value: MXLen = MStatus_MPP::MACHINE as MXLen;
         // set `MIE`, `MPRV`, `MBE` values to 0
-        // let misa_value: MXLen = ;
-
         set_mstatus_raw(self, mstatus_value);
-        // set_misa_raw(self, misa_value);
+
+        // prepare and set `misa`
+        let misa_value: MXLen;
+        // MXL (Machine XLEN) field encodes the native base integer ISA width
+        // TODO: currently only RV64I is supported
+        misa_value = (MISA_MXL::XLEN_64 as MXLen) << MISA_MXL_OFFSET;
+        set_misa_raw(self, misa_value);
 
         set_mhartid_raw(self, hartid);
     }

@@ -4,7 +4,7 @@ pub(crate) trait RegisterInterface {
     fn read(&self) -> XLen;
     fn write(&mut self, value: XLen);
 
-    fn reset(&mut self);
+    fn reset(&mut self, value: XLen);
 }
 
 pub(crate) trait RegisterFileInterface {
