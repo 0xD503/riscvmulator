@@ -1,14 +1,13 @@
 # RISC-V emulator
 
-## Development stage
-
-RV64IM are complete.
-
 ## Specifications
 
 [Specification](https://riscv.org/specifications/ratified/)
 
 ## Project state
+
+Currently project implements base RV64IM functionality. Project passes
+`rv64ui-p` and `rv64um-p` compliance tests.
 
 ### Main features
 
@@ -27,9 +26,6 @@ RV64IM are complete.
 - [ ] `RV64/32E` (embedded)
 - [x] little-endian
 - [ ] big-endian
-
-Currently project implements base RV64I functionality. Project passes `rv64ui-p`
-compliance tests.
 
 ### Compliance tests
 
