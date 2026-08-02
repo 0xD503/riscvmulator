@@ -58,12 +58,12 @@ fn remu() {
     run_test("3rd_party/riscv-tests/isa/rv64um-p-remu");
 }
 
-// #[test]
-// fn remuw() {
-//     run_test("3rd_party/riscv-tests/isa/rv64um-p-remuw");
-// }
+#[test]
+fn remuw() {
+    run_test("3rd_party/riscv-tests/isa/rv64um-p-remuw");
+}
 
-// #[test]
-// fn remw() {
-//     run_test("3rd_party/riscv-tests/isa/rv64um-p-remw");
-// }
+#[test]
+fn remw() {
+    run_test("3rd_party/riscv-tests/isa/rv64um-p-remw");
+}

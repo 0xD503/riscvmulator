@@ -123,9 +123,12 @@ impl Executor {
     pub(crate) fn instruction_multiply_low_word(&mut self, decoder: &Decoder) {
         trace!("Executing MULW...");
 
-        self.result = (((decoder.source_register_1 & XLen32::MAX as XLen)
-            * (decoder.source_register_2 & XLen32::MAX as XLen))
-            & XLen32::MAX as XLen)
+        // self.result = (((decoder.source_register_1 & XLen32::MAX as XLen)
+        //     * (decoder.source_register_2 & XLen32::MAX as XLen))
+        //     & XLen32::MAX as XLen)
+        //     .sign_extend();
+        self.result = (decoder.source_register_1 as XLen32)
+            .wrapping_mul(decoder.source_register_2 as XLen32)
             .sign_extend();
     }
     pub(crate) fn instruction_divide_word(&mut self, decoder: &Decoder) {
@@ -134,9 +137,8 @@ impl Executor {
         if self.is_div_by_zero(decoder) {
             self.result = XLen::MAX;
         } else if self.is_div_overflow(decoder) {
-            self.result = (decoder.source_register_1 & XLen32::MAX as XLen)
-                as XLen32 as SignedXLen32
-                as SignedXLen as XLen;
+            self.result =
+                (decoder.source_register_1 & XLen32::MAX as XLen).sign_extend();
         } else {
             self.result = ((decoder.source_register_1 as SignedXLen32)
                 .wrapping_div(decoder.source_register_2 as SignedXLen32))
@@ -160,7 +162,15 @@ impl Executor {
     pub(crate) fn instruction_remainder_word(&mut self, decoder: &Decoder) {
         trace!("Executing REMW...");
 
-        todo!();
+        if self.is_div_by_zero(decoder) {
+            self.result = decoder.source_register_1;
+        } else if self.is_div_overflow(decoder) {
+            self.result = 0;
+        } else {
+            self.result = ((decoder.source_register_1 as SignedXLen32)
+                .wrapping_rem(decoder.source_register_2 as SignedXLen32))
+                as SignedXLen as XLen;
+        }
     }
     pub(crate) fn instruction_remainder_unsigned_word(
         &mut self,
@@ -168,6 +178,12 @@ impl Executor {
     ) {
         trace!("Executing REMUW...");
 
-        todo!();
+        if self.is_div_by_zero(decoder) {
+            self.result = decoder.source_register_1;
+        } else {
+            self.result = ((decoder.source_register_1 as XLen32)
+                % (decoder.source_register_2 as XLen32))
+                .sign_extend();
+        }
     }
 }
