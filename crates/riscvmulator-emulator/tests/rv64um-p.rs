@@ -8,10 +8,10 @@ fn div() {
     run_test("3rd_party/riscv-tests/isa/rv64um-p-div");
 }
 
-// #[test]
-// fn divu() {
-//     run_test("3rd_party/riscv-tests/isa/rv64um-p-divu");
-// }
+#[test]
+fn divu() {
+    run_test("3rd_party/riscv-tests/isa/rv64um-p-divu");
+}
 
 // #[test]
 // fn divuw() {

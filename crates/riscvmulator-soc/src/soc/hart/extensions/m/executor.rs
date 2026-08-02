@@ -74,14 +74,20 @@ impl Executor {
         } else if self.is_div_overflow(decoder) {
             self.result = decoder.source_register_1;
         } else {
-            self.result = decoder.source_register_1 / decoder.source_register_2;
+            self.result = (decoder.source_register_1 as SignedXLen
+                / decoder.source_register_2 as SignedXLen)
+                as XLen;
         }
     }
 
     pub(crate) fn instruction_divide_unsigned(&mut self, decoder: &Decoder) {
         trace!("Executing DIVU...");
 
-        todo!();
+        if self.is_div_by_zero(decoder) {
+            self.result = XLen::MAX;
+        } else {
+            self.result = decoder.source_register_1 / decoder.source_register_2;
+        }
     }
 
     pub(crate) fn instruction_remainder(&mut self, decoder: &Decoder) {
