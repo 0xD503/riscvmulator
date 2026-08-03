@@ -103,6 +103,23 @@ impl Emulator {
                 EmulatorError::DeviceAttach
             })?;
 
+        // so far use `Ctrl+C` to send Stop events
+        // TODO: this is being used until true power management is implemented
+        let shut_down_event_sender =
+            Arc::clone(&emulator.emulator_event_sender);
+        ctrlc::set_handler(move || {
+            info!("`Ctrl+C` was assereted, shutting down...");
+            shut_down_event_sender
+                .send(EmulatorEvent::Stop(ExitCode::ThreadPoisoned))
+                .unwrap_or_else(|err| {
+                    error!("Failed to send event on `Ctrl+C`: {err}");
+                    ()
+                });
+        })
+        .unwrap_or_else(|err| {
+            error!("Failed to set `Ctrl+C` handler: {err}");
+        });
+
         Ok(emulator)
     }
 
@@ -304,6 +321,9 @@ impl Emulator {
         let panic_hook_event_sender = Arc::clone(&self.emulator_event_sender);
         panic::set_hook(Box::new(move |traceback| {
             eprintln!("hart paniced, reason: {traceback}");
+
+            let default_hook = std::panic::take_hook();
+            default_hook(traceback);
             _ = panic_hook_event_sender
                 .send(EmulatorEvent::Stop(ExitCode::ThreadPoisoned));
         }));
