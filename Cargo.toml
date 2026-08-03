@@ -39,6 +39,8 @@ rust-version.workspace = true
 
 [dependencies]
 riscvmulator-emulator = { path = "crates/riscvmulator-emulator" }
+log = { workspace = true }
+ctrlc = { workspace = true }
 
 [lints]
 workspace = true

@@ -15,7 +15,6 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use std::{error::Error, fmt::Formatter};
 
-use ctrlc;
 use log::error;
 use log::info;
 
@@ -103,23 +102,6 @@ impl Emulator {
                 EmulatorError::DeviceAttach
             })?;
 
-        // so far use `Ctrl+C` to send Stop events
-        // TODO: this is being used until true power management is implemented
-        let shut_down_event_sender =
-            Arc::clone(&emulator.emulator_event_sender);
-        ctrlc::set_handler(move || {
-            info!("`Ctrl+C` was assereted, shutting down...");
-            shut_down_event_sender
-                .send(EmulatorEvent::Stop(ExitCode::ThreadPoisoned))
-                .unwrap_or_else(|err| {
-                    error!("Failed to send event on `Ctrl+C`: {err}");
-                    ()
-                });
-        })
-        .unwrap_or_else(|err| {
-            error!("Failed to set `Ctrl+C` handler: {err}");
-        });
-
         Ok(emulator)
     }
 
@@ -163,6 +145,10 @@ impl Emulator {
 
     pub fn input_file(&self) -> Option<PathBuf> {
         self.input_file.clone()
+    }
+
+    pub fn event_sender(&self) -> Arc<Sender<EmulatorEvent>> {
+        Arc::clone(&self.emulator_event_sender)
     }
 
     fn devices_fill_available(&mut self) {
@@ -316,14 +302,15 @@ impl Emulator {
     fn loop_start(&mut self) {
         // TODO: it cause stalls during integration testing
         // TODO: add traceback printing
+        // TODO: remove hook when there is no panics in project
         // this hook will be executed in case some `Hart` thread panics
         // it will send `Stop` event in order to complete execution
         let panic_hook_event_sender = Arc::clone(&self.emulator_event_sender);
+        let default_hook = std::panic::take_hook();
         panic::set_hook(Box::new(move |traceback| {
-            eprintln!("hart paniced, reason: {traceback}");
-
-            let default_hook = std::panic::take_hook();
             default_hook(traceback);
+            // eprintln!("hart paniced, reason: {traceback}");
+
             _ = panic_hook_event_sender
                 .send(EmulatorEvent::Stop(ExitCode::ThreadPoisoned));
         }));

@@ -11,19 +11,19 @@ pub enum ExitCode {
     ConfigRead = 90,
     ConfigBuild = 91,
     ConfigValidation = 92,
-    ConfigPathNotGiven = 93,
 
-    ElfRead = 94,
-    ElfParseHeader = 95,
-    SegmentsLoad = 96,
-    StringTable = 97,
+    ElfRead = 93,
+    ElfParseHeader = 94,
+    SegmentsLoad = 95,
+    StringTable = 96,
 
-    NoInputFileProvided = 98,
-    ThreadPoisoned = 99,
+    NoInputFileProvided = 97,
+    ThreadPoisoned = 98,
     //
     // HookStopSignal = ,
     //
     EmulatorModePrepFailure = 110,
+    ConfigPathNotGiven = 111,
 }
 
 // impl PartialOrd for ExitCode {
@@ -57,8 +57,10 @@ impl From<i32> for ExitCode {
             96 => Self::StringTable,
 
             97 => Self::NoInputFileProvided,
+            98 => Self::ThreadPoisoned,
 
             110 => Self::EmulatorModePrepFailure,
+            111 => Self::ConfigPathNotGiven,
 
             _ => {
                 error!("Unknown exit code: {exit_code}");
