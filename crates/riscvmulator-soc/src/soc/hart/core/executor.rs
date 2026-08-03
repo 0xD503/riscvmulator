@@ -544,10 +544,6 @@ impl Executor {
                 XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
-        // TODO: generate exception if address is misaligned
-        error!(
-            "TODO: unimplemented: generate exception if address is misaligned"
-        );
     }
 
     fn instruction_bne(&mut self, decoder: &Decoder, pc: &Register) {
@@ -564,10 +560,6 @@ impl Executor {
         } else {
             trace!("Skip BNE...");
         }
-        // TODO: generate exception if address is misaligned
-        error!(
-            "TODO: unimplemented: generate exception if address is misaligned"
-        );
     }
 
     fn instruction_blt(&mut self, decoder: &Decoder, pc: &Register) {
@@ -580,10 +572,6 @@ impl Executor {
                 XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
-        // TODO: generate exception if address is misaligned
-        error!(
-            "TODO: unimplemented: generate exception if address is misaligned"
-        );
     }
 
     fn instruction_bge(&mut self, decoder: &Decoder, pc: &Register) {
@@ -596,10 +584,6 @@ impl Executor {
                 XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
-        // TODO: generate exception if address is misaligned
-        error!(
-            "TODO: unimplemented: generate exception if address is misaligned"
-        );
     }
 
     fn instruction_bltu(&mut self, decoder: &Decoder, pc: &Register) {
@@ -612,10 +596,6 @@ impl Executor {
                 XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
-        // TODO: generate exception if address is misaligned
-        error!(
-            "TODO: unimplemented: generate exception if address is misaligned"
-        );
     }
 
     fn instruction_bgeu(&mut self, decoder: &Decoder, pc: &Register) {
@@ -628,10 +608,6 @@ impl Executor {
                 XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
-        // TODO: generate exception if address is misaligned
-        error!(
-            "TODO: unimplemented: generate exception if address is misaligned"
-        );
     }
 
     fn instruction_jalr(
@@ -648,10 +624,6 @@ impl Executor {
         )) & !(XLen::MAX & 0x01);
         self.result =
             XLen::wrapping_add(pc.read(), fetch_unit.instruction_size as XLen);
-        // TODO: generate exception if address is misaligned
-        error!(
-            "TODO: unimplemented: generate exception if address is misaligned"
-        );
     }
 
     fn instruction_jal(
@@ -665,10 +637,6 @@ impl Executor {
         self.jump_target_address =
             XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
         self.result = pc.read() + fetch_unit.instruction_size as XLen;
-        // TODO: generate exception if address is misaligned
-        error!(
-            "TODO: unimplemented: generate exception if address is misaligned"
-        );
     }
 
     fn instruction_load_double_word(&mut self, decoder: &Decoder) {

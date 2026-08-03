@@ -3,6 +3,7 @@
 use crate::soc::hart::Hart;
 use crate::soc::hart::core::registers::RegisterFileInterface;
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
+use crate::soc::hart::privileged::machine::misa;
 use crate::{
     constants::arch::XLen, soc::hart::privileged::constants::MCause_Code,
 };
@@ -26,9 +27,23 @@ impl Hart {
     }
 
     fn set_pc_to_target_address(&mut self, target_addr: XLen) {
-        error!(
-            "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
-        );
+        // check if target address is not aligned (min alignement for compressed
+        // instructions is 2)
+        let alignment: XLen;
+        if misa::is_c_enabled(&self.context.arch_state.control_status_registers)
+        {
+            alignment = 0b01;
+        } else {
+            alignment = 0b11;
+        }
+        if target_addr & alignment != 0 {
+            error!(
+                "TODO: unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
+            );
+            todo!(
+                "unimplemented: generate exception if BRANCH/JUMP (BTA/JTA) address is misaligned"
+            );
+        }
         self.set_pc(target_addr);
     }
 

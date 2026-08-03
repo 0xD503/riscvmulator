@@ -6,7 +6,8 @@ pub mod misa {
     use crate::soc::hart::extensions::zicsr::CSRFile;
     use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
     use crate::soc::hart::privileged::constants::{
-        MISA_EXTENSIONS_M_MULTIPLY_DIVIDE_INT, MXLen,
+        MISA_EXTENSIONS_C_COMPRESSED, MISA_EXTENSIONS_M_MULTIPLY_DIVIDE_INT,
+        MXLen,
     };
 
     pub fn set_misa<const REGS_NUM: usize>(
@@ -39,6 +40,14 @@ pub mod misa {
         let misa = read_misa_raw(csrs);
 
         (misa & MISA_EXTENSIONS_M_MULTIPLY_DIVIDE_INT) != 0
+    }
+
+    pub fn is_c_enabled<const REGS_NUM: usize>(
+        csrs: &CSRFile<REGS_NUM>,
+    ) -> bool {
+        let misa = read_misa_raw(csrs);
+
+        (misa & MISA_EXTENSIONS_C_COMPRESSED) != 0
     }
 
     pub fn set_mstatus<const REGS_NUM: usize>(
