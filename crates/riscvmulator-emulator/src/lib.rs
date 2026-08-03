@@ -1,3 +1,5 @@
+//! Scaffolding around the system-on-chip: run loop, ELF loading, lifecycle.
+
 #![forbid(unsafe_code)]
 
 mod debug;

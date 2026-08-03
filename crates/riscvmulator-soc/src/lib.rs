@@ -1,3 +1,5 @@
+//! The hardware: system-on-chip (SoC), harts, bus, memory, pipeline, devices.
+
 #![forbid(unsafe_code)]
 
 pub mod config;
