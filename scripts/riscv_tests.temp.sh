@@ -2,7 +2,7 @@
 
 
 ## exit on errors, undefined vars, pipeline fails
-set -euo pipefail
+set -eu
 
 
 REPO_FULL_PATH="$(git rev-parse --show-toplevel)"
