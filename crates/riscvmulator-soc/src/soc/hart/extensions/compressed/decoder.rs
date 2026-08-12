@@ -1,5 +1,4 @@
 use crate::constants::arch::RISCV_NUM_OF_REGISTERS;
-use crate::soc::hart::core::decoder::constants::OpcodeToInstructionFormat;
 use crate::soc::hart::core::{
     ArchState, decoder::Decoder, fetch_unit::FetchUnit,
     gp_registers::RegisterFile,
@@ -13,6 +12,7 @@ impl Decoder {
         register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) {
         // self.opcode = self.extract_opcode_compressed(fetch_unit);
+        // let quadrant = fetch_unit.extract_quadrant(instruction)
 
         // match From::from(self.opcode) {
         //     OpcodeToInstructionFormat::

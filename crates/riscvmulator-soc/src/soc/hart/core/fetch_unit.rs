@@ -41,7 +41,10 @@ impl FetchUnit {
         }
     }
 
-    fn extract_quadrant(&self, instruction: InstructionType) -> OpcodeQuadrant {
+    pub(crate) fn extract_quadrant(
+        &self,
+        instruction: InstructionType,
+    ) -> OpcodeQuadrant {
         OpcodeQuadrant::from(instruction & OPCODE_QUADRANT_MASK)
     }
 
