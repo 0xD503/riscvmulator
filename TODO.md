@@ -55,7 +55,7 @@
     - [ ] `misa` register is reset to enable the maximal set of supported extensions
     - [x] `pc` is set to an implementation-defined reset vector
     - [ ] `mcause` register is set to a value indicating the cause of the reset
-    - [ ] writable `PMP` registers’ `A` and `L` fields are set to 0, unless the platform mandates a different reset value for some PMP registers’ A and L fields
+    - [ ] writable `PMP` registers `A` and `L` fields are set to 0, unless the platform mandates a different reset value for some PMP registers A and L fields
     - [ ] `MML`, `MMWP`, and `RLB` fields of the `mseccfg` register are set to 0, unless the platform mandates a different reset value.
     - [ ] `mcause` values after reset have implementation-specific interpretation, but the value 0 should be returned on implementations that do not distinguish different reset conditions. Implementations that distinguish different reset conditions should only use 0 to indicate the most complete reset.
     - [ ] `USEED` and `SSEED` fields of the `mseccfg` CSR must have defined reset values

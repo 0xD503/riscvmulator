@@ -800,7 +800,12 @@ impl Decoder {
             }
             InstructionSize::I16 => {
                 // compressed ISA
-                todo!("TODO: unimplemented");
+                if misa::is_c_enabled(&arch_state.control_status_registers) {
+                    self.decode_c();
+                } else {
+                    error!("Illegal instruction trap");
+                    todo!("Illegal instruction trap");
+                }
             }
 
             _ => {

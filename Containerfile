@@ -66,7 +66,6 @@ WORKDIR ${WD}
 ## create a fake src/ directory and a minimal main.rs; this lets
 ## `cargo build --${BUILD_TYPE}` succeed even though the full source is not yet in the
 ## context
-## this is a trick to pre‑build dependencies without the full app code
 COPY Cargo.toml Cargo.lock .
 COPY crates/riscvmulator-soc/Cargo.toml crates/riscvmulator-soc/
 COPY crates/riscvmulator-emulator/Cargo.toml crates/riscvmulator-emulator/
@@ -141,6 +140,6 @@ EXPOSE ${LISTEN_PORT}
 
 ### run application and pass default arguments that can be overriden fro CLI
 #ENTRYPOINT ["./${APP_NAME_ENV}"]
-## fixed ENTRYPOINT — ENV vars don't expand in JSON array form
+## fixed ENTRYPOINT - ENV vars don't expand in JSON array form
 ENTRYPOINT ["sh", "-c", "./$APP_NAME \"$@\"", "--"]
 CMD [""]

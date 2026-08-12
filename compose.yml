@@ -23,8 +23,8 @@ services:
 
   ## development container: Rust + RISC-V toolchain, source mounted live
   ## Usage:
-  ##   ${CONTAINER_ENGINE} run --rm dev              → interactive shell
-  ##   ${CONTAINER_ENGINE} run --rm dev cargo build  → one-off command
+  ##   ${CONTAINER_ENGINE} run --rm dev              # interactive shell
+  ##   ${CONTAINER_ENGINE} run --rm dev cargo build  # single-shot command
   dev:
     build:
       context: .
