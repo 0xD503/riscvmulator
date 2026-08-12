@@ -801,7 +801,7 @@ impl Decoder {
             InstructionSize::I16 => {
                 // compressed ISA
                 if misa::is_c_enabled(&arch_state.control_status_registers) {
-                    self.decode_c();
+                    self.decode_c(arch_state, fetch_unit, register_file);
                 } else {
                     error!("Illegal instruction trap");
                     todo!("Illegal instruction trap");

@@ -460,7 +460,11 @@ pub enum OpcodeToInstructionFormat {
     I_103_JALR = 0b1100111,
     J_111_JAL = 0b1101111,
 
-    I_115_SYSTEM = 0b1110011, // (Zicsr_extension)
+    // // compressed instruction formats
+    // CR_ = 0b0,
+
+    // Zicsr_extension
+    I_115_SYSTEM = 0b1110011,
 }
 
 impl From<Opcode> for OpcodeToInstructionFormat {
