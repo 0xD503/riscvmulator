@@ -1,4 +1,4 @@
-pub mod c;
-pub mod i;
-pub mod m;
+pub mod compressed;
+pub mod integer;
+pub mod multiply_divide;
 pub mod zicsr;

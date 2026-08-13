@@ -1,7 +1,7 @@
 use log::{error, trace};
 
 use crate::constants::arch::{BusAddrType, Byte, XLen};
-use crate::soc::hart::extensions::c::constants::InstructionTypeCompressed;
+use crate::soc::hart::extensions::compressed::constants::InstructionTypeCompressed;
 use crate::soc::memory::{Memory, MemoryValueType};
 use crate::soc::peripherals::common::device::{
     Addressable, Devices, IODeviceError, RawDevice,
