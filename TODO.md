@@ -34,6 +34,7 @@
     - [ ] MacOS
     - [ ] Windows
 - [ ] add container runner script for IDE
+- [ ] fix atomics load/store model (relaxed probably is not a good choice)
 
 ## Refactor
 
