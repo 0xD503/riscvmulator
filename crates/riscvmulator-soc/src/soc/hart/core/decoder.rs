@@ -8,7 +8,7 @@ use self::constants::{
 };
 use crate::soc::hart::core::ArchState;
 use crate::soc::hart::extensions;
-use crate::soc::hart::extensions::base::constants::{
+use crate::soc::hart::extensions::i::constants::{
     OP_32_Funct3, OP_IMM_32_Funct3,
 };
 use crate::soc::hart::privileged::machine::misa;
@@ -117,45 +117,43 @@ impl Decoder {
         match self.opcode {
             Opcode::OP => match self.r_funct7 {
                 Funct7::F0 => {
-                    match extensions::base::constants::OP_Funct3::from(
-                        self.funct3,
-                    ) {
-                        extensions::base::constants::OP_Funct3::ARITH => {
+                    match extensions::i::constants::OP_Funct3::from(self.funct3)
+                    {
+                        extensions::i::constants::OP_Funct3::ARITH => {
                             self.command_to_execute = ExecutableCommand::ADD;
                         }
-                        extensions::base::constants::OP_Funct3::SLL => {
+                        extensions::i::constants::OP_Funct3::SLL => {
                             self.shamt = self.extract_r_shamt();
                             self.command_to_execute = ExecutableCommand::SLL;
                         }
-                        extensions::base::constants::OP_Funct3::SLT => {
+                        extensions::i::constants::OP_Funct3::SLT => {
                             self.command_to_execute = ExecutableCommand::SLT;
                         }
-                        extensions::base::constants::OP_Funct3::SLTU => {
+                        extensions::i::constants::OP_Funct3::SLTU => {
                             self.command_to_execute = ExecutableCommand::SLTU;
                         }
-                        extensions::base::constants::OP_Funct3::XOR => {
+                        extensions::i::constants::OP_Funct3::XOR => {
                             self.command_to_execute = ExecutableCommand::XOR;
                         }
-                        extensions::base::constants::OP_Funct3::SRX => {
+                        extensions::i::constants::OP_Funct3::SRX => {
                             self.shamt = self.extract_r_shamt();
                             self.command_to_execute = ExecutableCommand::SRL;
                         }
-                        extensions::base::constants::OP_Funct3::OR => {
+                        extensions::i::constants::OP_Funct3::OR => {
                             self.command_to_execute = ExecutableCommand::OR;
                         }
-                        extensions::base::constants::OP_Funct3::AND => {
+                        extensions::i::constants::OP_Funct3::AND => {
                             self.command_to_execute = ExecutableCommand::AND;
                         }
                     }
                 }
                 Funct7::F1 => {
-                    match extensions::base::constants::OP_Funct3::from(
-                        self.funct3,
-                    ) {
-                        extensions::base::constants::OP_Funct3::ARITH => {
+                    match extensions::i::constants::OP_Funct3::from(self.funct3)
+                    {
+                        extensions::i::constants::OP_Funct3::ARITH => {
                             self.command_to_execute = ExecutableCommand::SUB;
                         }
-                        extensions::base::constants::OP_Funct3::SRX => {
+                        extensions::i::constants::OP_Funct3::SRX => {
                             self.shamt = self.extract_r_shamt();
                             self.command_to_execute = ExecutableCommand::SRA;
                         }
