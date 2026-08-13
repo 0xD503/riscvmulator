@@ -7,7 +7,9 @@ use crate::{
     soc::hart::extensions::compressed::constants::InstructionTypeCompressed,
 };
 
-pub const OPCODE_QUADRANT_MASK: InstructionType = 0b11;
+pub const OPCODE_QUADRANT_OFFSET: usize = 0;
+pub const OPCODE_QUADRANT_MASK: InstructionType =
+    0b11 << OPCODE_QUADRANT_OFFSET;
 
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
@@ -540,6 +542,27 @@ pub enum OpcodeQuadrant {
 
 impl From<InstructionType> for OpcodeQuadrant {
     fn from(quadrant: InstructionType) -> Self {
+        match quadrant {
+            // >= 32-bit instruction size
+            0b11 => OpcodeQuadrant::Quadrant11,
+            // 16-bit instruction size
+            0b10 => OpcodeQuadrant::Quadrant10,
+            0b01 => OpcodeQuadrant::Quadrant01,
+            0b00 => OpcodeQuadrant::Quadrant00,
+
+            _ => {
+                error!("Opcode quadrant is unreachable: {:#04b}", quadrant);
+                unreachable!(
+                    "Opcode quadrant is unreachable: {:#04b}",
+                    quadrant
+                );
+            }
+        }
+    }
+}
+
+impl From<InstructionTypeCompressed> for OpcodeQuadrant {
+    fn from(quadrant: InstructionTypeCompressed) -> Self {
         match quadrant {
             // >= 32-bit instruction size
             0b11 => OpcodeQuadrant::Quadrant11,

@@ -1,7 +1,13 @@
+use log::error;
+
 use crate::constants::arch::RISCV_NUM_OF_REGISTERS;
+use crate::soc::hart::core::decoder::constants::OpcodeQuadrant;
 use crate::soc::hart::core::{
     ArchState, decoder::Decoder, fetch_unit::FetchUnit,
     gp_registers::RegisterFile,
+};
+use crate::soc::hart::extensions::compressed::constants::{
+    COMPRESSED_FUNCT3_MASK, InstructionTypeCompressed, OP_Funct3,
 };
 
 impl Decoder {
@@ -11,18 +17,74 @@ impl Decoder {
         fetch_unit: &FetchUnit,
         register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) {
-        // self.opcode = self.extract_opcode_compressed(fetch_unit);
-        // let quadrant = fetch_unit.extract_quadrant(instruction)
+        let quadrant = fetch_unit.extract_quadrant_compressed(
+            fetch_unit.current_instruction_compressed,
+        );
+        let funct3 = self.extract_funct3_compressed(
+            fetch_unit.current_instruction_compressed,
+        );
+
+        match quadrant {
+            OpcodeQuadrant::Quadrant00 => {
+                match funct3 {
+                    OP_Funct3::F000 => {
+                        let uimm = self.extract_uimm_ciw(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                        if uimm != 0 {
+                            self.decode_ciw();
+                        } else {
+                            error!("Illegal instruction trap");
+                            todo!("Illegal instruction trap");
+                        }
+                    }
+
+                    _ => {
+                        error!("todo");
+                        todo!("todo");
+                    }
+                }
+                error!("TODO: unimplemented");
+                todo!("TODO: unimplemented");
+            }
+            OpcodeQuadrant::Quadrant01 => {
+                error!("TODO: unimplemented");
+                todo!("TODO: unimplemented");
+            }
+            OpcodeQuadrant::Quadrant10 => {
+                error!("TODO: unimplemented");
+                todo!("TODO: unimplemented");
+            }
+
+            OpcodeQuadrant::Quadrant11 => {
+                error!(
+                    "code flow reached compressed decoder but decodes non-compressed instruction"
+                );
+                todo!(
+                    "code flow reached compressed decoder but decodes non-compressed instruction"
+                );
+            }
+        }
 
         // match From::from(self.opcode) {
         //     OpcodeToInstructionFormat::
         // }
 
-        todo!("TODO: compressed ISA decoder");
+        // todo!("TODO: compressed ISA decoder");
     }
 
-    fn extract_opcode_compressed(&self, fetch_unit: &FetchUnit) {
-        //
+    fn extract_funct3_compressed(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> OP_Funct3 {
+        OP_Funct3::from(instruction & COMPRESSED_FUNCT3_MASK)
+    }
+
+    fn extract_uimm_ciw(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionTypeCompressed {
+        instruction
     }
 
     fn decode_cr(&mut self) {

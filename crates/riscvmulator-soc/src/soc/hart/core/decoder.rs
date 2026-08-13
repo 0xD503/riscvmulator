@@ -809,6 +809,7 @@ impl Decoder {
             }
 
             _ => {
+                error!("TODO: unimplemented");
                 todo!("TODO: unimplemented");
             }
         }
