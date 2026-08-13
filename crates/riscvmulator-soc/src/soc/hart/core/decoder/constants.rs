@@ -4,7 +4,7 @@ use log::error;
 
 use crate::{
     constants::arch::*,
-    soc::hart::extensions::compressed::constants::InstructionTypeCompressed,
+    soc::hart::extensions::c::constants::InstructionTypeCompressed,
 };
 
 pub const OPCODE_QUADRANT_MASK: InstructionType = 0b11;

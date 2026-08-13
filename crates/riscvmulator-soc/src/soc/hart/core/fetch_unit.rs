@@ -6,7 +6,7 @@ use crate::soc::hart::core::decoder::constants::{
 };
 use crate::soc::hart::core::gp_registers::Register;
 use crate::soc::hart::core::registers::RegisterInterface;
-use crate::soc::hart::extensions::compressed::constants::InstructionTypeCompressed;
+use crate::soc::hart::extensions::c::constants::InstructionTypeCompressed;
 use crate::soc::memory_bus::SystemBus;
 
 use log::trace;
