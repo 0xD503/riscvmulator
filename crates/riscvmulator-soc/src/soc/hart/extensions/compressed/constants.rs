@@ -10,6 +10,10 @@ pub const COMPRESSED_FUNCT3_OFFSET: usize = 13;
 pub const COMPRESSED_FUNCT3_MASK: InstructionTypeCompressed =
     0b111 << COMPRESSED_FUNCT3_OFFSET;
 
+pub const COMPRESSED_BITS_11_10_OFFSET: usize = 10;
+pub const COMPRESSED_BITS_11_10_MASK: InstructionTypeCompressed =
+    0b11 << COMPRESSED_BITS_11_10_OFFSET;
+
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum OP_Funct3 {
@@ -57,6 +61,30 @@ impl From<InstructionTypeCompressed> for OP_Funct3 {
             _ => {
                 error!("Unknown funct3: {value:#05b}");
                 unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+pub enum Bits11_10_quadrant_01 {
+    CB_00 = 0b00,
+    CB_01 = 0b01,
+    CB_10 = 0b10,
+    CA_11 = 0b11,
+}
+
+impl From<InstructionTypeCompressed> for Bits11_10_quadrant_01 {
+    fn from(value: InstructionTypeCompressed) -> Self {
+        match value {
+            0b00 => Bits11_10_quadrant_01::CB_00,
+            0b01 => Bits11_10_quadrant_01::CB_01,
+            0b10 => Bits11_10_quadrant_01::CB_10,
+            0b11 => Bits11_10_quadrant_01::CA_11,
+
+            _ => {
+                error!("Unknown bits[11:10]: {value:#04b}");
+                unreachable!("Unknown bits[11:10]: {value:#04b}");
             }
         }
     }

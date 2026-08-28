@@ -1,4 +1,4 @@
-use log::error;
+use log::{error, trace};
 
 use crate::constants::arch::RISCV_NUM_OF_REGISTERS;
 use crate::soc::hart::core::decoder::constants::OpcodeQuadrant;
@@ -7,7 +7,9 @@ use crate::soc::hart::core::{
     gp_registers::RegisterFile,
 };
 use crate::soc::hart::extensions::compressed::constants::{
-    COMPRESSED_FUNCT3_MASK, InstructionTypeCompressed, OP_Funct3,
+    Bits11_10_quadrant_01, COMPRESSED_BITS_11_10_MASK,
+    COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_FUNCT3_MASK,
+    InstructionTypeCompressed, OP_Funct3,
 };
 
 impl Decoder {
@@ -25,36 +27,65 @@ impl Decoder {
         );
 
         match quadrant {
-            OpcodeQuadrant::Quadrant00 => {
-                match funct3 {
-                    OP_Funct3::F000 => {
-                        let uimm = self.extract_uimm_ciw(
-                            fetch_unit.current_instruction_compressed,
-                        );
-                        if uimm != 0 {
-                            self.decode_ciw();
-                        } else {
-                            error!("Illegal instruction trap");
-                            todo!("Illegal instruction trap");
+            OpcodeQuadrant::Quadrant00 => match funct3 {
+                OP_Funct3::F000 => {
+                    self.decode_ciw(fetch_unit);
+                }
+                OP_Funct3::F001 | OP_Funct3::F010 | OP_Funct3::F011 => {
+                    self.decode_cl();
+                }
+                OP_Funct3::F101 | OP_Funct3::F110 | OP_Funct3::F111 => {
+                    self.decode_cs();
+                }
+
+                OP_Funct3::F100 => {
+                    error!("illegal instruction, reserved by specification");
+                    todo!("illegal instruction, reserved by specification");
+                }
+            },
+            OpcodeQuadrant::Quadrant01 => match funct3 {
+                OP_Funct3::F000 | OP_Funct3::F010 | OP_Funct3::F011 => {
+                    self.decode_ci();
+                }
+                OP_Funct3::F001 => {
+                    todo!("distiguish between RV32/RV64");
+                }
+                OP_Funct3::F100 => {
+                    let bits_11_10 = self.extract_bits_11_10_quadrant_01(
+                        fetch_unit.current_instruction_compressed,
+                    );
+                    match bits_11_10 {
+                        Bits11_10_quadrant_01::CA_11 => {
+                            self.decode_ca();
+                        }
+                        Bits11_10_quadrant_01::CB_00
+                        | Bits11_10_quadrant_01::CB_01
+                        | Bits11_10_quadrant_01::CB_10 => {
+                            self.decode_cb();
                         }
                     }
-
-                    _ => {
-                        error!("todo");
-                        todo!("todo");
-                    }
                 }
-                error!("TODO: unimplemented");
-                todo!("TODO: unimplemented");
-            }
-            OpcodeQuadrant::Quadrant01 => {
-                error!("TODO: unimplemented");
-                todo!("TODO: unimplemented");
-            }
-            OpcodeQuadrant::Quadrant10 => {
-                error!("TODO: unimplemented");
-                todo!("TODO: unimplemented");
-            }
+                OP_Funct3::F101 => {
+                    self.decode_cj();
+                }
+                OP_Funct3::F110 | OP_Funct3::F111 => {
+                    self.decode_cb();
+                }
+            },
+            OpcodeQuadrant::Quadrant10 => match funct3 {
+                OP_Funct3::F000
+                | OP_Funct3::F001
+                | OP_Funct3::F010
+                | OP_Funct3::F011 => {
+                    self.decode_ci();
+                }
+                OP_Funct3::F100 => {
+                    self.decode_cr();
+                }
+                OP_Funct3::F101 | OP_Funct3::F110 | OP_Funct3::F111 => {
+                    self.decode_css();
+                }
+            },
 
             OpcodeQuadrant::Quadrant11 => {
                 error!(
@@ -87,55 +118,92 @@ impl Decoder {
         instruction
     }
 
+    fn extract_bits_11_10_quadrant_01(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> Bits11_10_quadrant_01 {
+        let bits_11_10 = (instruction & COMPRESSED_BITS_11_10_MASK)
+            >> COMPRESSED_BITS_11_10_OFFSET;
+
+        Bits11_10_quadrant_01::from(bits_11_10)
+    }
+
     fn decode_cr(&mut self) {
+        trace!("Decoding CR-format instruction..");
+
         //
 
         todo!("TODO: unimplemented");
     }
 
     fn decode_ci(&mut self) {
+        trace!("Decoding CI-format instruction..");
+
         //
 
         todo!("TODO: unimplemented");
     }
 
     fn decode_css(&mut self) {
+        trace!("Decoding CSS-format instruction..");
+
         //
 
         todo!("TODO: unimplemented");
     }
 
-    fn decode_ciw(&mut self) {
-        //
+    fn decode_ciw(&mut self, fetch_unit: &FetchUnit) {
+        trace!("Decoding CIW-format instruction..");
 
-        todo!("TODO: unimplemented");
+        // C.ADDI4SPN (RESERVED when uimm == 0)
+        let uimm =
+            self.extract_uimm_ciw(fetch_unit.current_instruction_compressed);
+        if uimm != 0 {
+            // C.ADDI4SPN
+            //
+            todo!("TODO: unimplemented");
+        } else {
+            // RESERVED, uimm == 0
+            error!("illegal instruction trap, reserved by specification");
+            todo!("illegal instruction trap, reserved by specification");
+        }
     }
 
     fn decode_cl(&mut self) {
+        trace!("Decoding CL-format instruction..");
+
         //
 
         todo!("TODO: unimplemented");
     }
 
     fn decode_cs(&mut self) {
+        trace!("Decoding CS-format instruction..");
+
         //
 
         todo!("TODO: unimplemented");
     }
 
     fn decode_ca(&mut self) {
+        trace!("Decoding CA-format instruction..");
+
         //
 
         todo!("TODO: unimplemented");
     }
 
     fn decode_cb(&mut self) {
+        trace!("Decoding CB-format instruction..");
+
         //
 
         todo!("TODO: unimplemented");
     }
 
     fn decode_cj(&mut self) {
+        trace!("Decoding CJ-format instruction..");
+
         //
 
         todo!("TODO: unimplemented");
