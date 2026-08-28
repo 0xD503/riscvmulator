@@ -8,7 +8,8 @@ use crate::soc::hart::core::{
 };
 use crate::soc::hart::extensions::compressed::constants::{
     Bits11_10_quadrant_01, COMPRESSED_BITS_11_10_MASK,
-    COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_FUNCT3_MASK,
+    COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_CIW_IMM_MASK,
+    COMPRESSED_CIW_IMM_OFFSET, COMPRESSED_FUNCT3_MASK,
     InstructionTypeCompressed, OP_Funct3,
 };
 
@@ -19,9 +20,7 @@ impl Decoder {
         fetch_unit: &FetchUnit,
         register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) {
-        let quadrant = fetch_unit.extract_quadrant_compressed(
-            fetch_unit.current_instruction_compressed,
-        );
+        let quadrant = &fetch_unit.current_quadrant;
         let funct3 = self.extract_funct3_compressed(
             fetch_unit.current_instruction_compressed,
         );
@@ -51,9 +50,10 @@ impl Decoder {
                     todo!("distiguish between RV32/RV64");
                 }
                 OP_Funct3::F100 => {
-                    let bits_11_10 = self.extract_bits_11_10_quadrant_01(
-                        fetch_unit.current_instruction_compressed,
-                    );
+                    let bits_11_10 = self
+                        .extract_bits_11_10_quadrant_01_funct3_100(
+                            fetch_unit.current_instruction_compressed,
+                        );
                     match bits_11_10 {
                         Bits11_10_quadrant_01::CA_11 => {
                             self.decode_ca();
@@ -115,10 +115,10 @@ impl Decoder {
         &self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionTypeCompressed {
-        instruction
+        (instruction & COMPRESSED_CIW_IMM_MASK) >> COMPRESSED_CIW_IMM_OFFSET
     }
 
-    fn extract_bits_11_10_quadrant_01(
+    fn extract_bits_11_10_quadrant_01_funct3_100(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> Bits11_10_quadrant_01 {

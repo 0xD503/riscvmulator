@@ -14,6 +14,10 @@ pub const COMPRESSED_BITS_11_10_OFFSET: usize = 10;
 pub const COMPRESSED_BITS_11_10_MASK: InstructionTypeCompressed =
     0b11 << COMPRESSED_BITS_11_10_OFFSET;
 
+pub const COMPRESSED_CIW_IMM_OFFSET: usize = 5;
+pub const COMPRESSED_CIW_IMM_MASK: InstructionTypeCompressed =
+    0b11111111 << COMPRESSED_CIW_IMM_OFFSET;
+
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum OP_Funct3 {

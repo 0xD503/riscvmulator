@@ -17,6 +17,7 @@ pub struct FetchUnit {
     pub(in crate::soc) current_instruction: InstructionType,
     pub(in crate::soc) current_instruction_compressed:
         InstructionTypeCompressed,
+    pub(in crate::soc) current_quadrant: OpcodeQuadrant,
 }
 
 impl FetchUnit {
@@ -25,6 +26,9 @@ impl FetchUnit {
             instruction_size: instr_size,
             current_instruction: instr,
             current_instruction_compressed: instr as InstructionTypeCompressed,
+            current_quadrant: OpcodeQuadrant::from(
+                instr & OPCODE_QUADRANT_MASK,
+            ),
         }
     }
 
@@ -38,13 +42,13 @@ impl FetchUnit {
             current_instruction: INITIAL_INSTRUCTION,
             current_instruction_compressed: INITIAL_INSTRUCTION
                 as InstructionTypeCompressed,
+            current_quadrant: OpcodeQuadrant::from(
+                INITIAL_INSTRUCTION & OPCODE_QUADRANT_MASK,
+            ),
         }
     }
 
-    pub(crate) fn extract_quadrant(
-        &self,
-        instruction: InstructionType,
-    ) -> OpcodeQuadrant {
+    fn extract_quadrant(&self, instruction: InstructionType) -> OpcodeQuadrant {
         OpcodeQuadrant::from(instruction & OPCODE_QUADRANT_MASK)
     }
 
@@ -60,8 +64,8 @@ impl FetchUnit {
         // //
         // // we may have a compressed instruction, so we need to check quadrant
         // self.current_instruction = bus.instruction_read(pc.read());
-        // let quadrant = self.extract_quadrant(self.current_instruction);
-        // match quadrant {
+        // self.current_quadrant = self.extract_quadrant(self.current_instruction);
+        // match self.current_quadrant {
         //     // uncompressed instruction set
         //     OpcodeQuadrant::Quadrant11 => {
         //         self.instruction_size = InstructionSize::I32;
@@ -95,9 +99,9 @@ impl FetchUnit {
             });
         let current_instruction =
             InstructionTypeCompressed::from_le_bytes(current_instruction_dest);
-        let quadrant =
+        self.current_quadrant =
             self.extract_quadrant(current_instruction as InstructionType);
-        match quadrant {
+        match self.current_quadrant {
             OpcodeQuadrant::Quadrant11 => {
                 // non-compressed instruction, read more batches
                 // save first batch (lower)

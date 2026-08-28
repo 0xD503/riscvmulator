@@ -188,7 +188,7 @@ impl Config {
         if self.emulator.throttle_frequency != 0 {
             if self.emulator.throttle_frequency > self.soc.xtal_frequency_hz {
                 errors_list.push(format!(
-                    "throttle frequency ({}) cannot be higher the XTAL frequency ({})",
+                    "throttle frequency ({}) cannot be higher than the XTAL frequency ({})",
                     &self.emulator.throttle_frequency, self.soc.xtal_frequency_hz
                 ));
             }
