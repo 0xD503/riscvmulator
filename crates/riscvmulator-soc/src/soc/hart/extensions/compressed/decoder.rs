@@ -60,7 +60,7 @@ impl Decoder {
                 error!(
                     "code flow reached compressed decoder but decodes non-compressed instruction"
                 );
-                todo!(
+                unreachable!(
                     "code flow reached compressed decoder but decodes non-compressed instruction"
                 );
             }
@@ -89,37 +89,55 @@ impl Decoder {
 
     fn decode_cr(&mut self) {
         //
+
+        todo!("TODO: unimplemented");
     }
 
     fn decode_ci(&mut self) {
         //
+
+        todo!("TODO: unimplemented");
     }
 
     fn decode_css(&mut self) {
         //
+
+        todo!("TODO: unimplemented");
     }
 
     fn decode_ciw(&mut self) {
         //
+
+        todo!("TODO: unimplemented");
     }
 
     fn decode_cl(&mut self) {
         //
+
+        todo!("TODO: unimplemented");
     }
 
     fn decode_cs(&mut self) {
         //
+
+        todo!("TODO: unimplemented");
     }
 
     fn decode_ca(&mut self) {
         //
+
+        todo!("TODO: unimplemented");
     }
 
     fn decode_cb(&mut self) {
         //
+
+        todo!("TODO: unimplemented");
     }
 
     fn decode_cj(&mut self) {
         //
+
+        todo!("TODO: unimplemented");
     }
 }
