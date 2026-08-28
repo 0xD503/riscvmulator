@@ -9,7 +9,7 @@ repository = "https://github.com/0xD503/riscvmulator.git"
 license = "MIT OR Apache-2.0"
 keywords = [ "emulator", "risc-v", "riscv", "cpu" ]
 categories = [ "emulators" ]
-rust-version = "1.97"  ## use fixed `major`/`minor`, but latest `patch` version
+rust-version = "1.98"  ## use fixed `major`/`minor`, but latest `patch` version
 
 [workspace.dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
