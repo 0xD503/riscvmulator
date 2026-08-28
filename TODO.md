@@ -48,6 +48,7 @@
 - [ ] HALT/stop into interactive mode by `Ctrl+C`/double `Ctrl+C`
 - [ ] implement `EBREAK`, add debug mode
 - [ ] add fuzzer
+- [ ] extend log system: more log levels (critical/error/warning/notice/info/debug/trace/etc, each has 3 to 5 sublevels)
 - [ ] customize log string: add core num, PC value, cycle count
 - [ ] interactive commands: help/usage, license, load-elf, start, peek/poke
 - [ ] HW reset init:

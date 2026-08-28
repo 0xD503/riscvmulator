@@ -10,6 +10,10 @@ pub const COMPRESSED_FUNCT3_OFFSET: usize = 13;
 pub const COMPRESSED_FUNCT3_MASK: InstructionTypeCompressed =
     0b111 << COMPRESSED_FUNCT3_OFFSET;
 
+pub const COMPRESSED_FUNCT4_OFFSET: usize = 12;
+pub const COMPRESSED_FUNCT4_MASK: InstructionTypeCompressed =
+    0b1111 << COMPRESSED_FUNCT4_OFFSET;
+
 pub const COMPRESSED_BITS_11_10_OFFSET: usize = 10;
 pub const COMPRESSED_BITS_11_10_MASK: InstructionTypeCompressed =
     0b11 << COMPRESSED_BITS_11_10_OFFSET;

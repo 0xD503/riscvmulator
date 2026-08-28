@@ -9,8 +9,8 @@ use crate::soc::hart::core::{
 use crate::soc::hart::extensions::compressed::constants::{
     Bits11_10_quadrant_01, COMPRESSED_BITS_11_10_MASK,
     COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_CIW_IMM_MASK,
-    COMPRESSED_CIW_IMM_OFFSET, COMPRESSED_FUNCT3_MASK,
-    InstructionTypeCompressed, OP_Funct3,
+    COMPRESSED_CIW_IMM_OFFSET, COMPRESSED_FUNCT3_MASK, COMPRESSED_FUNCT4_MASK,
+    COMPRESSED_FUNCT4_OFFSET, InstructionTypeCompressed, OP_Funct3,
 };
 
 impl Decoder {
@@ -80,7 +80,7 @@ impl Decoder {
                     self.decode_ci();
                 }
                 OP_Funct3::F100 => {
-                    self.decode_cr();
+                    self.decode_cr(fetch_unit);
                 }
                 OP_Funct3::F101 | OP_Funct3::F110 | OP_Funct3::F111 => {
                     self.decode_css();
@@ -104,34 +104,16 @@ impl Decoder {
         // todo!("TODO: compressed ISA decoder");
     }
 
-    fn extract_funct3_compressed(
-        &self,
-        instruction: InstructionTypeCompressed,
-    ) -> OP_Funct3 {
-        OP_Funct3::from(instruction & COMPRESSED_FUNCT3_MASK)
-    }
-
-    fn extract_uimm_ciw(
-        &self,
-        instruction: InstructionTypeCompressed,
-    ) -> InstructionTypeCompressed {
-        (instruction & COMPRESSED_CIW_IMM_MASK) >> COMPRESSED_CIW_IMM_OFFSET
-    }
-
-    fn extract_bits_11_10_quadrant_01_funct3_100(
-        &self,
-        instruction: InstructionTypeCompressed,
-    ) -> Bits11_10_quadrant_01 {
-        let bits_11_10 = (instruction & COMPRESSED_BITS_11_10_MASK)
-            >> COMPRESSED_BITS_11_10_OFFSET;
-
-        Bits11_10_quadrant_01::from(bits_11_10)
-    }
-
-    fn decode_cr(&mut self) {
+    fn decode_cr(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CR-format instruction..");
 
-        //
+        if self.extract_funct4_lsb_compressed(
+            fetch_unit.current_instruction_compressed,
+        ) {
+            //
+        } else {
+            //
+        }
 
         todo!("TODO: unimplemented");
     }
@@ -207,5 +189,38 @@ impl Decoder {
         //
 
         todo!("TODO: unimplemented");
+    }
+
+    fn extract_funct3_compressed(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> OP_Funct3 {
+        OP_Funct3::from(instruction & COMPRESSED_FUNCT3_MASK)
+    }
+
+    fn extract_funct4_lsb_compressed(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> bool {
+        ((instruction & COMPRESSED_FUNCT4_MASK) >> COMPRESSED_FUNCT4_OFFSET)
+            & 0b1
+            == 1
+    }
+
+    fn extract_uimm_ciw(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionTypeCompressed {
+        (instruction & COMPRESSED_CIW_IMM_MASK) >> COMPRESSED_CIW_IMM_OFFSET
+    }
+
+    fn extract_bits_11_10_quadrant_01_funct3_100(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> Bits11_10_quadrant_01 {
+        let bits_11_10 = (instruction & COMPRESSED_BITS_11_10_MASK)
+            >> COMPRESSED_BITS_11_10_OFFSET;
+
+        Bits11_10_quadrant_01::from(bits_11_10)
     }
 }
