@@ -95,4 +95,7 @@ pub enum ExecutableCommand {
     DIVUW = 72,
     REMW = 73,
     REMUW = 74,
+
+    /// `C` extension instructions
+    C_ADDI4SPN = 75,
 }

@@ -2,6 +2,7 @@ use log::{error, trace};
 
 use crate::constants::arch::RISCV_NUM_OF_REGISTERS;
 use crate::soc::hart::core::decoder::constants::OpcodeQuadrant;
+use crate::soc::hart::core::executor::constants::ExecutableCommand;
 use crate::soc::hart::core::{
     ArchState, decoder::Decoder, fetch_unit::FetchUnit,
     gp_registers::RegisterFile,
@@ -142,7 +143,7 @@ impl Decoder {
             self.extract_uimm_ciw(fetch_unit.current_instruction_compressed);
         if uimm != 0 {
             // C.ADDI4SPN
-            //
+            self.command_to_execute = ExecutableCommand::C_ADDI4SPN;
             todo!("TODO: unimplemented");
         } else {
             // RESERVED, uimm == 0
