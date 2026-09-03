@@ -138,6 +138,7 @@ impl Decoder {
     fn decode_ciw(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CIW-format instruction..");
 
+        todo!("TODO: unimplemented");
         // C.ADDI4SPN (RESERVED when uimm == 0)
         let uimm =
             self.extract_uimm_ciw(fetch_unit.current_instruction_compressed);
