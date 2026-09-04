@@ -109,4 +109,43 @@ pub enum ExecutableCommand {
     C_SW = 81,
     C_FSW = 82,
     C_SD = 83,
+    // CA
+    C_AND = 84,
+    C_OR = 85,
+    C_XOR = 86,
+    C_SUB = 87,
+    C_ADDW = 88,
+    C_SUBW = 89,
+    // CB
+    C_BEQZ = 90,
+    C_BNEZ = 91,
+    C_SRLI = 92,
+    C_SRAI = 93,
+    C_ANDI = 94,
+    // CJ
+    C_J = 95,
+    C_JAL = 96,
+    // CR
+    C_JR = 97,
+    C_JALR = 98,
+    C_MV = 99,
+    C_ADD = 100,
+    C_EBREAK = 101,
+    // CI
+    C_LWSP = 102,
+    C_LDSP = 103,
+    C_FLWSP = 104,
+    C_FLDSP = 105,
+    C_LI = 106,
+    C_LUI = 107,
+    C_ADDI = 108,
+    C_ADDIW = 109,
+    C_ADDI16SP = 110,
+    C_SLLI = 111,
+    C_NOP = 112,
+    // CSS
+    C_SWSP = 113,
+    C_SDSP = 114,
+    C_FSWSP = 115,
+    C_FSDSP = 116,
 }
