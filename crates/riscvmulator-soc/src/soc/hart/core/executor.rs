@@ -280,8 +280,37 @@ impl Executor {
             }
 
             /// `C` extension instructions
+            // CIW
             ExecutableCommand::C_ADDI4SPN => {
-                self.instruction_add_immediate_to_stack_pointer(decoder);
+                self.instruction_add_immediate_to_stack_pointer_compressed(
+                    decoder,
+                );
+            }
+            // CL
+            ExecutableCommand::C_FLD => {
+                self.instruction_load_double_precision_fp_compressed(decoder);
+            }
+            ExecutableCommand::C_LW => {
+                self.instruction_load_word_compressed(decoder);
+            }
+            ExecutableCommand::C_FLW => {
+                self.instruction_load_single_precision_fp_compressed(decoder);
+            }
+            ExecutableCommand::C_LD => {
+                self.instruction_load_double_word_compressed(decoder);
+            }
+            // CS
+            ExecutableCommand::C_FSD => {
+                self.instruction_store_double_precision_fp_compressed(decoder);
+            }
+            ExecutableCommand::C_SW => {
+                self.instruction_store_word_compressed(decoder);
+            }
+            ExecutableCommand::C_FSW => {
+                self.instruction_store_single_precision_fp_compressed(decoder);
+            }
+            ExecutableCommand::C_SD => {
+                self.instruction_store_double_word_compressed(decoder);
             }
         }
     }

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use log::error;
 
 pub type InstructionTypeCompressed = u16;
@@ -24,6 +26,7 @@ pub const COMPRESSED_CIW_IMM_MASK: InstructionTypeCompressed =
 
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
+#[derive(Clone)]
 pub enum OP_Funct3 {
     F000 = 0b000 << COMPRESSED_FUNCT3_OFFSET, //
     F001 = 0b001 << COMPRESSED_FUNCT3_OFFSET, //
@@ -69,6 +72,37 @@ impl From<InstructionTypeCompressed> for OP_Funct3 {
             _ => {
                 error!("Unknown funct3: {value:#05b}");
                 unreachable!("Unknown funct3: {value:#05b}");
+            }
+        }
+    }
+}
+
+impl Display for OP_Funct3 {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OP_Funct3::F000 => {
+                writeln!(formatter, "0b000")
+            }
+            OP_Funct3::F001 => {
+                writeln!(formatter, "0b001")
+            }
+            OP_Funct3::F010 => {
+                writeln!(formatter, "0b010")
+            }
+            OP_Funct3::F011 => {
+                writeln!(formatter, "0b011")
+            }
+            OP_Funct3::F100 => {
+                writeln!(formatter, "0b100")
+            }
+            OP_Funct3::F101 => {
+                writeln!(formatter, "0b101")
+            }
+            OP_Funct3::F110 => {
+                writeln!(formatter, "0b110")
+            }
+            OP_Funct3::F111 => {
+                writeln!(formatter, "0b111")
             }
         }
     }

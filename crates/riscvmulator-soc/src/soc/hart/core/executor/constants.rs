@@ -97,5 +97,16 @@ pub enum ExecutableCommand {
     REMUW = 74,
 
     /// `C` extension instructions
+    // CIW
     C_ADDI4SPN = 75,
+    // CL
+    C_FLD = 76,
+    C_LW = 77,
+    C_FLW = 78,
+    C_LD = 79,
+    // CS
+    C_FSD = 80,
+    C_SW = 81,
+    C_FSW = 82,
+    C_SD = 83,
 }

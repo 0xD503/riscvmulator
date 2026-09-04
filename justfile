@@ -40,6 +40,8 @@ build-dev:
 run-dev:
   {{RUN_IN_CONTAINER_DEBUG}}cargo run --profile=release-checked
 
+ci-dev: test run-dev
+
 run-dev-trace:
   {{RUN_IN_CONTAINER_TRACE}}cargo run --profile=release-checked
 

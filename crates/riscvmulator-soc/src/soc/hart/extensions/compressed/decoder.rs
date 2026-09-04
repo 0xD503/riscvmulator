@@ -14,20 +14,31 @@ use crate::soc::hart::extensions::compressed::constants::{
     COMPRESSED_FUNCT4_OFFSET, InstructionTypeCompressed, OP_Funct3,
 };
 
+#[derive(Clone)]
+pub struct DecoderCompressedISAContext {
+    funct3: OP_Funct3,
+}
+
+impl Default for DecoderCompressedISAContext {
+    fn default() -> Self {
+        DecoderCompressedISAContext {
+            funct3: OP_Funct3::F000,
+        }
+    }
+}
+
 impl Decoder {
     pub(crate) fn decode_c(
         &mut self,
         arch_state: &ArchState,
         fetch_unit: &FetchUnit,
-        register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) {
-        let quadrant = &fetch_unit.current_quadrant;
-        let funct3 = self.extract_funct3_compressed(
+        self.compressedISA.funct3 = self.extract_funct3_compressed(
             fetch_unit.current_instruction_compressed,
         );
 
-        match quadrant {
-            OpcodeQuadrant::Quadrant00 => match funct3 {
+        match fetch_unit.current_quadrant {
+            OpcodeQuadrant::Quadrant00 => match self.compressedISA.funct3 {
                 OP_Funct3::F000 => {
                     self.decode_ciw(fetch_unit);
                 }
@@ -43,7 +54,7 @@ impl Decoder {
                     todo!("illegal instruction, reserved by specification");
                 }
             },
-            OpcodeQuadrant::Quadrant01 => match funct3 {
+            OpcodeQuadrant::Quadrant01 => match self.compressedISA.funct3 {
                 OP_Funct3::F000 | OP_Funct3::F010 | OP_Funct3::F011 => {
                     self.decode_ci();
                 }
@@ -73,7 +84,7 @@ impl Decoder {
                     self.decode_cb();
                 }
             },
-            OpcodeQuadrant::Quadrant10 => match funct3 {
+            OpcodeQuadrant::Quadrant10 => match self.compressedISA.funct3 {
                 OP_Funct3::F000
                 | OP_Funct3::F001
                 | OP_Funct3::F010
@@ -138,14 +149,12 @@ impl Decoder {
     fn decode_ciw(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CIW-format instruction..");
 
-        todo!("TODO: unimplemented");
         // C.ADDI4SPN (RESERVED when uimm == 0)
         let uimm =
             self.extract_uimm_ciw(fetch_unit.current_instruction_compressed);
         if uimm != 0 {
             // C.ADDI4SPN
             self.command_to_execute = ExecutableCommand::C_ADDI4SPN;
-            todo!("TODO: unimplemented");
         } else {
             // RESERVED, uimm == 0
             error!("illegal instruction trap, reserved by specification");
@@ -156,7 +165,36 @@ impl Decoder {
     fn decode_cl(&mut self) {
         trace!("Decoding CL-format instruction..");
 
-        //
+        match self.compressedISA.funct3 {
+            OP_Funct3::F001 => {
+                todo!("condition unimplemented yet");
+                // if RV(32|64)DC {
+                self.command_to_execute = ExecutableCommand::C_FLD
+                // }
+            }
+            OP_Funct3::F010 => {
+                self.command_to_execute = ExecutableCommand::C_LW
+            }
+            OP_Funct3::F011 => {
+                todo!("condition unimplemented yet");
+                // if RV32IFC {
+                self.command_to_execute = ExecutableCommand::C_FLW;
+                // } else { // RV64IC only
+                self.command_to_execute = ExecutableCommand::C_LD;
+                // }
+            }
+
+            _ => {
+                error!(
+                    "unreachable funct3 ({}) for CL instruction",
+                    self.compressedISA.funct3
+                );
+                unreachable!(
+                    "unreachable funct3 ({}) for CL instruction",
+                    self.compressedISA.funct3
+                );
+            }
+        }
 
         todo!("TODO: unimplemented");
     }
@@ -164,7 +202,36 @@ impl Decoder {
     fn decode_cs(&mut self) {
         trace!("Decoding CS-format instruction..");
 
-        //
+        match self.compressedISA.funct3 {
+            OP_Funct3::F101 => {
+                todo!("condition unimplemented yet");
+                // if RV(32|64)DC {
+                self.command_to_execute = ExecutableCommand::C_FSD
+                // }
+            }
+            OP_Funct3::F110 => {
+                self.command_to_execute = ExecutableCommand::C_SW
+            }
+            OP_Funct3::F111 => {
+                todo!("condition unimplemented yet");
+                // if RV32IFC {
+                self.command_to_execute = ExecutableCommand::C_FSW;
+                // } else { // RV64IC only
+                self.command_to_execute = ExecutableCommand::C_SD;
+                // }
+            }
+
+            _ => {
+                error!(
+                    "unreachable funct3 ({}) for CS instruction",
+                    self.compressedISA.funct3
+                );
+                unreachable!(
+                    "unreachable funct3 ({}) for CS instruction",
+                    self.compressedISA.funct3
+                );
+            }
+        }
 
         todo!("TODO: unimplemented");
     }

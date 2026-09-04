@@ -8,6 +8,7 @@ use self::constants::{
 };
 use crate::soc::hart::core::ArchState;
 use crate::soc::hart::extensions;
+use crate::soc::hart::extensions::compressed::decoder::DecoderCompressedISAContext;
 use crate::soc::hart::extensions::integer::constants::{
     OP_32_Funct3, OP_IMM_32_Funct3,
 };
@@ -51,6 +52,9 @@ pub struct Decoder {
     pub(crate) fence: FENCE_Context,
 
     pub(crate) zicsr: DecoderZicsrContext,
+
+    #[allow(non_snake_case)]
+    pub(crate) compressedISA: DecoderCompressedISAContext,
 }
 
 impl Decoder {
@@ -801,7 +805,7 @@ impl Decoder {
             InstructionSize::I16 => {
                 // compressed ISA
                 if misa::is_c_enabled(&arch_state.control_status_registers) {
-                    self.decode_c(arch_state, fetch_unit, register_file);
+                    self.decode_c(arch_state, fetch_unit);
                 } else {
                     error!("Illegal instruction trap");
                     todo!("Illegal instruction trap");
