@@ -39,6 +39,7 @@ RUN apt-get update && apt-get install --assume-yes \
     && cargo install --locked just \
     && cargo install --locked wild-linker \
     && cargo install --locked flamegraph \
+    && cargo install --locked tokei \
     && cargo install --locked cargo-bloat \
     && cargo install --locked cargo-show-asm \
     && cargo install --locked cargo-deny \
