@@ -26,6 +26,7 @@ services:
   ##   ${CONTAINER_ENGINE} run --rm dev              # interactive shell
   ##   ${CONTAINER_ENGINE} run --rm dev cargo build  # single-shot command
   dev:
+    image: ${DEV_SERVICE_STARTING_IMAGE_NAME}:local
     build:
       context: .
       ## container file name within context

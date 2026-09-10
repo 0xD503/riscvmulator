@@ -1,11 +1,9 @@
 ## 1. BUILD stage   ------------------------------------------------------------
 
 ARG DISTRO_RELEASE_VER=trixie
-ARG DEV_CONTAINER_NAME=builder
-ARG RELEASE_CONTAINER_NAME=runner
 
 ## use fixed `major`/`minor`, but latest `patch` version
-FROM rust:1.98-slim-${DISTRO_RELEASE_VER} AS ${DEV_CONTAINER_NAME}
+FROM docker.io/library/rust:1.98-slim-${DISTRO_RELEASE_VER} AS builder
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
@@ -103,7 +101,7 @@ USER ${DEV_USERNAME}
 
 ## 2. RUN stage     ------------------------------------------------------------
 
-FROM debian:${DISTRO_RELEASE_VER}-slim AS ${RELEASE_CONTAINER_NAME}
+FROM docker.io/library/debian:${DISTRO_RELEASE_VER}-slim AS runner
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
