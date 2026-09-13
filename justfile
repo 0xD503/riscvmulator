@@ -102,6 +102,9 @@ check:
 audit:
   {{RUN_IN_CONTAINER}}cargo audit
 
+count *ARGS:
+  {{RUN_IN_CONTAINER}}tokei {{ARGS}}
+
 
 ## legal
 
