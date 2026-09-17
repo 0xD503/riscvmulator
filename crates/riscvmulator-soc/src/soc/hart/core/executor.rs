@@ -415,7 +415,7 @@ impl Executor {
                 );
             }
             ExecutableCommand::C_FSDSP => {
-                self.instruction_store_double_precision_fp_compressed(decoder);
+                self.instruction_store_double_precision_fp_sp_compressed(decoder);
             }
         }
     }
