@@ -12,6 +12,7 @@ ARG DEV_UID=1000
 ARG DEV_GID=1000
 ARG DEV_USERNAME=appdev
 ARG DEV_GROUPNAME=appdev
+ARG CODE_LLDB_VERSION=1.12.3
 
 
 ## install RISC-V toolchain, build deps and clean cache to keep the image small
@@ -30,6 +31,8 @@ RUN apt-get update && apt-get install --assume-yes \
     ## convenience tools \
     tmux emacs-nox ripgrep fd-find fzf htop lldb \
     vim gdb \
+    curl openssh-server \
+    unzip \
     ## clean apt cache and install some crates \
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt rust-src rust-analyzer \
@@ -44,6 +47,12 @@ RUN apt-get update && apt-get install --assume-yes \
     && cargo install --locked --features cli cargo-about \
     && cargo install --locked cargo-audit \
     && cargo install --locked cargo-fuzz
+
+RUN curl -fsSL -o /tmp/codelldb.vsix \
+    https://github.com/vadimcn/codelldb/releases/download/v${CODELLDB_SHA256}/codelldb-linux-x64.vsix \
+    && unzip -q /tmp/codelldb.vsix 'extension/*' -d /tmp/codelldb \
+    && mv /tmp/codelldb/extension /opt/codelldb \
+    && rm -rf /tmp/codelldb /tmp/codelldblldb.vsix
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
     && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME} \
@@ -92,6 +101,8 @@ RUN find src crates crates_guest -name "*.rs" -exec touch {} + \
 
 ## mark "inside dev container" for the justfile's RUN_IN_CONTAINER detection
 ENV IN_DEV_CONTAINER=1
+
+RUN echo 'export PATH="$CARGO_HOME/bin:$PATH"' > /etc/profile.d/cargo.sh
 
 ## make cargo registry to be owned by user
 RUN chown -R ${DEV_UID}:${DEV_GID} /usr/local/cargo
