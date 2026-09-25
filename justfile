@@ -27,51 +27,51 @@ DEV_IMAGE := env_var("DEV_SERVICE_STARTING_IMAGE_NAME") + ":local"
 ## development
 
 ## drop into a development container shell (no-op if already inside)
-run-dev-container:
-  #!/usr/bin/env bash
+run-dev-container: ensure-dev-image
+  #!/usr/bin/env sh
   if [ -n "$container" ]; then
     echo "Already inside a container, do nothing..."
   else
     {{COMPOSE_CMD}} run --rm dev
   fi
 
-build-dev:
+build-dev: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo build --workspace --profile=release-checked
 
-run-dev:
+run-dev: ensure-dev-image
   {{RUN_IN_CONTAINER_DEBUG}}cargo run --profile=release-checked
 
 ci-dev: test run-dev
 
-run-dev-trace:
+run-dev-trace: ensure-dev-image
   {{RUN_IN_CONTAINER_TRACE}}cargo run --profile=release-checked
 
-run-linux-dev: build-dev test
+run-linux-dev: ensure-dev-image build-dev test
   {{RUN_IN_CONTAINER_DEBUG}}cargo run --profile=release-checked
 
-asm *args:
+asm *args: ensure-dev-image
   {{RUN_IN_CONTAINER_DEBUG}}cargo asm --profile=release {{args}}
 
-build-deb:
+build-deb: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo build --workspace
 
-run-deb:
+run-deb: ensure-dev-image
   {{RUN_IN_CONTAINER_DEBUG}}cargo run
 
-run-deb-trace:
+run-deb-trace: ensure-dev-image
   {{RUN_IN_CONTAINER_TRACE}}cargo run
 
 
 ## release
 
-build:
+build: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo build --workspace --profile=release
 
-run:
+run: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo run --profile=release
 
 run-release-container:
-  #!/bin/env sh
+  #!/usr/bin/env sh
   if [ -n "$container" ]; then
     echo "Already inside a container, do nothing..."
   else
@@ -81,44 +81,44 @@ run-release-container:
 
 ## quality
 
-test:
+test: ensure-dev-image
   {{RUN_IN_CONTAINER_DEBUG}}scripts/riscv_tests.temp.sh
   {{RUN_IN_CONTAINER_DEBUG}}cargo test --workspace --profile=release-checked
 
-bench:
+bench: ensure-dev-image
   {{RUN_IN_CONTAINER_DEBUG}}cargo bench --workspace  --profile=release-checked
 
-lint:
+lint: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo clippy --workspace --profile=release-checked -- -D warnings
 
-fmt:
+fmt: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo fmt --all
 
-doc:
+doc: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo doc --workspace --profile=release --no-deps
 
-check:
+check: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo check --workspace --all-targets --profile=release-checked
 
-audit:
+audit: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo audit
 
-count *ARGS:
+count *ARGS: ensure-dev-image
   {{RUN_IN_CONTAINER}}tokei {{ARGS}}
 
 
 ## legal
 
-legal:
+legal: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo deny --workspace check
 
-generate-about: legal
+generate-about: ensure-dev-image legal
   {{RUN_IN_CONTAINER}}cargo about generate --workspace about.hbs -o THIRD_PARTY_LICENSES.html
 
 
 ## clean
 
-clean:
+clean: ensure-dev-image
   {{RUN_IN_CONTAINER}}cargo clean
 
 
@@ -132,11 +132,22 @@ container-build:
 container-clean:
   {{COMPOSE_CMD}} down
 
+## build the dev image if it's missing
+ensure-dev-image:
+  #!/usr/bin/env sh
+  ## exit script on error or unexisting var
+  set -eu
+  ## exit if we're already within a container
+  if [ -n "{{IS_IN_CONTAINER}}" ]; then
+    exit 0
+  fi
+  ##
+
 
 ## optimization
 
 ## post-link optimization (PLOT)
-bolt:
+bolt: ensure-dev-image
   {{RUN_IN_CONTAINER}}llvm-bolt target/release/riscvmulator -o target/release/riscvmulator-bolt
 
 

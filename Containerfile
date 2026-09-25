@@ -49,10 +49,10 @@ RUN apt-get update && apt-get install --assume-yes \
     && cargo install --locked cargo-fuzz
 
 RUN curl -fsSL -o /tmp/codelldb.vsix \
-    https://github.com/vadimcn/codelldb/releases/download/v${CODELLDB_SHA256}/codelldb-linux-x64.vsix \
+    https://github.com/vadimcn/codelldb/releases/download/v${CODE_LLDB_VERSION}/codelldb-linux-x64.vsix \
     && unzip -q /tmp/codelldb.vsix 'extension/*' -d /tmp/codelldb \
     && mv /tmp/codelldb/extension /opt/codelldb \
-    && rm -rf /tmp/codelldb /tmp/codelldblldb.vsix
+    && rm -rf /tmp/codelldb /tmp/codelldb.vsix
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
     && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME} \
@@ -139,7 +139,7 @@ ENV IN_APP_CONTAINER=1
 
 USER ${USERNAME}
 
-COPY --from=${DEV_CONTAINER_NAME} ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
+COPY --from=builder ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
 
 ## set runtime environment variables
 ENV RVMULATOR_EMULATOR__LOGGING__LEVEL=${RELEASE_LOG_LEVEL}
