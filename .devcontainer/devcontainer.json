@@ -11,12 +11,14 @@
   "capAdd": ["SYS_PTRACE"],
   "securityOpt": ["seccomp=unconfined"],
 
-  "mounts": ["source=cargo-cache,target=/usr/local/cargo/registry,type=volume"],
+  "mounts": [
+    "source=riscvmulator_cargo-cache,target=/usr/local/cargo/registry,type=volume"
+  ],
 
   "containerEnv": {
-    "RVMULATOR_EMULATOR__LOGGING__LEVEL": "debug",
+    "RVMULATOR_EMULATOR__LOGGING__LEVEL": "debug"
   },
 
   "remoteUser": "appdev",
-  "updateRemoteUserUID": false,
+  "updateRemoteUserUID": false
 }

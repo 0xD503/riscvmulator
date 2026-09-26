@@ -3,12 +3,14 @@
     "rust-analyzer": {
       "initialization_options": {
         "cargo": {
-          "targetDir": true,
-        },
-      },
-    },
+          "targetDir": true
+        }
+      }
+    }
   },
-  // "dap": {
-  //   //
-  // },
+  "dap": {
+    "CodeLLDB": {
+      "binary": "/opt/codelldb/adapter/codelldb"
+    }
+  }
 }

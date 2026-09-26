@@ -63,4 +63,5 @@ services:
 ## declare named volumes to keep them between container runs
 volumes:
   cargo-cache:
+    name: riscvmulator_cargo-cache
   cargo-bin:

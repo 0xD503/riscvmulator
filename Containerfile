@@ -12,7 +12,6 @@ ARG DEV_UID=1000
 ARG DEV_GID=1000
 ARG DEV_USERNAME=appdev
 ARG DEV_GROUPNAME=appdev
-ARG CODE_LLDB_VERSION=1.12.3
 
 
 ## install RISC-V toolchain, build deps and clean cache to keep the image small
@@ -48,6 +47,7 @@ RUN apt-get update && apt-get install --assume-yes \
     && cargo install --locked cargo-audit \
     && cargo install --locked cargo-fuzz
 
+ARG CODE_LLDB_VERSION=1.12.3
 RUN curl -fsSL -o /tmp/codelldb.vsix \
     https://github.com/vadimcn/codelldb/releases/download/v${CODE_LLDB_VERSION}/codelldb-linux-x64.vsix \
     && unzip -q /tmp/codelldb.vsix 'extension/*' -d /tmp/codelldb \

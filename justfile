@@ -29,10 +29,10 @@ DEV_IMAGE := env_var("DEV_SERVICE_STARTING_IMAGE_NAME") + ":local"
 ## drop into a development container shell (no-op if already inside)
 run-dev-container: ensure-dev-image-exists
   #!/usr/bin/env sh
-  if [ -n "$container" ]; then
+  if [ -n "$IN_DEV_CONTAINER" ]; then
     echo "Already inside a container, do nothing..."
   else
-    {{COMPOSE_CMD}} run --rm dev
+    {{COMPOSE_CMD}} run --rm {{DEV_SERVICE_NAME}}
   fi
 
 build-dev: ensure-dev-image-exists
@@ -72,7 +72,7 @@ run: ensure-dev-image-exists
 
 run-release-container:
   #!/usr/bin/env sh
-  if [ -n "$container" ]; then
+  if [ -n "$IN_DEV_CONTAINER" ]; then
     echo "Already inside a container, do nothing..."
   else
     {{COMPOSE_CMD}} run --rm --entrypoint ${USER_SHELL} emulator
@@ -133,6 +133,7 @@ container-clean:
   {{COMPOSE_CMD}} down
 
 ## build the dev image if it's missing
+[private]
 ensure-dev-image-exists:
   #!/usr/bin/env sh
   ## exit script on error or unexisting var
