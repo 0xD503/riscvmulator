@@ -151,8 +151,8 @@ impl Executor {
     // CB
     /// C.BEQZ performs conditional control transfers. The offset is
     /// sign-extended and added to the pc to form the branch target address. It
-    /// can therefore target a ±256 B range. C.BEQZ takes the branch if the
-    /// value in register rs1′ is zero. It expands to beq rs1′, x0, offset
+    /// can therefore target a +/-256 B range. C.BEQZ takes the branch if the
+    /// value in register rs1' is zero. It expands to beq rs1', x0, offset
     pub(crate) fn instruction_branch_if_equals_zero_compressed(
         &self,
         decoder: &Decoder,
@@ -164,8 +164,8 @@ impl Executor {
         todo!("TODO: unimplemented");
     }
 
-    /// C.BNEZ is defined analogously to C.BQEZ, but it takes the branch if rs1′
-    /// contains a nonzero value. It expands to bne rs1′, x0, offset.
+    /// C.BNEZ is defined analogously to C.BQEZ, but it takes the branch if rs1'
+    /// contains a nonzero value. It expands to bne rs1', x0, offset.
     pub(crate) fn instruction_branch_if_not_equals_zero_compressed(
         &self,
         decoder: &Decoder,

@@ -1,4 +1,4 @@
-## 1. BUILD stage   ------------------------------------------------------------
+## 1. DEV stage   --------------------------------------------------------------
 
 ARG DISTRO_RELEASE_VER=trixie
 
@@ -68,6 +68,9 @@ RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
 ## set WORKDIR
 WORKDIR ${WD}
 
+## mark "inside dev container" for the justfile's RUN_IN_CONTAINER detection
+ENV IN_DEV_CONTAINER=1
+
 ## copy dependencies to WORKDIR (to cache them)
 ## putting this before copying all source lets Podman cache dependency
 ## resolution so rebuilds are faster when only source changes
@@ -98,9 +101,6 @@ RUN rm -rf src crates crates_guest
 COPY . .
 RUN find src crates crates_guest -name "*.rs" -exec touch {} + \
     && cargo build --${BUILD_TYPE}
-
-## mark "inside dev container" for the justfile's RUN_IN_CONTAINER detection
-ENV IN_DEV_CONTAINER=1
 
 RUN echo 'export PATH="$CARGO_HOME/bin:$PATH"' > /etc/profile.d/cargo.sh
 
