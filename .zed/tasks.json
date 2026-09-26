@@ -1,3 +1,3 @@
 [
-  //
+  { "label": "CI (local)", "command": "just", "args": ["ci-dev"] }
 ]
