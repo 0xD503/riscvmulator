@@ -7,7 +7,7 @@
   "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
   "workspaceFolder": "/app",
 
-  "runArgs": ["--userns=keep-id"],
+  "runArgs": ["--userns=keep-id:uid=1000,gid=1000"],
   "capAdd": ["SYS_PTRACE"],
   "securityOpt": ["seccomp=unconfined"],
 

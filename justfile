@@ -14,7 +14,7 @@ IS_IN_CONTAINER := env_var_or_default("IN_DEV_CONTAINER", "")
 CONTAINER_ENGINE := env_var_or_default("CONTAINER_ENGINE", "podman")
 ## exported so every recipe hands it to compose (compose.yml reads
 ## `${DEV_USERNS_MODE:-keep-id}`)
-export DEV_USERNS_MODE := if CONTAINER_ENGINE == "podman" { "keep-id" } else { "host" }
+export DEV_USERNS_MODE := if CONTAINER_ENGINE == "podman" { "keep-id:uid=1000,gid=1000" } else { "host" }
 COMPOSE_SUBCMD := if CONTAINER_ENGINE == "podman" { "-compose" } else { " compose" }
 COMPOSE_CMD := CONTAINER_ENGINE + COMPOSE_SUBCMD
 COMPOSE := COMPOSE_CMD + " run --rm"
@@ -30,7 +30,7 @@ DEV_IMAGE := env_var("DEV_SERVICE_STARTING_IMAGE_NAME") + ":local"
 ## development
 
 ## drop into a development container shell (no-op if already inside)
-run-dev-container:
+run-dev-container: ensure-dev-image-exists
   #!/usr/bin/env sh
   if [ -n "$IN_DEV_CONTAINER" ]; then
     echo "Already inside a container, do nothing..."

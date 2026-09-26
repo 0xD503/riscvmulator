@@ -98,6 +98,7 @@ COPY crates/riscvmulator-soc/Cargo.toml crates/riscvmulator-soc/
 COPY crates/riscvmulator-emulator/Cargo.toml crates/riscvmulator-emulator/
 COPY crates_guest/riscvmulator-simple_firmware/Cargo.toml \
      crates_guest/riscvmulator-simple_firmware/
+COPY .cargo .cargo
 RUN mkdir -p src \
              crates/riscvmulator-soc/src \
              crates/riscvmulator-emulator/src \

@@ -51,7 +51,7 @@ services:
     ## command to run on container run: interactive shell
     command: ${USER_SHELL}
     ## map host identity to container user so bind-mount files stay user's
-    userns_mode: "${DEV_USERNS_MODE:-keep-id}"
+    userns_mode: "${DEV_USERNS_MODE:-keep-id:uid=1000,gid=1000}"
     ## facilitate debuggers usage
     security_opt:
       - seccomp=unconfined
