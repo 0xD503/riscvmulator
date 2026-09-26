@@ -27,7 +27,7 @@ DEV_IMAGE := env_var("DEV_SERVICE_STARTING_IMAGE_NAME") + ":local"
 ## development
 
 ## drop into a development container shell (no-op if already inside)
-run-dev-container: ensure-dev-image
+run-dev-container: ensure-dev-image-exists
   #!/usr/bin/env sh
   if [ -n "$container" ]; then
     echo "Already inside a container, do nothing..."
@@ -35,39 +35,39 @@ run-dev-container: ensure-dev-image
     {{COMPOSE_CMD}} run --rm dev
   fi
 
-build-dev: ensure-dev-image
+build-dev: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo build --workspace --profile=release-checked
 
-run-dev: ensure-dev-image
+run-dev: ensure-dev-image-exists
   {{RUN_IN_CONTAINER_DEBUG}}cargo run --profile=release-checked
 
 ci-dev: test run-dev
 
-run-dev-trace: ensure-dev-image
+run-dev-trace: ensure-dev-image-exists
   {{RUN_IN_CONTAINER_TRACE}}cargo run --profile=release-checked
 
-run-linux-dev: ensure-dev-image build-dev test
+run-linux-dev: ensure-dev-image-exists build-dev test
   {{RUN_IN_CONTAINER_DEBUG}}cargo run --profile=release-checked
 
-asm *args: ensure-dev-image
+asm *args: ensure-dev-image-exists
   {{RUN_IN_CONTAINER_DEBUG}}cargo asm --profile=release {{args}}
 
-build-deb: ensure-dev-image
+build-deb: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo build --workspace
 
-run-deb: ensure-dev-image
+run-deb: ensure-dev-image-exists
   {{RUN_IN_CONTAINER_DEBUG}}cargo run
 
-run-deb-trace: ensure-dev-image
+run-deb-trace: ensure-dev-image-exists
   {{RUN_IN_CONTAINER_TRACE}}cargo run
 
 
 ## release
 
-build: ensure-dev-image
+build: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo build --workspace --profile=release
 
-run: ensure-dev-image
+run: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo run --profile=release
 
 run-release-container:
@@ -81,44 +81,44 @@ run-release-container:
 
 ## quality
 
-test: ensure-dev-image
+test: ensure-dev-image-exists
   {{RUN_IN_CONTAINER_DEBUG}}scripts/riscv_tests.temp.sh
   {{RUN_IN_CONTAINER_DEBUG}}cargo test --workspace --profile=release-checked
 
-bench: ensure-dev-image
+bench: ensure-dev-image-exists
   {{RUN_IN_CONTAINER_DEBUG}}cargo bench --workspace  --profile=release-checked
 
-lint: ensure-dev-image
+lint: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo clippy --workspace --profile=release-checked -- -D warnings
 
-fmt: ensure-dev-image
+fmt: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo fmt --all
 
-doc: ensure-dev-image
+doc: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo doc --workspace --profile=release --no-deps
 
-check: ensure-dev-image
+check: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo check --workspace --all-targets --profile=release-checked
 
-audit: ensure-dev-image
+audit: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo audit
 
-count *ARGS: ensure-dev-image
+count *ARGS: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}tokei {{ARGS}}
 
 
 ## legal
 
-legal: ensure-dev-image
+legal: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo deny --workspace check
 
-generate-about: ensure-dev-image legal
+generate-about: ensure-dev-image-exists legal
   {{RUN_IN_CONTAINER}}cargo about generate --workspace about.hbs -o THIRD_PARTY_LICENSES.html
 
 
 ## clean
 
-clean: ensure-dev-image
+clean: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}cargo clean
 
 
@@ -133,7 +133,7 @@ container-clean:
   {{COMPOSE_CMD}} down
 
 ## build the dev image if it's missing
-ensure-dev-image:
+ensure-dev-image-exists:
   #!/usr/bin/env sh
   ## exit script on error or unexisting var
   set -eu
@@ -141,13 +141,32 @@ ensure-dev-image:
   if [ -n "{{IS_IN_CONTAINER}}" ]; then
     exit 0
   fi
-  ##
+  ## ensure that image name within `.devcontainer.json` is the same as
+  ## `{{DEV_IMAGE}}`
+  ## check if image with name {{DEV_IMAGE}} is present in devcontainer.json
+  if ! grep -qF '"image": "{{DEV_IMAGE}}"' .devcontainer/devcontainer.json; then
+    echo 'ERROR: image "{{DEV_IMAGE}}" is not set in .devcontainer/devcontainer.json' >&2
+    exit 1
+  fi
+  ## check that development image exists
+  if {{CONTAINER_ENGINE}} image inspect {{DEV_IMAGE}} > /dev/null 2>&1; then
+    ## development image exists, continue
+    exit 0
+  fi
+  ## development image doesn't exists, build it
+  echo 'NOTICE: Development image "{{DEV_IMAGE}}" is missing, building it...' >&2
+  {{COMPOSE_CMD}} build {{DEV_IMAGE}}
+  ## ensure that image was built
+  if ! {{CONTAINER_ENGINE}} image inspect {{DEV_IMAGE}} > /dev/null 2>&1; then
+    echo 'ERROR: failed to build "{{DEV_IMAGE}}" image' >&2
+    exit 1
+  fi
 
 
 ## optimization
 
 ## post-link optimization (PLOT)
-bolt: ensure-dev-image
+bolt: ensure-dev-image-exists
   {{RUN_IN_CONTAINER}}llvm-bolt target/release/riscvmulator -o target/release/riscvmulator-bolt
 
 
