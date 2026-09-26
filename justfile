@@ -18,16 +18,17 @@ export DEV_USERNS_MODE := if CONTAINER_ENGINE == "podman" { "keep-id" } else { "
 COMPOSE_SUBCMD := if CONTAINER_ENGINE == "podman" { "-compose" } else { " compose" }
 COMPOSE_CMD := CONTAINER_ENGINE + COMPOSE_SUBCMD
 COMPOSE := COMPOSE_CMD + " run --rm"
-RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" } else { COMPOSE + " " + DEV_SERVICE_NAME + " " }
-RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { "RVMULATOR_EMULATOR__LOGGING__LEVEL=debug" + " " } else { COMPOSE + " -e RVMULATOR_EMULATOR__LOGGING__LEVEL=debug -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
-RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { "RVMULATOR_EMULATOR__LOGGING__LEVEL=trace" + " " } else { COMPOSE + " -e RVMULATOR_EMULATOR__LOGGING__LEVEL=trace -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
+ENSURE_DEV_IMAGE_EXISTS := just_executable() + " --justfile " + quote(justfile()) + " " + "ensure-dev-image-exists" + " && "
+RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " " + DEV_SERVICE_NAME + " " }
+RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { "RVMULATOR_EMULATOR__LOGGING__LEVEL=debug" + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e RVMULATOR_EMULATOR__LOGGING__LEVEL=debug -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
+RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { "RVMULATOR_EMULATOR__LOGGING__LEVEL=trace" + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e RVMULATOR_EMULATOR__LOGGING__LEVEL=trace -e RUST_BACKTRACE=1 " + DEV_SERVICE_NAME + " " }
 DEV_IMAGE := env_var("DEV_SERVICE_STARTING_IMAGE_NAME") + ":local"
 
 
 ## development
 
 ## drop into a development container shell (no-op if already inside)
-run-dev-container: ensure-dev-image-exists
+run-dev-container:
   #!/usr/bin/env sh
   if [ -n "$IN_DEV_CONTAINER" ]; then
     echo "Already inside a container, do nothing..."
@@ -35,39 +36,39 @@ run-dev-container: ensure-dev-image-exists
     {{COMPOSE_CMD}} run --rm {{DEV_SERVICE_NAME}}
   fi
 
-build-dev: ensure-dev-image-exists
+build-dev:
   {{RUN_IN_CONTAINER}} cargo build --workspace --profile=release-checked
 
-run-dev: ensure-dev-image-exists
+run-dev:
   {{RUN_IN_CONTAINER_DEBUG}} cargo run --profile=release-checked
 
 ci-dev: test run-dev
 
-run-dev-trace: ensure-dev-image-exists
+run-dev-trace:
   {{RUN_IN_CONTAINER_TRACE}} cargo run --profile=release-checked
 
-run-linux-dev: ensure-dev-image-exists build-dev test
+run-linux-dev: build-dev test
   {{RUN_IN_CONTAINER_DEBUG}} cargo run --profile=release-checked
 
-asm *args: ensure-dev-image-exists
+asm *args:
   {{RUN_IN_CONTAINER_DEBUG}} cargo asm --profile=release {{args}}
 
-build-deb: ensure-dev-image-exists
+build-deb:
   {{RUN_IN_CONTAINER}} cargo build --workspace
 
-run-deb: ensure-dev-image-exists
+run-deb:
   {{RUN_IN_CONTAINER_DEBUG}} cargo run
 
-run-deb-trace: ensure-dev-image-exists
+run-deb-trace:
   {{RUN_IN_CONTAINER_TRACE}} cargo run
 
 
 ## release
 
-build: ensure-dev-image-exists
+build:
   {{RUN_IN_CONTAINER}} cargo build --workspace --profile=release
 
-run: ensure-dev-image-exists
+run:
   {{RUN_IN_CONTAINER}} cargo run --profile=release
 
 run-release-container:
@@ -81,44 +82,44 @@ run-release-container:
 
 ## quality
 
-test: ensure-dev-image-exists
+test:
   {{RUN_IN_CONTAINER_DEBUG}} scripts/riscv_tests.temp.sh
   {{RUN_IN_CONTAINER_DEBUG}} cargo test --workspace --profile=release-checked
 
-bench: ensure-dev-image-exists
+bench:
   {{RUN_IN_CONTAINER_DEBUG}} cargo bench --workspace  --profile=release-checked
 
-lint: ensure-dev-image-exists
+lint:
   {{RUN_IN_CONTAINER}} cargo clippy --workspace --profile=release-checked -- -D warnings
 
-fmt: ensure-dev-image-exists
+fmt:
   {{RUN_IN_CONTAINER}} cargo fmt --all
 
-doc: ensure-dev-image-exists
+doc:
   {{RUN_IN_CONTAINER}} cargo doc --workspace --profile=release --no-deps
 
-check: ensure-dev-image-exists
+check:
   {{RUN_IN_CONTAINER}} cargo check --workspace --all-targets --profile=release-checked
 
-audit: ensure-dev-image-exists
+audit:
   {{RUN_IN_CONTAINER}} cargo audit
 
-count *ARGS: ensure-dev-image-exists
+count *ARGS:
   {{RUN_IN_CONTAINER}} tokei {{ARGS}}
 
 
 ## legal
 
-legal: ensure-dev-image-exists
+legal:
   {{RUN_IN_CONTAINER}} cargo deny --workspace check
 
-generate-about: ensure-dev-image-exists legal
+generate-about: legal
   {{RUN_IN_CONTAINER}} cargo about generate --workspace about.hbs -o THIRD_PARTY_LICENSES.html
 
 
 ## clean
 
-clean: ensure-dev-image-exists
+clean:
   {{RUN_IN_CONTAINER}} cargo clean
 
 
@@ -167,7 +168,7 @@ ensure-dev-image-exists:
 ## optimization
 
 ## post-link optimization (PLOT)
-bolt: ensure-dev-image-exists
+bolt:
   {{RUN_IN_CONTAINER}} llvm-bolt target/release/riscvmulator -o target/release/riscvmulator-bolt
 
 
