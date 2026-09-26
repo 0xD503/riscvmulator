@@ -155,7 +155,7 @@ ensure-dev-image-exists:
   fi
   ## development image doesn't exists, build it
   echo 'NOTICE: Development image "{{DEV_IMAGE}}" is missing, building it...' >&2
-  {{COMPOSE_CMD}} build {{DEV_IMAGE}}
+  {{COMPOSE_CMD}} build {{DEV_SERVICE_NAME}}
   ## ensure that image was built
   if ! {{CONTAINER_ENGINE}} image inspect {{DEV_IMAGE}} > /dev/null 2>&1; then
     echo 'ERROR: failed to build "{{DEV_IMAGE}}" image' >&2
