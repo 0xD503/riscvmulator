@@ -128,7 +128,7 @@ clean:
 ## container management
 
 ## build container images
-container-build:
+container-build: && check-devcontainer-image-version
   {{COMPOSE_CMD}} build
 
 ## stop and remove this project's compose services
@@ -165,6 +165,19 @@ ensure-dev-image-exists:
     echo 'ERROR: failed to build "{{DEV_IMAGE}}" image' >&2
     exit 1
   fi
+
+## check current container version
+[private]
+check-devcontainer-image-version:
+  #!/usr/bin/env sh
+  set -eu
+  CURRENT_IMG_VER=$({{CONTAINER_ENGINE}} image inspect {{DEV_IMAGE}} --format '{{{{.Id}}') || exit 0
+  for container in $({{CONTAINER_ENGINE}} ps -aq --filter "label=devcontainer.local_folder={{justfile_directory()}}"); do
+    if [ "$({{CONTAINER_ENGINE}} inspect "$container" --format '{{{{.Image}}')" != "$CURRENT_IMG_VER" ]; then
+      name=$({{CONTAINER_ENGINE}} inspect "$container" --format '{{{{.Name}}')
+      echo "WARNING: dev container $name runs an outdated image" >&2
+    fi
+  done
 
 
 ## optimization

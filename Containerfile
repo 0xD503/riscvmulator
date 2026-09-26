@@ -7,7 +7,6 @@ FROM docker.io/library/rust:1.98-slim-${DISTRO_RELEASE_VER} AS builder
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
-ARG BUILD_TYPE=release
 ARG DEV_UID=1000
 ARG DEV_GID=1000
 ARG DEV_USERNAME=appdev
@@ -71,6 +70,23 @@ WORKDIR ${WD}
 ## mark "inside dev container" for the justfile's RUN_IN_CONTAINER detection
 ENV IN_DEV_CONTAINER=1
 
+RUN echo 'export PATH="$CARGO_HOME/bin:$PATH"' > /etc/profile.d/cargo.sh
+
+## make cargo registry to be owned by user
+RUN chown -R ${DEV_UID}:${DEV_GID} /usr/local/cargo
+## switch to dev user
+USER ${DEV_USERNAME}
+
+
+## 2. BUILD stage   ------------------------------------------------------------
+
+FROM builder AS release-build
+
+ARG BUILD_TYPE=release
+
+## build as root user
+USER root
+
 ## copy dependencies to WORKDIR (to cache them)
 ## putting this before copying all source lets Podman cache dependency
 ## resolution so rebuilds are faster when only source changes
@@ -102,13 +118,6 @@ COPY . .
 RUN find src crates crates_guest -name "*.rs" -exec touch {} + \
     && cargo build --${BUILD_TYPE}
 
-RUN echo 'export PATH="$CARGO_HOME/bin:$PATH"' > /etc/profile.d/cargo.sh
-
-## make cargo registry to be owned by user
-RUN chown -R ${DEV_UID}:${DEV_GID} /usr/local/cargo
-## switch to dev user
-USER ${DEV_USERNAME}
-
 
 ## 2. RUN stage     ------------------------------------------------------------
 
@@ -139,7 +148,7 @@ ENV IN_APP_CONTAINER=1
 
 USER ${USERNAME}
 
-COPY --from=builder ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
+COPY --from=release-build ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
 
 ## set runtime environment variables
 ENV RVMULATOR_EMULATOR__LOGGING__LEVEL=${RELEASE_LOG_LEVEL}

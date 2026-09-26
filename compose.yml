@@ -41,8 +41,6 @@ services:
       - .:${WD}
       ## keep cargo cache between container runs to avoid redownload/recompile
       - cargo-cache:/usr/local/cargo/registry
-      ## keep installed cargo binaries between container runs
-      - cargo-bin:/usr/local/cargo/bin
     environment:
       - RVMULATOR_EMULATOR__LOGGING__LEVEL=${DEBUG_LOG_LEVEL}
     ## keep container for interactive use (i.e. add `-it` to args automatically)
@@ -64,4 +62,3 @@ services:
 volumes:
   cargo-cache:
     name: riscvmulator_cargo-cache
-  cargo-bin:
