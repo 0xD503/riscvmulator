@@ -1,11 +1,9 @@
 use log::{error, trace};
 
-use crate::constants::arch::RISCV_NUM_OF_REGISTERS;
 use crate::soc::hart::core::decoder::constants::OpcodeQuadrant;
 use crate::soc::hart::core::executor::constants::ExecutableCommand;
 use crate::soc::hart::core::{
     ArchState, decoder::Decoder, fetch_unit::FetchUnit,
-    gp_registers::RegisterFile,
 };
 use crate::soc::hart::extensions::compressed::constants::{
     Bits11_10_quadrant_01, COMPRESSED_BITS_11_10_MASK,

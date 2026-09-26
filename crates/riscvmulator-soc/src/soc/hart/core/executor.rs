@@ -17,7 +17,6 @@ use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
 use crate::soc::hart::privileged::constants::{
     MCause_Code, MSTATUS_MPP_MASK, MSTATUS_MPP_OFFSET, MStatus_MPP,
 };
-use crate::soc::hart::privileged::machine::misa;
 use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
 
 use log::{debug, error, trace};
@@ -237,7 +236,7 @@ impl Executor {
                 );
             }
 
-            /// `M` extension instructoins
+            // `M` extension instructoins
             ExecutableCommand::MUL => {
                 self.instruction_multiply_low(decoder);
             }
@@ -279,7 +278,7 @@ impl Executor {
                 self.instruction_remainder_unsigned_word(decoder);
             }
 
-            /// `C` extension instructions
+            // `C` extension instructions
             // CIW
             ExecutableCommand::C_ADDI4SPN => {
                 self.instruction_add_immediate_to_stack_pointer_compressed(
@@ -415,7 +414,9 @@ impl Executor {
                 );
             }
             ExecutableCommand::C_FSDSP => {
-                self.instruction_store_double_precision_fp_sp_compressed(decoder);
+                self.instruction_store_double_precision_fp_sp_compressed(
+                    decoder,
+                );
             }
         }
     }
