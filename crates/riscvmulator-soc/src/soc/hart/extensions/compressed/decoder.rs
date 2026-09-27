@@ -54,7 +54,7 @@ impl Decoder {
             },
             OpcodeQuadrant::Quadrant01 => match self.compressedISA.funct3 {
                 OP_Funct3::F000 | OP_Funct3::F010 | OP_Funct3::F011 => {
-                    self.decode_ci();
+                    self.decode_ci(fetch_unit);
                 }
                 OP_Funct3::F001 => {
                     todo!("distiguish between RV32/RV64");
@@ -87,7 +87,7 @@ impl Decoder {
                 | OP_Funct3::F001
                 | OP_Funct3::F010
                 | OP_Funct3::F011 => {
-                    self.decode_ci();
+                    self.decode_ci(fetch_unit);
                 }
                 OP_Funct3::F100 => {
                     self.decode_cr(fetch_unit);
@@ -128,10 +128,31 @@ impl Decoder {
         todo!("TODO: unimplemented");
     }
 
-    fn decode_ci(&mut self) {
+    fn decode_ci(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CI-format instruction..");
 
-        //
+        match self.compressedISA.funct3 {
+            OP_Funct3::F000 => {
+                todo!("TODO: unimplemented");
+            }
+            OP_Funct3::F010 => {
+                todo!("TODO: unimplemented");
+            }
+            OP_Funct3::F011 => {
+                todo!("TODO: unimplemented");
+            }
+
+            _ => {
+                error!(
+                    "unreachable funct3 ({}) for CI instruction",
+                    self.compressedISA.funct3
+                );
+                unreachable!(
+                    "unreachable funct3 ({}) for CI instruction",
+                    self.compressedISA.funct3
+                );
+            }
+        }
 
         todo!("TODO: unimplemented");
     }
