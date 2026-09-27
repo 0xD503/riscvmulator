@@ -1,5 +1,6 @@
 use log::{error, trace};
 
+use crate::constants::arch::InstructionType;
 use crate::soc::hart::core::decoder::constants::OpcodeQuadrant;
 use crate::soc::hart::core::executor::constants::ExecutableCommand;
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
@@ -32,6 +33,7 @@ pub struct DecoderCompressedISAContext {
     cl_cs_rs1_scaled: InstructionTypeCompressed,
     cs_ca_rs2_scaled: InstructionTypeCompressed,
     ca_cb_rd_or_rs1_scaled: InstructionTypeCompressed,
+    ca_cb_bits_11_10_quadrant_01_funct3_100: Bits11_10_quadrant_01,
     cj_jta_imm: InstructionTypeCompressed,
 }
 
@@ -48,6 +50,8 @@ impl Default for DecoderCompressedISAContext {
             cl_cs_rs1_scaled: 0,
             cs_ca_rs2_scaled: 0,
             ca_cb_rd_or_rs1_scaled: 0,
+            ca_cb_bits_11_10_quadrant_01_funct3_100:
+                Bits11_10_quadrant_01::CA_11,
             cj_jta_imm: 0,
         }
     }
@@ -88,11 +92,15 @@ impl Decoder {
                     todo!("distiguish between RV32/RV64");
                 }
                 OP_Funct3::F100 => {
-                    let bits_11_10 = self
+                    self.compressedISA
+                        .ca_cb_bits_11_10_quadrant_01_funct3_100 = self
                         .extract_bits_11_10_quadrant_01_funct3_100(
                             fetch_unit.current_instruction_compressed,
                         );
-                    match bits_11_10 {
+                    match self
+                        .compressedISA
+                        .ca_cb_bits_11_10_quadrant_01_funct3_100
+                    {
                         Bits11_10_quadrant_01::CA_11 => {
                             self.decode_ca(fetch_unit);
                         }
@@ -497,4 +505,10 @@ impl Decoder {
 
         Bits11_10_quadrant_01::from(bits_11_10)
     }
+}
+
+fn expand_compressed_instruction(
+    compressed_instruction: InstructionTypeCompressed,
+) -> Option<InstructionType> {
+    None
 }

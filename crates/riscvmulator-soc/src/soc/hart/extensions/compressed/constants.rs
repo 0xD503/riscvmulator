@@ -141,6 +141,7 @@ impl Display for OP_Funct3 {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(Clone)]
 pub enum Bits11_10_quadrant_01 {
     CB_00 = 0b00,
     CB_01 = 0b01,
