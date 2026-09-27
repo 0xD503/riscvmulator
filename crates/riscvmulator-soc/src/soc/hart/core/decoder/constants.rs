@@ -13,7 +13,7 @@ pub const OPCODE_QUADRANT_MASK: InstructionType =
 
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Default, Clone)]
+#[derive(Default, Copy, Clone)]
 pub enum Opcode {
     LOAD = OPCODE_LOAD as isize,
     STORE = OPCODE_STORE as isize,
