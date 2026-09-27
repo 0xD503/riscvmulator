@@ -2,7 +2,6 @@ use log::{error, trace};
 
 use crate::soc::hart::core::decoder::constants::OpcodeQuadrant;
 use crate::soc::hart::core::executor::constants::ExecutableCommand;
-use crate::soc::hart::core::fetch_unit;
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::core::{
     ArchState, decoder::Decoder, fetch_unit::FetchUnit,
@@ -57,10 +56,10 @@ impl Decoder {
                     self.decode_ciw(fetch_unit);
                 }
                 OP_Funct3::F001 | OP_Funct3::F010 | OP_Funct3::F011 => {
-                    self.decode_cl();
+                    self.decode_cl(fetch_unit);
                 }
                 OP_Funct3::F101 | OP_Funct3::F110 | OP_Funct3::F111 => {
-                    self.decode_cs();
+                    self.decode_cs(fetch_unit);
                 }
 
                 OP_Funct3::F100 => {
@@ -82,20 +81,20 @@ impl Decoder {
                         );
                     match bits_11_10 {
                         Bits11_10_quadrant_01::CA_11 => {
-                            self.decode_ca();
+                            self.decode_ca(fetch_unit);
                         }
                         Bits11_10_quadrant_01::CB_00
                         | Bits11_10_quadrant_01::CB_01
                         | Bits11_10_quadrant_01::CB_10 => {
-                            self.decode_cb();
+                            self.decode_cb(fetch_unit);
                         }
                     }
                 }
                 OP_Funct3::F101 => {
-                    self.decode_cj();
+                    self.decode_cj(fetch_unit);
                 }
                 OP_Funct3::F110 | OP_Funct3::F111 => {
-                    self.decode_cb();
+                    self.decode_cb(fetch_unit);
                 }
             },
             OpcodeQuadrant::Quadrant10 => match self.compressedISA.funct3 {
@@ -261,10 +260,12 @@ impl Decoder {
         }
     }
 
-    fn decode_cl(&mut self) {
+    fn decode_cl(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CL-format instruction..");
 
-        //
+        self.compressedISA.ciw_cl_rd_scaled = self.extract_ciw_cl_rd_scaled(
+            fetch_unit.current_instruction_compressed,
+        );
 
         match self.compressedISA.funct3 {
             OP_Funct3::F001 => {
@@ -300,7 +301,7 @@ impl Decoder {
         todo!("TODO: unimplemented");
     }
 
-    fn decode_cs(&mut self) {
+    fn decode_cs(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CS-format instruction..");
 
         //
@@ -339,7 +340,7 @@ impl Decoder {
         todo!("TODO: unimplemented");
     }
 
-    fn decode_ca(&mut self) {
+    fn decode_ca(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CA-format instruction..");
 
         //
@@ -347,7 +348,7 @@ impl Decoder {
         todo!("TODO: unimplemented");
     }
 
-    fn decode_cb(&mut self) {
+    fn decode_cb(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CB-format instruction..");
 
         //
@@ -355,7 +356,7 @@ impl Decoder {
         todo!("TODO: unimplemented");
     }
 
-    fn decode_cj(&mut self) {
+    fn decode_cj(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CJ-format instruction..");
 
         //
