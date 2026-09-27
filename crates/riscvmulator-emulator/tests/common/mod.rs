@@ -8,6 +8,22 @@ use riscvmulator_emulator::{
 
 use crate::peripherals::htif::HTIF_SUCCESS;
 
+#[macro_export]
+macro_rules! riscv_test {
+    ($isa:expr, $name:ident) => {
+        #[test]
+        fn $name() {
+            let path = concat!(
+                "3rd_party/riscv-tests/isa/",
+                $isa,
+                "-",
+                stringify!($name)
+            );
+            run_test(path, TEST_CONFIG_PATH);
+        }
+    };
+}
+
 fn test_setup() {
     //
 }
