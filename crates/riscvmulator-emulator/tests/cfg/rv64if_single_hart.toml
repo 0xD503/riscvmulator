@@ -1,0 +1,30 @@
+[emulator]
+## 0 means as fast as possible
+#throttle_frequency = 0
+
+[emulator.logging]
+level = "debug"
+style = "auto"
+
+[soc]
+harts_num = 1
+#xtal_frequency_hz = 16384
+
+[soc.hart]
+pc_reset_value = 0x8000_0000
+
+## RV64GC == RV64IMAFDC
+extension_I = true
+extension_M = false
+extension_A = false
+extension_F = true
+extension_D = false
+extension_C = false
+extension_Zifencei = false
+extension_Zicsr = true
+
+[soc.bus]
+
+[soc.bus.memory]
+base_addr = 0x8000_0000
+size_bytes = 16384     ## 16 KB
