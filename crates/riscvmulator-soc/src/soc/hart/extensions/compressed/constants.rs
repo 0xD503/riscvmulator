@@ -40,6 +40,22 @@ pub const COMPRESSED_CIW_CL_RD_SCALED_OFFSET: usize = 2;
 pub const COMPRESSED_CIW_CL_RD_SCALED_MASK: InstructionTypeCompressed =
     0b111 << COMPRESSED_CIW_CL_RD_SCALED_OFFSET;
 
+pub const COMPRESSED_CL_CS_RS1_SCALED_OFFSET: usize = 7;
+pub const COMPRESSED_CL_CS_RS1_SCALED_MASK: InstructionTypeCompressed =
+    0b111 << COMPRESSED_CL_CS_RS1_SCALED_OFFSET;
+
+pub const COMPRESSED_CS_CA_RS2_SCALED_OFFSET: usize = 2;
+pub const COMPRESSED_CS_CA_RS2_SCALED_MASK: InstructionTypeCompressed =
+    0b111 << COMPRESSED_CS_CA_RS2_SCALED_OFFSET;
+
+pub const COMPRESSED_CA_CB_RD_OR_RS1_SCALED_OFFSET: usize = 7;
+pub const COMPRESSED_CA_CB_RD_OR_RS1_SCALED_MASK: InstructionTypeCompressed =
+    0b111 << COMPRESSED_CA_CB_RD_OR_RS1_SCALED_OFFSET;
+
+pub const COMPRESSED_CJ_JTA_IMM_OFFSET: usize = 7;
+pub const COMPRESSED_CJ_JTA_IMM_MASK: InstructionTypeCompressed =
+    0b11111111111 << COMPRESSED_CJ_JTA_IMM_OFFSET;
+
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Clone)]
