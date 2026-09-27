@@ -106,7 +106,7 @@ check:
 audit:
   {{RUN_IN_CONTAINER}} cargo audit
 
-count *ARGS:
+count-loc *ARGS:
   {{RUN_IN_CONTAINER}} tokei {{ARGS}}
 
 

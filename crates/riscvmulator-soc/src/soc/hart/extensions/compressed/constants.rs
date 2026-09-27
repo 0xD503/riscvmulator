@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use log::error;
 
+use crate::constants::arch::RISCV_NUM_OF_REGISTERS;
+
 pub type InstructionTypeCompressed = u16;
 pub type SignedInstructionTypeCompressed = i16;
 
@@ -23,6 +25,16 @@ pub const COMPRESSED_BITS_11_10_MASK: InstructionTypeCompressed =
 pub const COMPRESSED_CIW_IMM_OFFSET: usize = 5;
 pub const COMPRESSED_CIW_IMM_MASK: InstructionTypeCompressed =
     0b11111111 << COMPRESSED_CIW_IMM_OFFSET;
+
+pub const COMPRESSED_CR_CI_RD_RS1_OFFSET: usize = 7;
+pub const COMPRESSED_CR_CI_RD_RS1_MASK: InstructionTypeCompressed =
+    ((RISCV_NUM_OF_REGISTERS - 1) as InstructionTypeCompressed)
+        << COMPRESSED_CR_CI_RD_RS1_OFFSET;
+
+pub const COMPRESSED_CR_CSS_RS2_OFFSET: usize = 2;
+pub const COMPRESSED_CR_CSS_RS2_MASK: InstructionTypeCompressed =
+    ((RISCV_NUM_OF_REGISTERS - 1) as InstructionTypeCompressed)
+        << COMPRESSED_CR_CSS_RS2_OFFSET;
 
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]

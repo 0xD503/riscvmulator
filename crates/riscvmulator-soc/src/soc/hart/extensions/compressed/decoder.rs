@@ -2,25 +2,36 @@ use log::{error, trace};
 
 use crate::soc::hart::core::decoder::constants::OpcodeQuadrant;
 use crate::soc::hart::core::executor::constants::ExecutableCommand;
+use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::core::{
     ArchState, decoder::Decoder, fetch_unit::FetchUnit,
 };
 use crate::soc::hart::extensions::compressed::constants::{
     Bits11_10_quadrant_01, COMPRESSED_BITS_11_10_MASK,
     COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_CIW_IMM_MASK,
-    COMPRESSED_CIW_IMM_OFFSET, COMPRESSED_FUNCT3_MASK, COMPRESSED_FUNCT4_MASK,
-    COMPRESSED_FUNCT4_OFFSET, InstructionTypeCompressed, OP_Funct3,
+    COMPRESSED_CIW_IMM_OFFSET, COMPRESSED_CR_CI_RD_RS1_MASK,
+    COMPRESSED_CR_CI_RD_RS1_OFFSET, COMPRESSED_CR_CSS_RS2_MASK,
+    COMPRESSED_CR_CSS_RS2_OFFSET, COMPRESSED_FUNCT3_MASK,
+    COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
+    InstructionTypeCompressed, OP_Funct3,
 };
 
 #[derive(Clone)]
 pub struct DecoderCompressedISAContext {
     funct3: OP_Funct3,
+    cr_funct4_lsb_compressed: bool,
+    cr_ci_destination_or_source_register_1_offset: usize,
+    cr_css_source_register_2_offset: usize,
 }
 
 impl Default for DecoderCompressedISAContext {
     fn default() -> Self {
         DecoderCompressedISAContext {
             funct3: OP_Funct3::F000,
+            cr_funct4_lsb_compressed: false,
+            cr_ci_destination_or_source_register_1_offset:
+                GPRegisterName::x0_zero as usize,
+            cr_css_source_register_2_offset: GPRegisterName::x0_zero as usize,
         }
     }
 }
@@ -117,9 +128,21 @@ impl Decoder {
     fn decode_cr(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CR-format instruction..");
 
-        if self.extract_funct4_lsb_compressed(
-            fetch_unit.current_instruction_compressed,
-        ) {
+        self.compressedISA.cr_funct4_lsb_compressed = self
+            .extract_cr_funct4_lsb_compressed(
+                fetch_unit.current_instruction_compressed,
+            );
+        self.compressedISA
+            .cr_ci_destination_or_source_register_1_offset = self
+            .extract_cr_ci_destination_or_source_register_1_offset(
+                fetch_unit.current_instruction_compressed,
+            );
+        self.compressedISA.cr_css_source_register_2_offset = self
+            .extract_cr_css_source_register_2_offset(
+                fetch_unit.current_instruction_compressed,
+            );
+
+        if self.compressedISA.cr_funct4_lsb_compressed {
             //
         } else {
             //
@@ -131,16 +154,61 @@ impl Decoder {
     fn decode_ci(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CI-format instruction..");
 
+        self.compressedISA
+            .cr_ci_destination_or_source_register_1_offset = self
+            .extract_cr_ci_destination_or_source_register_1_offset(
+                fetch_unit.current_instruction_compressed,
+            );
+        //
+
         match self.compressedISA.funct3 {
-            OP_Funct3::F000 => {
-                todo!("TODO: unimplemented");
-            }
-            OP_Funct3::F010 => {
-                todo!("TODO: unimplemented");
-            }
-            OP_Funct3::F011 => {
-                todo!("TODO: unimplemented");
-            }
+            OP_Funct3::F000 => match fetch_unit.current_quadrant {
+                OpcodeQuadrant::Quadrant01 => {
+                    self.command_to_execute = ExecutableCommand::C_ADDI;
+                }
+                OpcodeQuadrant::Quadrant10 => {
+                    self.command_to_execute = ExecutableCommand::C_SLLI;
+                }
+
+                _ => {
+                    error!("unreachable opcode for CI instruction");
+                    unreachable!("unreachable opcode for CI instruction");
+                }
+            },
+            OP_Funct3::F010 => match fetch_unit.current_quadrant {
+                OpcodeQuadrant::Quadrant01 => {
+                    self.command_to_execute = ExecutableCommand::C_LI;
+                }
+                OpcodeQuadrant::Quadrant10 => {
+                    self.command_to_execute = ExecutableCommand::C_LWSP;
+                }
+
+                _ => {
+                    error!("unreachable opcode for CI instruction");
+                    unreachable!("unreachable opcode for CI instruction");
+                }
+            },
+            OP_Funct3::F011 => match fetch_unit.current_quadrant {
+                OpcodeQuadrant::Quadrant01 => {
+                    todo!("check unimplemented");
+                    // if self.destination_register_offset
+                    self.command_to_execute = ExecutableCommand::C_LUI;
+                    // else
+                    self.command_to_execute = ExecutableCommand::C_ADDI16SP;
+                }
+                OpcodeQuadrant::Quadrant10 => {
+                    todo!("check unimplemented");
+                    // if RV32FC
+                    self.command_to_execute = ExecutableCommand::C_FLWSP;
+                    // else if RV64C
+                    self.command_to_execute = ExecutableCommand::C_LDSP;
+                }
+
+                _ => {
+                    error!("unreachable opcode for CI instruction");
+                    unreachable!("unreachable opcode for CI instruction");
+                }
+            },
 
             _ => {
                 error!(
@@ -170,7 +238,7 @@ impl Decoder {
 
         // C.ADDI4SPN (RESERVED when uimm == 0)
         let uimm =
-            self.extract_uimm_ciw(fetch_unit.current_instruction_compressed);
+            self.extract_ciw_uimm(fetch_unit.current_instruction_compressed);
         if uimm != 0 {
             // C.ADDI4SPN
             self.command_to_execute = ExecutableCommand::C_ADDI4SPN;
@@ -279,6 +347,7 @@ impl Decoder {
         todo!("TODO: unimplemented");
     }
 
+    // extractors
     fn extract_funct3_compressed(
         &self,
         instruction: InstructionTypeCompressed,
@@ -286,7 +355,7 @@ impl Decoder {
         OP_Funct3::from(instruction & COMPRESSED_FUNCT3_MASK)
     }
 
-    fn extract_funct4_lsb_compressed(
+    fn extract_cr_funct4_lsb_compressed(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> bool {
@@ -295,7 +364,23 @@ impl Decoder {
             == 1
     }
 
-    fn extract_uimm_ciw(
+    fn extract_cr_ci_destination_or_source_register_1_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> usize {
+        ((instruction & COMPRESSED_CR_CI_RD_RS1_MASK)
+            >> COMPRESSED_CR_CI_RD_RS1_OFFSET) as usize
+    }
+
+    fn extract_cr_css_source_register_2_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> usize {
+        ((instruction & COMPRESSED_CR_CSS_RS2_MASK)
+            >> COMPRESSED_CR_CSS_RS2_OFFSET) as usize
+    }
+
+    fn extract_ciw_uimm(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionTypeCompressed {
