@@ -2,17 +2,18 @@ use log::{error, trace};
 
 use crate::soc::hart::core::decoder::constants::OpcodeQuadrant;
 use crate::soc::hart::core::executor::constants::ExecutableCommand;
+use crate::soc::hart::core::fetch_unit;
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::core::{
     ArchState, decoder::Decoder, fetch_unit::FetchUnit,
 };
 use crate::soc::hart::extensions::compressed::constants::{
     Bits11_10_quadrant_01, COMPRESSED_BITS_11_10_MASK,
-    COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_CIW_IMM_MASK,
-    COMPRESSED_CIW_IMM_OFFSET, COMPRESSED_CR_CI_RD_RS1_MASK,
-    COMPRESSED_CR_CI_RD_RS1_OFFSET, COMPRESSED_CR_CSS_RS2_MASK,
-    COMPRESSED_CR_CSS_RS2_OFFSET, COMPRESSED_FUNCT3_MASK,
-    COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
+    COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_CIW_CL_RD_SCALED_MASK,
+    COMPRESSED_CIW_IMM_MASK, COMPRESSED_CIW_IMM_OFFSET,
+    COMPRESSED_CR_CI_RD_RS1_MASK, COMPRESSED_CR_CI_RD_RS1_OFFSET,
+    COMPRESSED_CR_CSS_RS2_MASK, COMPRESSED_CR_CSS_RS2_OFFSET,
+    COMPRESSED_FUNCT3_MASK, COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
     InstructionTypeCompressed, OP_Funct3,
 };
 
@@ -22,6 +23,8 @@ pub struct DecoderCompressedISAContext {
     cr_funct4_lsb_compressed: bool,
     cr_ci_destination_or_source_register_1_offset: usize,
     cr_css_source_register_2_offset: usize,
+    ciw_nzuimm: InstructionTypeCompressed,
+    ciw_cl_rd_scaled: InstructionTypeCompressed,
 }
 
 impl Default for DecoderCompressedISAContext {
@@ -32,6 +35,8 @@ impl Default for DecoderCompressedISAContext {
             cr_ci_destination_or_source_register_1_offset:
                 GPRegisterName::x0_zero as usize,
             cr_css_source_register_2_offset: GPRegisterName::x0_zero as usize,
+            ciw_nzuimm: 0,
+            ciw_cl_rd_scaled: 0,
         }
     }
 }
@@ -104,7 +109,7 @@ impl Decoder {
                     self.decode_cr(fetch_unit);
                 }
                 OP_Funct3::F101 | OP_Funct3::F110 | OP_Funct3::F111 => {
-                    self.decode_css();
+                    self.decode_css(fetch_unit);
                 }
             },
 
@@ -225,10 +230,13 @@ impl Decoder {
         todo!("TODO: unimplemented");
     }
 
-    fn decode_css(&mut self) {
+    fn decode_css(&mut self, fetch_unit: &FetchUnit) {
         trace!("Decoding CSS-format instruction..");
 
-        //
+        self.compressedISA.cr_css_source_register_2_offset = self
+            .extract_cr_css_source_register_2_offset(
+                fetch_unit.current_instruction_compressed,
+            );
 
         todo!("TODO: unimplemented");
     }
@@ -237,9 +245,13 @@ impl Decoder {
         trace!("Decoding CIW-format instruction..");
 
         // C.ADDI4SPN (RESERVED when uimm == 0)
-        let uimm =
+        self.compressedISA.ciw_nzuimm =
             self.extract_ciw_uimm(fetch_unit.current_instruction_compressed);
-        if uimm != 0 {
+        self.compressedISA.ciw_cl_rd_scaled = self.extract_ciw_cl_rd_scaled(
+            fetch_unit.current_instruction_compressed,
+        );
+
+        if self.compressedISA.ciw_nzuimm != 0 {
             // C.ADDI4SPN
             self.command_to_execute = ExecutableCommand::C_ADDI4SPN;
         } else {
@@ -251,6 +263,8 @@ impl Decoder {
 
     fn decode_cl(&mut self) {
         trace!("Decoding CL-format instruction..");
+
+        //
 
         match self.compressedISA.funct3 {
             OP_Funct3::F001 => {
@@ -288,6 +302,8 @@ impl Decoder {
 
     fn decode_cs(&mut self) {
         trace!("Decoding CS-format instruction..");
+
+        //
 
         match self.compressedISA.funct3 {
             OP_Funct3::F101 => {
@@ -384,7 +400,21 @@ impl Decoder {
         &self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionTypeCompressed {
-        (instruction & COMPRESSED_CIW_IMM_MASK) >> COMPRESSED_CIW_IMM_OFFSET
+        let mut nzuimm = (instruction & COMPRESSED_CIW_IMM_MASK)
+            >> COMPRESSED_CIW_IMM_OFFSET;
+        nzuimm = ((nzuimm >> 1) & 0b00000001)  // bit 2
+               | ((nzuimm << 1) & 0b00000010)  // bit 3
+               | ((nzuimm >> 4) & 0b00001100)  // bits 5-4
+               | ((nzuimm << 2) & 0b11110000); // bits 9-6
+
+        nzuimm
+    }
+
+    fn extract_ciw_cl_rd_scaled(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionTypeCompressed {
+        instruction & COMPRESSED_CIW_CL_RD_SCALED_MASK
     }
 
     fn extract_bits_11_10_quadrant_01_funct3_100(

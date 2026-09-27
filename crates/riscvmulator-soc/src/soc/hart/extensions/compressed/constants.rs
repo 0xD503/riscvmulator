@@ -36,6 +36,10 @@ pub const COMPRESSED_CR_CSS_RS2_MASK: InstructionTypeCompressed =
     ((RISCV_NUM_OF_REGISTERS - 1) as InstructionTypeCompressed)
         << COMPRESSED_CR_CSS_RS2_OFFSET;
 
+pub const COMPRESSED_CIW_CL_RD_SCALED_OFFSET: usize = 2;
+pub const COMPRESSED_CIW_CL_RD_SCALED_MASK: InstructionTypeCompressed =
+    0b111 << COMPRESSED_CIW_CL_RD_SCALED_OFFSET;
+
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Clone)]
