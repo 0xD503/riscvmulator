@@ -1,10 +1,10 @@
 pub mod constants;
 
 use self::constants::{
-    BRANCH_Funct3, FenceMode, Funct7, I_Funct12, JALR_Funct3, MISC_MEM_Funct3,
-    OP_IMM_Funct3, OP_IMM_Funct7, OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode,
-    OpcodeToInstructionFormat, STORE_Funct3, SYSTEM_Funct3,
-    SYSTEM_Imm_transfer_control_return_from,
+    BRANCH_Funct3, FenceMode, I_Funct12, JALR_Funct3, MISC_MEM_Funct3,
+    OP_Funct7, OP_IMM_Funct3, OP_IMM_Funct7, OP_IMM_ShiftType,
+    OPCODE_LOAD_Funct3, Opcode, OpcodeToInstructionFormat, STORE_Funct3,
+    SYSTEM_Funct3, SYSTEM_Imm_transfer_control_return_from,
 };
 use crate::soc::hart::core::ArchState;
 use crate::soc::hart::extensions;
@@ -37,7 +37,7 @@ pub struct Decoder {
     pub(crate) funct3: InstructionType,
     pub(crate) i_funct7: OP_IMM_Funct7,
     pub(crate) i_funct12: I_Funct12,
-    pub(crate) r_funct7: Funct7,
+    pub(crate) r_funct7: OP_Funct7,
 
     pub(crate) shamt: InstructionType,
     pub(crate) shift_type: OP_IMM_ShiftType,
@@ -120,7 +120,7 @@ impl Decoder {
 
         match self.opcode {
             Opcode::OP => match self.r_funct7 {
-                Funct7::F0 => {
+                OP_Funct7::F0 => {
                     match extensions::integer::constants::OP_Funct3::from(
                         self.funct3,
                     ) {
@@ -152,7 +152,7 @@ impl Decoder {
                         }
                     }
                 }
-                Funct7::F1 => {
+                OP_Funct7::F1 => {
                     match extensions::integer::constants::OP_Funct3::from(
                         self.funct3,
                     ) {
@@ -170,7 +170,7 @@ impl Decoder {
                         }
                     }
                 }
-                Funct7::F_MULDIV => {
+                OP_Funct7::F_MULDIV => {
                     if misa::is_m_enabled(&arch_state.control_status_registers)
                     {
                         self.decode_m();
@@ -181,7 +181,7 @@ impl Decoder {
                 }
             },
             Opcode::OP_32 => match self.r_funct7 {
-                Funct7::F0 => match OP_32_Funct3::from(self.funct3) {
+                OP_Funct7::F0 => match OP_32_Funct3::from(self.funct3) {
                     OP_32_Funct3::ARITHW => {
                         self.command_to_execute = ExecutableCommand::ADDW;
                     }
@@ -195,7 +195,7 @@ impl Decoder {
                         self.command_to_execute = ExecutableCommand::SRLW;
                     }
                 },
-                Funct7::F1 => match OP_32_Funct3::from(self.funct3) {
+                OP_Funct7::F1 => match OP_32_Funct3::from(self.funct3) {
                     OP_32_Funct3::ARITHW => {
                         self.command_to_execute = ExecutableCommand::SUBW;
                     }
@@ -215,7 +215,7 @@ impl Decoder {
                         unreachable!("unreachable!");
                     }
                 },
-                Funct7::F_MULDIV => {
+                OP_Funct7::F_MULDIV => {
                     if misa::is_m_enabled(&arch_state.control_status_registers)
                     {
                         self.decode_m_32();
@@ -781,8 +781,9 @@ impl Decoder {
             InstructionSize::I16 => {
                 // compressed ISA
                 if misa::is_c_enabled(&arch_state.control_status_registers) {
-                    self.decode_c(fetch_unit);
-                    // self.decode(arch_state, instruction);
+                    let decompressed_instruction =
+                        self.expand_compressed(fetch_unit);
+                    self.decode_32(arch_state, decompressed_instruction);
                 } else {
                     error!("Illegal instruction trap");
                     todo!("Illegal instruction trap");
@@ -900,7 +901,7 @@ impl Decoder {
         From::from((instruction >> BIT_OFFSET_SHTYPE) & MASK_SHTYPE)
     }
 
-    fn extract_r_funct7(&self, instruction: InstructionType) -> Funct7 {
+    fn extract_r_funct7(&self, instruction: InstructionType) -> OP_Funct7 {
         From::from((instruction >> BIT_OFFSET_R_FUNCT7) & MASK_R_FUNCT7)
     }
 

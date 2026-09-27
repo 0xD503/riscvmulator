@@ -36,6 +36,34 @@ pub const COMPRESSED_CR_CSS_RS2_MASK: InstructionTypeCompressed =
     ((RISCV_NUM_OF_REGISTERS - 1) as InstructionTypeCompressed)
         << COMPRESSED_CR_CSS_RS2_OFFSET;
 
+pub const COMPRESSED_CI_NZIMM_5_OFFSET: usize = 12;
+pub const COMPRESSED_CI_NZIMM_5_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CI_NZIMM_5_OFFSET;
+pub const COMPRESSED_CI_NZIMM_4_0_OFFSET: usize = 2;
+pub const COMPRESSED_CI_NZIMM_4_0_MASK: InstructionTypeCompressed =
+    0b11111 << COMPRESSED_CI_NZIMM_4_0_OFFSET;
+pub const COMPRESSED_CI_IMM_5_OFFSET: usize = 12;
+pub const COMPRESSED_CI_IMM_5_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CI_IMM_5_OFFSET;
+pub const COMPRESSED_CI_IMM_4_0_OFFSET: usize = 2;
+pub const COMPRESSED_CI_IMM_4_0_MASK: InstructionTypeCompressed =
+    0b11111 << COMPRESSED_CI_IMM_4_0_OFFSET;
+pub const COMPRESSED_CI_NZIMM_9_OFFSET: usize = 12;
+pub const COMPRESSED_CI_NZIMM_9_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CI_NZIMM_9_OFFSET;
+pub const COMPRESSED_CI_NZIMM_4_OFFSET: usize = 6;
+pub const COMPRESSED_CI_NZIMM_4_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CI_NZIMM_4_OFFSET;
+pub const COMPRESSED_CI_NZIMM_6_OFFSET: usize = 5;
+pub const COMPRESSED_CI_NZIMM_6_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CI_NZIMM_6_OFFSET;
+pub const COMPRESSED_CI_NZIMM_8_7_OFFSET: usize = 3;
+pub const COMPRESSED_CI_NZIMM_8_7_MASK: InstructionTypeCompressed =
+    0b11 << COMPRESSED_CI_NZIMM_8_7_OFFSET;
+pub const COMPRESSED_CI_NZIMM_5_9_4_OFFSET: usize = 2;
+pub const COMPRESSED_CI_NZIMM_5_9_4_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CI_NZIMM_5_9_4_OFFSET;
+
 pub const COMPRESSED_CIW_CL_RD_SCALED_OFFSET: usize = 2;
 pub const COMPRESSED_CIW_CL_RD_SCALED_MASK: InstructionTypeCompressed =
     0b111 << COMPRESSED_CIW_CL_RD_SCALED_OFFSET;

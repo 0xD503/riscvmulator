@@ -98,6 +98,7 @@ pub const MASK_SHAMT_RV64W: InstructionType = XLen32::BITS - 1;
 
 pub const BIT_OFFSET_IMM_11_0: usize = 20;
 pub const BIT_OFFSET_IMM_11_0_FINAL: usize = 0;
+pub const BIT_OFFSET_FUNCT12: usize = 20;
 pub const BITS_NUM_IMM_11_0: usize = 12;
 // const MASK_IMM_11_0: InstructionType =
 //     ((1 << BITS_NUM_IMM_11_0) - 1) << BIT_OFFSET_IMM_11_0_FINAL;

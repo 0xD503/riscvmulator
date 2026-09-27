@@ -246,19 +246,19 @@ impl From<InstructionType> for OP_IMM_ShiftType {
 
 #[allow(non_camel_case_types)]
 #[derive(Default, Clone)]
-pub enum Funct7 {
+pub enum OP_Funct7 {
     #[default]
     F0 = 0b0000000,
     F1 = 0b0100000,
     F_MULDIV = 0b0000001,
 }
 
-impl From<InstructionType> for Funct7 {
+impl From<InstructionType> for OP_Funct7 {
     fn from(value: InstructionType) -> Self {
         match value {
-            0b0000000 => Funct7::F0,
-            0b0100000 => Funct7::F1,
-            0b0000001 => Funct7::F_MULDIV,
+            0b0000000 => OP_Funct7::F0,
+            0b0100000 => OP_Funct7::F1,
+            0b0000001 => OP_Funct7::F_MULDIV,
 
             _ => {
                 error!("Unknown funct7: {value:#09b}");
