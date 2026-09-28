@@ -22,9 +22,9 @@ pub const COMPRESSED_BITS_11_10_OFFSET: usize = 10;
 pub const COMPRESSED_BITS_11_10_MASK: InstructionTypeCompressed =
     0b11 << COMPRESSED_BITS_11_10_OFFSET;
 
-pub const COMPRESSED_CIW_IMM_OFFSET: usize = 5;
-pub const COMPRESSED_CIW_IMM_MASK: InstructionTypeCompressed =
-    0b11111111 << COMPRESSED_CIW_IMM_OFFSET;
+pub const COMPRESSED_CIW_NZUIMM_OFFSET: usize = 5;
+pub const COMPRESSED_CIW_NZUIMM_MASK: InstructionTypeCompressed =
+    0b11111111 << COMPRESSED_CIW_NZUIMM_OFFSET;
 
 pub const COMPRESSED_CR_CI_RD_RS1_OFFSET: usize = 7;
 pub const COMPRESSED_CR_CI_RD_RS1_MASK: InstructionTypeCompressed =
@@ -63,6 +63,30 @@ pub const COMPRESSED_CI_NZIMM_8_7_MASK: InstructionTypeCompressed =
 pub const COMPRESSED_CI_NZIMM_5_9_4_OFFSET: usize = 2;
 pub const COMPRESSED_CI_NZIMM_5_9_4_MASK: InstructionTypeCompressed =
     0b1 << COMPRESSED_CI_NZIMM_5_9_4_OFFSET;
+
+pub const COMPRESSED_CI_NZIMM_17_OFFSET: usize = 12;
+pub const COMPRESSED_CI_NZIMM_17_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CI_NZIMM_17_OFFSET;
+pub const COMPRESSED_CI_NZIMM_16_12_OFFSET: usize = 2;
+pub const COMPRESSED_CI_NZIMM_16_12_MASK: InstructionTypeCompressed =
+    0b11111 << COMPRESSED_CI_NZIMM_16_12_OFFSET;
+
+pub const COMPRESSED_CI_SHAMT_4_0_OFFSET: usize = 2;
+pub const COMPRESSED_CI_SHAMT_4_0_MASK: InstructionTypeCompressed =
+    0b11111 << COMPRESSED_CI_SHAMT_4_0_OFFSET;
+pub const COMPRESSED_CI_SHAMT_5_OFFSET: usize = 12;
+pub const COMPRESSED_CI_SHAMT_5_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CI_SHAMT_5_OFFSET;
+
+pub const COMPRESSED_CI_OFFSET_5_OFFSET: usize = 12;
+pub const COMPRESSED_CI_OFFSET_5_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CI_OFFSET_5_OFFSET;
+pub const COMPRESSED_CI_OFFSET_4_2_OFFSET: usize = 4;
+pub const COMPRESSED_CI_OFFSET_4_2_MASK: InstructionTypeCompressed =
+    0b111 << COMPRESSED_CI_OFFSET_4_2_OFFSET;
+pub const COMPRESSED_CI_OFFSET_7_6_OFFSET: usize = 2;
+pub const COMPRESSED_CI_OFFSET_7_6_MASK: InstructionTypeCompressed =
+    0b11 << COMPRESSED_CI_OFFSET_7_6_OFFSET;
 
 pub const COMPRESSED_CIW_CL_RD_SCALED_OFFSET: usize = 2;
 pub const COMPRESSED_CIW_CL_RD_SCALED_MASK: InstructionTypeCompressed =

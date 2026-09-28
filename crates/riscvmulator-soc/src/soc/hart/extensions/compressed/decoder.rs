@@ -2,17 +2,16 @@ use log::{error, trace};
 
 use crate::constants::arch::{
     BIT_OFFSET_DESTINATION_REGISTER, BIT_OFFSET_FUNCT3, BIT_OFFSET_FUNCT12,
-    BIT_OFFSET_IMM_11_0, BIT_OFFSET_R_FUNCT7, BIT_OFFSET_SOURCE_REGISTER_1,
-    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, RISCV_NUM_OF_REGISTERS,
-    XLen,
+    BIT_OFFSET_IMM_11_0, BIT_OFFSET_IMM_31_12, BIT_OFFSET_R_FUNCT7,
+    BIT_OFFSET_SHAMT, BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
+    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, MASK_SHAMT, SignedImmediate,
+    UnsignedImmediate,
 };
 use crate::soc::hart::core::decoder::constants::{
-    OP_Funct7, OP_IMM_Funct3, Opcode, OpcodeQuadrant, SYSTEM_Funct3,
-    SYSTEM_Imm_transfer_control_return_from,
+    OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode,
+    OpcodeQuadrant, SYSTEM_Funct3, SYSTEM_Imm_transfer_control_return_from,
 };
-use crate::soc::hart::core::gp_registers::RegisterFile;
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
-use crate::soc::hart::core::registers::RegisterFileInterface;
 use crate::soc::hart::core::{decoder::Decoder, fetch_unit::FetchUnit};
 use crate::soc::hart::extensions::compressed;
 use crate::soc::hart::extensions::compressed::constants::{
@@ -27,9 +26,16 @@ use crate::soc::hart::extensions::compressed::constants::{
     COMPRESSED_CI_NZIMM_5_OFFSET, COMPRESSED_CI_NZIMM_6_MASK,
     COMPRESSED_CI_NZIMM_6_OFFSET, COMPRESSED_CI_NZIMM_8_7_MASK,
     COMPRESSED_CI_NZIMM_8_7_OFFSET, COMPRESSED_CI_NZIMM_9_MASK,
-    COMPRESSED_CI_NZIMM_9_OFFSET, COMPRESSED_CIW_CL_RD_SCALED_MASK,
-    COMPRESSED_CIW_CL_RD_SCALED_OFFSET, COMPRESSED_CIW_IMM_MASK,
-    COMPRESSED_CIW_IMM_OFFSET, COMPRESSED_CJ_JTA_IMM_MASK,
+    COMPRESSED_CI_NZIMM_9_OFFSET, COMPRESSED_CI_NZIMM_16_12_MASK,
+    COMPRESSED_CI_NZIMM_16_12_OFFSET, COMPRESSED_CI_NZIMM_17_MASK,
+    COMPRESSED_CI_NZIMM_17_OFFSET, COMPRESSED_CI_OFFSET_4_2_MASK,
+    COMPRESSED_CI_OFFSET_4_2_OFFSET, COMPRESSED_CI_OFFSET_5_MASK,
+    COMPRESSED_CI_OFFSET_5_OFFSET, COMPRESSED_CI_OFFSET_7_6_MASK,
+    COMPRESSED_CI_OFFSET_7_6_OFFSET, COMPRESSED_CI_SHAMT_4_0_MASK,
+    COMPRESSED_CI_SHAMT_4_0_OFFSET, COMPRESSED_CI_SHAMT_5_MASK,
+    COMPRESSED_CI_SHAMT_5_OFFSET, COMPRESSED_CIW_CL_RD_SCALED_MASK,
+    COMPRESSED_CIW_CL_RD_SCALED_OFFSET, COMPRESSED_CIW_NZUIMM_MASK,
+    COMPRESSED_CIW_NZUIMM_OFFSET, COMPRESSED_CJ_JTA_IMM_MASK,
     COMPRESSED_CJ_JTA_IMM_OFFSET, COMPRESSED_CL_CS_RS1_SCALED_MASK,
     COMPRESSED_CL_CS_RS1_SCALED_OFFSET, COMPRESSED_CR_CI_RD_RS1_MASK,
     COMPRESSED_CR_CI_RD_RS1_OFFSET, COMPRESSED_CR_CSS_RS2_MASK,
@@ -39,6 +45,7 @@ use crate::soc::hart::extensions::compressed::constants::{
     InstructionTypeCompressed,
 };
 use crate::soc::hart::extensions::integer;
+use crate::soc::hart::extensions::integer::constants::OP_IMM_32_Funct3;
 
 #[derive(Clone)]
 pub struct DecoderCompressedISAContext {
@@ -46,8 +53,9 @@ pub struct DecoderCompressedISAContext {
     cr_funct4_lsb_compressed: bool,
     cr_ci_destination_or_source_register_1_offset: usize,
     cr_css_source_register_2_offset: usize,
-    ci_imm: InstructionTypeCompressed,
-    ciw_nzuimm: InstructionTypeCompressed,
+    ci_imm: SignedImmediate,
+    ci_shamt: InstructionTypeCompressed,
+    ciw_nzuimm: UnsignedImmediate,
     ciw_cl_rd_scaled: InstructionTypeCompressed,
     cl_cs_rs1_scaled: InstructionTypeCompressed,
     cs_ca_rs2_scaled: InstructionTypeCompressed,
@@ -65,6 +73,7 @@ impl Default for DecoderCompressedISAContext {
                 GPRegisterName::x0_zero as usize,
             cr_css_source_register_2_offset: GPRegisterName::x0_zero as usize,
             ci_imm: 0,
+            ci_shamt: 0,
             ciw_nzuimm: 0,
             ciw_cl_rd_scaled: 0,
             cl_cs_rs1_scaled: 0,
@@ -87,26 +96,24 @@ impl Decoder {
         );
 
         match fetch_unit.current_quadrant {
-            OpcodeQuadrant::Quadrant00 => match self.compressedISA.funct3 {
-                compressed::constants::OP_Funct3::F000 => {
-                    self.expand_ciw(fetch_unit.current_instruction_compressed)
-                }
-                compressed::constants::OP_Funct3::F001
-                | compressed::constants::OP_Funct3::F010
-                | compressed::constants::OP_Funct3::F011 => {
-                    self.expand_cl(fetch_unit.current_instruction_compressed)
-                }
-                compressed::constants::OP_Funct3::F101
-                | compressed::constants::OP_Funct3::F110
-                | compressed::constants::OP_Funct3::F111 => {
-                    self.expand_cs(fetch_unit.current_instruction_compressed)
-                }
+            OpcodeQuadrant::Quadrant00 => {
+                match self.compressedISA.funct3 {
+                    compressed::constants::OP_Funct3::F000 => self
+                        .expand_ciw(fetch_unit.current_instruction_compressed),
+                    compressed::constants::OP_Funct3::F001
+                    | compressed::constants::OP_Funct3::F010
+                    | compressed::constants::OP_Funct3::F011 => self
+                        .expand_cl(fetch_unit.current_instruction_compressed),
+                    compressed::constants::OP_Funct3::F101
+                    | compressed::constants::OP_Funct3::F110
+                    | compressed::constants::OP_Funct3::F111 => self
+                        .expand_cs(fetch_unit.current_instruction_compressed),
 
-                compressed::constants::OP_Funct3::F100 => {
-                    error!("illegal instruction, reserved by specification");
-                    todo!("illegal instruction, reserved by specification");
+                    compressed::constants::OP_Funct3::F100 => {
+                        todo!("illegal instruction, reserved by specification");
+                    }
                 }
-            },
+            }
             OpcodeQuadrant::Quadrant01 => {
                 match self.compressedISA.funct3 {
                     compressed::constants::OP_Funct3::F000
@@ -212,7 +219,7 @@ impl Decoder {
                     .cr_ci_destination_or_source_register_1_offset
                     == 0
                 {
-                    trace!("hint was met");
+                    trace!("HINT was met");
                 }
                 // C.ADD
                 self.expand_to_add()
@@ -228,9 +235,6 @@ impl Decoder {
                     // C.JR
                     self.expand_to_jr()
                 } else {
-                    error!(
-                        "illegal instruction trap, reserved by specification"
-                    );
                     todo!(
                         "illegal instruction trap, reserved by specification"
                     );
@@ -241,7 +245,7 @@ impl Decoder {
                     .compressedISA
                     .cr_ci_destination_or_source_register_1_offset;
                 if self.destination_register_offset == 0 {
-                    trace!("hint was met");
+                    trace!("HINT was met");
                 }
                 // C.MV
                 self.expand_to_mv()
@@ -268,7 +272,9 @@ impl Decoder {
                         self.expand_to_addi()
                     }
                     OpcodeQuadrant::Quadrant10 => {
-                        //
+                        self.compressedISA.ci_shamt = self.extract_ci_shamt(
+                            fetch_unit.current_instruction_compressed,
+                        );
                         self.expand_to_slli()
                     }
 
@@ -297,11 +303,16 @@ impl Decoder {
             compressed::constants::OP_Funct3::F010 => {
                 match fetch_unit.current_quadrant {
                     OpcodeQuadrant::Quadrant01 => {
-                        //
+                        self.compressedISA.ci_imm = self.extract_ci_imm_5_0(
+                            fetch_unit.current_instruction_compressed,
+                        );
                         self.expand_to_li()
                     }
                     OpcodeQuadrant::Quadrant10 => {
-                        //
+                        self.compressedISA.ci_imm = self
+                            .extract_ci_load_word_sp_offset(
+                                fetch_unit.current_instruction_compressed,
+                            );
                         self.expand_to_lwsp()
                     }
 
@@ -314,20 +325,50 @@ impl Decoder {
             compressed::constants::OP_Funct3::F011 => {
                 match fetch_unit.current_quadrant {
                     OpcodeQuadrant::Quadrant01 => {
-                        todo!("check unimplemented");
-                        // if self.destination_register_offset
-                        self.expand_to_lui()
-                        // else {
-                        // self.compressedISA.ci_imm = self.extract_ci_nzimm_9_4(fetch_unit.current_instruction_compressed);
-                        // self.expand_to_addi16sp(instruction)
-                        // }
+                        if self
+                            .compressedISA
+                            .cr_ci_destination_or_source_register_1_offset
+                            != 2
+                        {
+                            self.compressedISA.ci_imm = self
+                                .extract_ci_nzimm_17_12(
+                                    fetch_unit.current_instruction_compressed,
+                                );
+                            if self.compressedISA.ci_imm != 0 {
+                                if self.compressedISA.cr_ci_destination_or_source_register_1_offset == 0 {
+                                    trace!("HINT");
+                                }
+                                self.expand_to_lui()
+                            } else {
+                                // the code points with imm = 0 are reserved
+                                todo!(
+                                    "illegal instruction trap, reserved by specification"
+                                );
+                            }
+                        } else {
+                            self.compressedISA.ci_imm = self
+                                .extract_ci_nzimm_9_4(
+                                    fetch_unit.current_instruction_compressed,
+                                );
+                            if self.compressedISA.ci_imm != 0 {
+                                if self.compressedISA.cr_ci_destination_or_source_register_1_offset == 0 {
+                                    trace!("HINT");
+                                }
+                                self.expand_to_addi16sp()
+                            } else {
+                                // the code point with nzimm = 0 is reserved
+                                todo!(
+                                    "illegal instruction trap, reserved by specification"
+                                );
+                            }
+                        }
                     }
                     OpcodeQuadrant::Quadrant10 => {
                         todo!("check unimplemented");
-                        // if RV32FC
-                        self.expand_to_flwsp()
-                        // else if RV64C
-                        // self.expand_to_ldsp(instruction)
+                        // if if RV64C
+                        self.expand_to_ldsp()
+                        // else RV32FC
+                        // self.expand_to_flwsp()
                     }
 
                     _ => {
@@ -369,7 +410,7 @@ impl Decoder {
         trace!("Decoding CIW-format instruction..");
 
         // C.ADDI4SPN (RESERVED when uimm == 0)
-        self.compressedISA.ciw_nzuimm = self.extract_ciw_uimm(instruction);
+        self.compressedISA.ciw_nzuimm = self.extract_ciw_nzuimm(instruction);
         self.compressedISA.ciw_cl_rd_scaled =
             self.extract_ciw_cl_rd_scaled(instruction);
 
@@ -377,7 +418,6 @@ impl Decoder {
             self.expand_to_addi4spn()
         } else {
             // RESERVED, uimm == 0
-            error!("illegal instruction trap, reserved by specification");
             todo!("illegal instruction trap, reserved by specification");
         }
     }
@@ -403,10 +443,10 @@ impl Decoder {
             compressed::constants::OP_Funct3::F010 => self.expand_to_lw(),
             compressed::constants::OP_Funct3::F011 => {
                 todo!("condition unimplemented yet");
-                // if RV32IFC {
-                self.expand_to_flw()
-                // } else { // RV64IC only
-                // self.expand_to_ld()
+                // if RV64IC only
+                self.expand_to_ld()
+                // } else if RV32IFC {
+                // self.expand_to_flw()
                 // }
             }
 
@@ -543,31 +583,33 @@ impl Decoder {
     fn extract_ci_nzimm_5_0(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> InstructionTypeCompressed {
+    ) -> SignedImmediate {
         let mut imm = (instruction & COMPRESSED_CI_NZIMM_5_MASK)
             >> (COMPRESSED_CI_NZIMM_5_OFFSET - 5);
         imm |= (instruction & COMPRESSED_CI_NZIMM_4_0_MASK)
             >> (COMPRESSED_CI_NZIMM_4_0_OFFSET - 0);
+        imm >>= 0;
 
-        imm
+        imm.into()
     }
 
     fn extract_ci_imm_5_0(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> InstructionTypeCompressed {
+    ) -> SignedImmediate {
         let mut imm = (instruction & COMPRESSED_CI_IMM_5_MASK)
             >> (COMPRESSED_CI_IMM_5_OFFSET - 5);
         imm |= (instruction & COMPRESSED_CI_IMM_4_0_MASK)
             >> (COMPRESSED_CI_IMM_4_0_OFFSET - 0);
+        imm >>= 0;
 
-        imm
+        imm.into()
     }
 
     fn extract_ci_nzimm_9_4(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> InstructionTypeCompressed {
+    ) -> SignedImmediate {
         let mut imm = (instruction & COMPRESSED_CI_NZIMM_9_MASK)
             >> (COMPRESSED_CI_NZIMM_9_OFFSET - 9);
         imm |= (instruction & COMPRESSED_CI_NZIMM_4_MASK)
@@ -577,23 +619,65 @@ impl Decoder {
         imm |= (instruction & COMPRESSED_CI_NZIMM_8_7_MASK)
             << (7 - COMPRESSED_CI_NZIMM_8_7_OFFSET);
         imm |= (instruction & COMPRESSED_CI_NZIMM_5_9_4_MASK)
-            << (4 - COMPRESSED_CI_NZIMM_5_9_4_OFFSET);
+            << (5 - COMPRESSED_CI_NZIMM_5_9_4_OFFSET);
+        imm >>= 4;
+
+        imm.into()
+    }
+
+    fn extract_ci_nzimm_17_12(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut imm = ((instruction & COMPRESSED_CI_NZIMM_17_MASK)
+            as SignedImmediate)
+            << (17 - COMPRESSED_CI_NZIMM_17_OFFSET);
+        imm |= ((instruction & COMPRESSED_CI_NZIMM_16_12_MASK)
+            as SignedImmediate)
+            << (12 - COMPRESSED_CI_NZIMM_16_12_OFFSET);
+        imm >>= 12;
 
         imm
     }
 
-    fn extract_ciw_uimm(
+    fn extract_ci_shamt(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionTypeCompressed {
-        let mut nzuimm = (instruction & COMPRESSED_CIW_IMM_MASK)
-            >> COMPRESSED_CIW_IMM_OFFSET;
+        let mut shamt = (instruction & COMPRESSED_CI_SHAMT_5_MASK)
+            >> (COMPRESSED_CI_SHAMT_5_OFFSET - 5);
+        shamt |= (instruction & COMPRESSED_CI_SHAMT_4_0_MASK)
+            >> (COMPRESSED_CI_SHAMT_4_0_OFFSET - 0);
+
+        shamt
+    }
+
+    fn extract_ci_load_word_sp_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut imm = (instruction & COMPRESSED_CI_OFFSET_5_MASK)
+            >> (COMPRESSED_CI_OFFSET_5_OFFSET - 5);
+        imm |= (instruction & COMPRESSED_CI_OFFSET_4_2_MASK)
+            >> (COMPRESSED_CI_OFFSET_4_2_OFFSET - 2);
+        imm |= (instruction & COMPRESSED_CI_OFFSET_7_6_MASK)
+            << (6 - COMPRESSED_CI_OFFSET_7_6_OFFSET);
+
+        imm.into()
+    }
+
+    fn extract_ciw_nzuimm(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> UnsignedImmediate {
+        let mut nzuimm = (instruction & COMPRESSED_CIW_NZUIMM_MASK)
+            >> COMPRESSED_CIW_NZUIMM_OFFSET;
         nzuimm = ((nzuimm >> 1) & 0b00000001)  // bit 2
                | ((nzuimm << 1) & 0b00000010)  // bit 3
                | ((nzuimm >> 4) & 0b00001100)  // bits 5-4
                | ((nzuimm << 2) & 0b11110000); // bits 9-6
 
-        nzuimm
+        nzuimm.into()
     }
 
     fn extract_ciw_cl_rd_scaled(
@@ -803,80 +887,256 @@ impl Decoder {
     }
 
     fn expand_to_slli(&self) -> InstructionType {
-        todo!()
+        // C.SLLI expands into `slli rd, rd, shamt[5:0]`
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            Opcode::OP_IMM as InstructionType;
+        // set rd
+        expanded_instruction |= (self
+            .compressedISA
+            .cr_ci_destination_or_source_register_1_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |=
+            (OP_IMM_Funct3::SLLI as InstructionType) << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (self
+            .compressedISA
+            .cr_ci_destination_or_source_register_1_offset
+            as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set shamt
+        expanded_instruction |=
+            (self.compressedISA.ci_shamt as InstructionType & MASK_SHAMT)
+                << BIT_OFFSET_SHAMT;
+        // set shift type (funct7)
+        expanded_instruction |=
+            (OP_IMM_ShiftType::SXLI as InstructionType) << BIT_OFFSET_SHTYPE;
+
+        expanded_instruction
     }
 
     fn expand_to_addiw(&self) -> InstructionType {
-        todo!()
+        // C.ADDIW expands into `addiw rd, rd, imm`
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            Opcode::OP_IMM_32 as InstructionType;
+        // set rd
+        expanded_instruction |= (self
+            .compressedISA
+            .cr_ci_destination_or_source_register_1_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |=
+            (OP_IMM_32_Funct3::ADDIW as InstructionType) << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (self
+            .compressedISA
+            .cr_ci_destination_or_source_register_1_offset
+            as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set imm_11_0
+        expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
+            << BIT_OFFSET_IMM_11_0;
+
+        expanded_instruction
     }
 
     fn expand_to_fldsp(&self) -> InstructionType {
+        // C.FLDSP expands into `fld rd, offset(x2)`
+        // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_li(&self) -> InstructionType {
-        todo!()
+        // C.LI expands into `addi rd, x0, imm`
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            Opcode::OP_IMM as InstructionType;
+        // set rd
+        expanded_instruction |= (self
+            .compressedISA
+            .cr_ci_destination_or_source_register_1_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |=
+            (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (GPRegisterName::x0_zero as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set imm_11_0
+        expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
+            << BIT_OFFSET_IMM_11_0;
+
+        expanded_instruction
     }
 
     fn expand_to_lwsp(&self) -> InstructionType {
-        todo!()
+        // C.LWSP expands into `lw rd, offset(x2)`
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            Opcode::LOAD as InstructionType;
+        // set rd
+        expanded_instruction |= (self
+            .compressedISA
+            .cr_ci_destination_or_source_register_1_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |=
+            (OPCODE_LOAD_Funct3::LW as InstructionType) << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (GPRegisterName::x2_sp as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set imm_11_0
+        expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
+            << BIT_OFFSET_IMM_11_0;
+
+        expanded_instruction
     }
 
     fn expand_to_lui(&self) -> InstructionType {
-        todo!()
+        // C.LUI expands into `lui rd, imm`
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            Opcode::LUI as InstructionType;
+        // set rd
+        expanded_instruction |= (self
+            .compressedISA
+            .cr_ci_destination_or_source_register_1_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set imm_31_12
+        expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
+            << BIT_OFFSET_IMM_31_12;
+
+        expanded_instruction
     }
 
     fn expand_to_addi16sp(&self) -> InstructionType {
+        // // C.ADDI16SP expands into `addi x2, x2, nzimm[9:4]`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_flwsp(&self) -> InstructionType {
+        // // C.FLWSP expands into `flw rd, offset(x2)`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_ldsp(&self) -> InstructionType {
+        // // C.LDSP expands into `ld rd, offset(x2)`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_addi4spn(&self) -> InstructionType {
+        // // C.ADDI4SPN expands into `addi rd', x2, nzuimm[9:2]`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_fld(&self) -> InstructionType {
+        // // C.FLD expands into `fld rd', offset(rs1')`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_lw(&self) -> InstructionType {
+        // // C.LW expands into `lw rd', offset(rs1')`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_flw(&self) -> InstructionType {
+        // // C.FLW expands into `flw rd', offset(rs1')`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_ld(&self) -> InstructionType {
+        // // C.LD expands into `ld rd', offset(rs1')`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_fsd(&self) -> InstructionType {
+        // // C.FSD expands into `fsd rs2', offset(rs1')`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_sw(&self) -> InstructionType {
+        // // C.SW expands into `sw rs2', offset(rs1')`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_fsw(&self) -> InstructionType {
+        // // C.FSW expands into `fsw rs2', offset(rs1')`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 
     fn expand_to_sd(&self) -> InstructionType {
+        // // C.SD expands into `sd rs2', offset(rs1')`
+        // // set opcode
+        // let mut expanded_instruction: InstructionType =
+        //     Opcode:: as InstructionType;
+
+        // expanded_instruction
         todo!()
     }
 }
-
-// fn expand_compressed_instruction(
-//     compressed_instruction: InstructionTypeCompressed,
-// ) -> Option<InstructionType> {
-//     None
-// }
