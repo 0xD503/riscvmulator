@@ -87,6 +87,12 @@ pub const COMPRESSED_CI_OFFSET_4_2_MASK: InstructionTypeCompressed =
 pub const COMPRESSED_CI_OFFSET_7_6_OFFSET: usize = 2;
 pub const COMPRESSED_CI_OFFSET_7_6_MASK: InstructionTypeCompressed =
     0b11 << COMPRESSED_CI_OFFSET_7_6_OFFSET;
+pub const COMPRESSED_CI_OFFSET_4_3_OFFSET: usize = 5;
+pub const COMPRESSED_CI_OFFSET_4_3_MASK: InstructionTypeCompressed =
+    0b11 << COMPRESSED_CI_OFFSET_4_3_OFFSET;
+pub const COMPRESSED_CI_OFFSET_8_6_OFFSET: usize = 2;
+pub const COMPRESSED_CI_OFFSET_8_6_MASK: InstructionTypeCompressed =
+    0b111 << COMPRESSED_CI_OFFSET_8_6_OFFSET;
 
 pub const COMPRESSED_CIW_CL_RD_SCALED_OFFSET: usize = 2;
 pub const COMPRESSED_CIW_CL_RD_SCALED_MASK: InstructionTypeCompressed =
