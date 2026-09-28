@@ -35,16 +35,19 @@ use crate::soc::hart::extensions::compressed::constants::{
     COMPRESSED_CI_OFFSET_7_6_OFFSET, COMPRESSED_CI_OFFSET_8_6_MASK,
     COMPRESSED_CI_OFFSET_8_6_OFFSET, COMPRESSED_CI_SHAMT_4_0_MASK,
     COMPRESSED_CI_SHAMT_4_0_OFFSET, COMPRESSED_CI_SHAMT_5_MASK,
-    COMPRESSED_CI_SHAMT_5_OFFSET,
-    COMPRESSED_CIW_CL_DESTINATION_REGISTER_OFFSET_MASK,
-    COMPRESSED_CIW_CL_DESTINATION_REGISTER_OFFSET_OFFSET,
-    COMPRESSED_CIW_NZUIMM_MASK, COMPRESSED_CIW_NZUIMM_OFFSET,
-    COMPRESSED_CJ_JTA_IMM_MASK, COMPRESSED_CJ_JTA_IMM_OFFSET,
-    COMPRESSED_CL_CS_RS1_OFFSET_MASK, COMPRESSED_CL_CS_RS1_OFFSET_OFFSET,
-    COMPRESSED_CR_CI_RD_RS1_MASK, COMPRESSED_CR_CI_RD_RS1_OFFSET,
-    COMPRESSED_CR_CSS_RS2_MASK, COMPRESSED_CR_CSS_RS2_OFFSET,
-    COMPRESSED_CS_CA_RS2_OFFSET_MASK, COMPRESSED_CS_CA_RS2_OFFSET_OFFSET,
-    COMPRESSED_FUNCT3_MASK, COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
+    COMPRESSED_CI_SHAMT_5_OFFSET, COMPRESSED_CIW_CL_RD_OFFSET_MASK,
+    COMPRESSED_CIW_CL_RD_OFFSET_OFFSET, COMPRESSED_CIW_NZUIMM_MASK,
+    COMPRESSED_CIW_NZUIMM_OFFSET, COMPRESSED_CJ_JTA_IMM_MASK,
+    COMPRESSED_CJ_JTA_IMM_OFFSET, COMPRESSED_CL_CS_RS1_OFFSET_MASK,
+    COMPRESSED_CL_CS_RS1_OFFSET_OFFSET, COMPRESSED_CL_OFFSET_2_MASK,
+    COMPRESSED_CL_OFFSET_2_OFFSET, COMPRESSED_CL_OFFSET_5_3_MASK,
+    COMPRESSED_CL_OFFSET_5_3_OFFSET, COMPRESSED_CL_OFFSET_6_MASK,
+    COMPRESSED_CL_OFFSET_6_OFFSET, COMPRESSED_CL_OFFSET_7_MASK,
+    COMPRESSED_CL_OFFSET_7_OFFSET, COMPRESSED_CR_CI_RD_RS1_MASK,
+    COMPRESSED_CR_CI_RD_RS1_OFFSET, COMPRESSED_CR_CSS_RS2_MASK,
+    COMPRESSED_CR_CSS_RS2_OFFSET, COMPRESSED_CS_CA_RS2_OFFSET_MASK,
+    COMPRESSED_CS_CA_RS2_OFFSET_OFFSET, COMPRESSED_FUNCT3_MASK,
+    COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
     InstructionTypeCompressed,
 };
 use crate::soc::hart::extensions::integer;
@@ -60,6 +63,8 @@ pub struct DecoderCompressedISAContext {
     ci_shamt: InstructionTypeCompressed,
     ciw_nzuimm_9_2: UnsignedImmediate,
     ciw_cl_rd_offset: InstructionTypeCompressed,
+    cl_offset_6_2: InstructionTypeCompressed,
+    cl_offset_7_3: InstructionTypeCompressed,
     cl_cs_rs1_offset: InstructionTypeCompressed,
     cs_ca_rs2_offset: InstructionTypeCompressed,
     ca_cb_rd_or_rs1_offset: InstructionTypeCompressed,
@@ -79,6 +84,8 @@ impl Default for DecoderCompressedISAContext {
             ci_shamt: 0,
             ciw_nzuimm_9_2: 0,
             ciw_cl_rd_offset: 0,
+            cl_offset_6_2: 0,
+            cl_offset_7_3: 0,
             cl_cs_rs1_offset: 0,
             cs_ca_rs2_offset: 0,
             ca_cb_rd_or_rs1_offset: 0,
@@ -456,18 +463,24 @@ impl Decoder {
             compressed::constants::OP_Funct3::F001 => {
                 todo!("condition unimplemented yet");
                 // if RV(32|64)DC {
+                self.compressedISA.cl_offset_7_3 =
+                    self.extract_cl_offset_7_3(instruction);
                 self.expand_to_fld()
                 // }
             }
             compressed::constants::OP_Funct3::F010 => {
-                //
+                self.compressedISA.cl_offset_6_2 =
+                    self.extract_cl_offset_6_2(instruction);
                 self.expand_to_lw()
             }
             compressed::constants::OP_Funct3::F011 => {
                 todo!("condition unimplemented yet");
                 // if RV64IC only
+                self.compressedISA.cl_offset_7_3 =
+                    self.extract_cl_offset_7_3(instruction);
                 self.expand_to_ld()
                 // } else if RV32IFC {
+                // self.compressedISA.cl_offset_6_2 = self.extract_cl_offset_6_2(instruction);
                 // self.expand_to_flw()
                 // }
             }
@@ -723,9 +736,37 @@ impl Decoder {
         &self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionTypeCompressed {
-        ((instruction & COMPRESSED_CIW_CL_DESTINATION_REGISTER_OFFSET_MASK)
-            >> COMPRESSED_CIW_CL_DESTINATION_REGISTER_OFFSET_OFFSET)
+        ((instruction & COMPRESSED_CIW_CL_RD_OFFSET_MASK)
+            >> COMPRESSED_CIW_CL_RD_OFFSET_OFFSET)
             + GPRegisterName::x8_s0_fp as InstructionTypeCompressed
+    }
+
+    fn extract_cl_offset_6_2(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionTypeCompressed {
+        let mut offset = (instruction & COMPRESSED_CL_OFFSET_6_MASK)
+            << (6 - COMPRESSED_CL_OFFSET_6_OFFSET);
+        offset |= (instruction & COMPRESSED_CL_OFFSET_2_MASK)
+            >> (COMPRESSED_CL_OFFSET_2_OFFSET - 2);
+        offset |= (instruction & COMPRESSED_CL_OFFSET_5_3_MASK)
+            >> (COMPRESSED_CL_OFFSET_5_3_OFFSET - 3);
+
+        offset
+    }
+
+    fn extract_cl_offset_7_3(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionTypeCompressed {
+        let mut offset = (instruction & COMPRESSED_CL_OFFSET_6_MASK)
+            << (6 - COMPRESSED_CL_OFFSET_6_OFFSET);
+        offset |= (instruction & COMPRESSED_CL_OFFSET_7_MASK)
+            << (7 - COMPRESSED_CL_OFFSET_7_OFFSET);
+        offset |= (instruction & COMPRESSED_CL_OFFSET_5_3_MASK)
+            >> (COMPRESSED_CL_OFFSET_5_3_OFFSET - 3);
+
+        offset
     }
 
     fn extract_cl_cs_rs1_offset(
@@ -1158,13 +1199,26 @@ impl Decoder {
     }
 
     fn expand_to_lw(&self) -> InstructionType {
-        // // C.LW expands into `lw rd', offset(rs1')`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
+        // C.LW expands into `lw rd', offset(rs1')`
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            Opcode::LOAD as InstructionType;
+        // set rd
+        expanded_instruction |= (self.compressedISA.ciw_cl_rd_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |=
+            (OPCODE_LOAD_Funct3::LW as InstructionType) << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (self.compressedISA.cl_cs_rs1_offset
+            as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set imm_11_0
+        expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
+            << BIT_OFFSET_IMM_11_0;
 
-        // expanded_instruction
-        todo!()
+        expanded_instruction
     }
 
     fn expand_to_flw(&self) -> InstructionType {
