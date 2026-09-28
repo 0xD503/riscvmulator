@@ -518,7 +518,10 @@ impl Decoder {
                 // todo!();
                 // }
             }
-            compressed::constants::OP_Funct3::F110 => self.expand_to_sw(),
+            compressed::constants::OP_Funct3::F110 => {
+                //
+                self.expand_to_sw()
+            }
             compressed::constants::OP_Funct3::F111 => {
                 todo!("condition unimplemented yet");
                 // if { // RV64IC only
@@ -1215,7 +1218,32 @@ impl Decoder {
             as InstructionType)
             << BIT_OFFSET_SOURCE_REGISTER_1;
         // set imm_11_0
-        expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
+        expanded_instruction |= (self.compressedISA.cl_offset_6_2
+            as InstructionType)
+            << BIT_OFFSET_IMM_11_0;
+
+        expanded_instruction
+    }
+
+    fn expand_to_ld(&self) -> InstructionType {
+        // C.LD expands into `ld rd', offset(rs1')`
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            Opcode::LOAD as InstructionType;
+        // set rd
+        expanded_instruction |= (self.compressedISA.ciw_cl_rd_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |=
+            (OPCODE_LOAD_Funct3::LD as InstructionType) << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (self.compressedISA.cl_cs_rs1_offset
+            as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set imm_11_0
+        expanded_instruction |= (self.compressedISA.cl_offset_7_3
+            as InstructionType)
             << BIT_OFFSET_IMM_11_0;
 
         expanded_instruction
@@ -1223,16 +1251,6 @@ impl Decoder {
 
     fn expand_to_flw(&self) -> InstructionType {
         // // C.FLW expands into `flw rd', offset(rs1')`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
-
-        // expanded_instruction
-        todo!()
-    }
-
-    fn expand_to_ld(&self) -> InstructionType {
-        // // C.LD expands into `ld rd', offset(rs1')`
         // // set opcode
         // let mut expanded_instruction: InstructionType =
         //     Opcode:: as InstructionType;
