@@ -175,7 +175,6 @@ impl Decoder {
                     {
                         self.decode_m();
                     } else {
-                        error!("Illegal instruction trap");
                         todo!("Illegal instruction trap");
                     }
                 }
@@ -220,7 +219,6 @@ impl Decoder {
                     {
                         self.decode_m_32();
                     } else {
-                        error!("Illegal instruction trap");
                         todo!("Illegal instruction trap");
                     }
                 }
@@ -785,7 +783,6 @@ impl Decoder {
                         self.expand_compressed(fetch_unit);
                     self.decode_32(arch_state, decompressed_instruction);
                 } else {
-                    error!("Illegal instruction trap");
                     todo!("Illegal instruction trap");
                 }
             }

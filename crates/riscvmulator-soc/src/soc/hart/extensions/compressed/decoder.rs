@@ -16,8 +16,8 @@ use crate::soc::hart::core::{decoder::Decoder, fetch_unit::FetchUnit};
 use crate::soc::hart::extensions::compressed;
 use crate::soc::hart::extensions::compressed::constants::{
     Bits11_10_quadrant_01, COMPRESSED_BITS_11_10_MASK,
-    COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_CA_CB_RD_OR_RS1_SCALED_MASK,
-    COMPRESSED_CA_CB_RD_OR_RS1_SCALED_OFFSET, COMPRESSED_CI_IMM_4_0_MASK,
+    COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK,
+    COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET, COMPRESSED_CI_IMM_4_0_MASK,
     COMPRESSED_CI_IMM_4_0_OFFSET, COMPRESSED_CI_IMM_5_MASK,
     COMPRESSED_CI_IMM_5_OFFSET, COMPRESSED_CI_NZIMM_4_0_MASK,
     COMPRESSED_CI_NZIMM_4_0_OFFSET, COMPRESSED_CI_NZIMM_4_MASK,
@@ -35,15 +35,16 @@ use crate::soc::hart::extensions::compressed::constants::{
     COMPRESSED_CI_OFFSET_7_6_OFFSET, COMPRESSED_CI_OFFSET_8_6_MASK,
     COMPRESSED_CI_OFFSET_8_6_OFFSET, COMPRESSED_CI_SHAMT_4_0_MASK,
     COMPRESSED_CI_SHAMT_4_0_OFFSET, COMPRESSED_CI_SHAMT_5_MASK,
-    COMPRESSED_CI_SHAMT_5_OFFSET, COMPRESSED_CIW_CL_RD_SCALED_MASK,
-    COMPRESSED_CIW_CL_RD_SCALED_OFFSET, COMPRESSED_CIW_NZUIMM_MASK,
-    COMPRESSED_CIW_NZUIMM_OFFSET, COMPRESSED_CJ_JTA_IMM_MASK,
-    COMPRESSED_CJ_JTA_IMM_OFFSET, COMPRESSED_CL_CS_RS1_SCALED_MASK,
-    COMPRESSED_CL_CS_RS1_SCALED_OFFSET, COMPRESSED_CR_CI_RD_RS1_MASK,
-    COMPRESSED_CR_CI_RD_RS1_OFFSET, COMPRESSED_CR_CSS_RS2_MASK,
-    COMPRESSED_CR_CSS_RS2_OFFSET, COMPRESSED_CS_CA_RS2_SCALED_MASK,
-    COMPRESSED_CS_CA_RS2_SCALED_OFFSET, COMPRESSED_FUNCT3_MASK,
-    COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
+    COMPRESSED_CI_SHAMT_5_OFFSET,
+    COMPRESSED_CIW_CL_DESTINATION_REGISTER_OFFSET_MASK,
+    COMPRESSED_CIW_CL_DESTINATION_REGISTER_OFFSET_OFFSET,
+    COMPRESSED_CIW_NZUIMM_MASK, COMPRESSED_CIW_NZUIMM_OFFSET,
+    COMPRESSED_CJ_JTA_IMM_MASK, COMPRESSED_CJ_JTA_IMM_OFFSET,
+    COMPRESSED_CL_CS_RS1_OFFSET_MASK, COMPRESSED_CL_CS_RS1_OFFSET_OFFSET,
+    COMPRESSED_CR_CI_RD_RS1_MASK, COMPRESSED_CR_CI_RD_RS1_OFFSET,
+    COMPRESSED_CR_CSS_RS2_MASK, COMPRESSED_CR_CSS_RS2_OFFSET,
+    COMPRESSED_CS_CA_RS2_OFFSET_MASK, COMPRESSED_CS_CA_RS2_OFFSET_OFFSET,
+    COMPRESSED_FUNCT3_MASK, COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
     InstructionTypeCompressed,
 };
 use crate::soc::hart::extensions::integer;
@@ -57,11 +58,11 @@ pub struct DecoderCompressedISAContext {
     cr_css_source_register_2_offset: usize,
     ci_imm: SignedImmediate,
     ci_shamt: InstructionTypeCompressed,
-    ciw_nzuimm: UnsignedImmediate,
-    ciw_cl_rd_scaled: InstructionTypeCompressed,
-    cl_cs_rs1_scaled: InstructionTypeCompressed,
-    cs_ca_rs2_scaled: InstructionTypeCompressed,
-    ca_cb_rd_or_rs1_scaled: InstructionTypeCompressed,
+    ciw_nzuimm_9_2: UnsignedImmediate,
+    ciw_cl_rd_offset: InstructionTypeCompressed,
+    cl_cs_rs1_offset: InstructionTypeCompressed,
+    cs_ca_rs2_offset: InstructionTypeCompressed,
+    ca_cb_rd_or_rs1_offset: InstructionTypeCompressed,
     ca_cb_bits_11_10_quadrant_01_funct3_100: Bits11_10_quadrant_01,
     cj_jta_imm: InstructionTypeCompressed,
 }
@@ -76,11 +77,11 @@ impl Default for DecoderCompressedISAContext {
             cr_css_source_register_2_offset: GPRegisterName::x0_zero as usize,
             ci_imm: 0,
             ci_shamt: 0,
-            ciw_nzuimm: 0,
-            ciw_cl_rd_scaled: 0,
-            cl_cs_rs1_scaled: 0,
-            cs_ca_rs2_scaled: 0,
-            ca_cb_rd_or_rs1_scaled: 0,
+            ciw_nzuimm_9_2: 0,
+            ciw_cl_rd_offset: 0,
+            cl_cs_rs1_offset: 0,
+            cs_ca_rs2_offset: 0,
+            ca_cb_rd_or_rs1_offset: 0,
             ca_cb_bits_11_10_quadrant_01_funct3_100:
                 Bits11_10_quadrant_01::CA_11,
             cj_jta_imm: 0,
@@ -427,11 +428,12 @@ impl Decoder {
         trace!("Decoding CIW-format instruction..");
 
         // C.ADDI4SPN (RESERVED when uimm == 0)
-        self.compressedISA.ciw_nzuimm = self.extract_ciw_nzuimm(instruction);
-        self.compressedISA.ciw_cl_rd_scaled =
-            self.extract_ciw_cl_rd_scaled(instruction);
+        self.compressedISA.ciw_nzuimm_9_2 =
+            self.extract_ciw_nzuimm_9_2(instruction);
+        self.compressedISA.ciw_cl_rd_offset =
+            self.extract_ciw_cl_rd_offset(instruction);
 
-        if self.compressedISA.ciw_nzuimm != 0 {
+        if self.compressedISA.ciw_nzuimm_9_2 != 0 {
             self.expand_to_addi4spn()
         } else {
             // RESERVED, uimm == 0
@@ -445,10 +447,10 @@ impl Decoder {
     ) -> InstructionType {
         trace!("Decoding CL-format instruction..");
 
-        self.compressedISA.ciw_cl_rd_scaled =
-            self.extract_ciw_cl_rd_scaled(instruction);
-        self.compressedISA.cl_cs_rs1_scaled =
-            self.extract_cl_cs_rs1_scaled(instruction);
+        self.compressedISA.ciw_cl_rd_offset =
+            self.extract_ciw_cl_rd_offset(instruction);
+        self.compressedISA.cl_cs_rs1_offset =
+            self.extract_cl_cs_rs1_offset(instruction);
 
         match self.compressedISA.funct3 {
             compressed::constants::OP_Funct3::F001 => {
@@ -457,7 +459,10 @@ impl Decoder {
                 self.expand_to_fld()
                 // }
             }
-            compressed::constants::OP_Funct3::F010 => self.expand_to_lw(),
+            compressed::constants::OP_Funct3::F010 => {
+                //
+                self.expand_to_lw()
+            }
             compressed::constants::OP_Funct3::F011 => {
                 todo!("condition unimplemented yet");
                 // if RV64IC only
@@ -486,10 +491,10 @@ impl Decoder {
     ) -> InstructionType {
         trace!("Decoding CS-format instruction..");
 
-        self.compressedISA.cl_cs_rs1_scaled =
-            self.extract_cl_cs_rs1_scaled(instruction);
-        self.compressedISA.cs_ca_rs2_scaled =
-            self.extract_cs_ca_rs2_scaled(instruction);
+        self.compressedISA.cl_cs_rs1_offset =
+            self.extract_cl_cs_rs1_offset(instruction);
+        self.compressedISA.cs_ca_rs2_offset =
+            self.extract_cs_ca_rs2_offset(instruction);
 
         match self.compressedISA.funct3 {
             compressed::constants::OP_Funct3::F101 => {
@@ -503,10 +508,10 @@ impl Decoder {
             compressed::constants::OP_Funct3::F110 => self.expand_to_sw(),
             compressed::constants::OP_Funct3::F111 => {
                 todo!("condition unimplemented yet");
-                // if RV32IFC {
-                self.expand_to_fsw()
-                // } else { // RV64IC only
-                // self.expand_to_sd()
+                // if { // RV64IC only
+                self.expand_to_sd()
+                // } else if RV32IFC {
+                // self.expand_to_fsw()
                 // }
             }
 
@@ -529,10 +534,10 @@ impl Decoder {
     ) -> InstructionType {
         trace!("Decoding CA-format instruction..");
 
-        self.compressedISA.cs_ca_rs2_scaled =
-            self.extract_cs_ca_rs2_scaled(instruction);
-        self.compressedISA.ca_cb_rd_or_rs1_scaled =
-            self.extract_ca_cb_rd_or_rs1_scaled(instruction);
+        self.compressedISA.cs_ca_rs2_offset =
+            self.extract_cs_ca_rs2_offset(instruction);
+        self.compressedISA.ca_cb_rd_or_rs1_offset =
+            self.extract_ca_cb_rd_or_rs1_offset(instruction);
 
         todo!("TODO: unimplemented");
     }
@@ -543,8 +548,8 @@ impl Decoder {
     ) -> InstructionType {
         trace!("Decoding CB-format instruction..");
 
-        self.compressedISA.ca_cb_rd_or_rs1_scaled =
-            self.extract_ca_cb_rd_or_rs1_scaled(instruction);
+        self.compressedISA.ca_cb_rd_or_rs1_offset =
+            self.extract_ca_cb_rd_or_rs1_offset(instruction);
 
         todo!("TODO: unimplemented");
     }
@@ -699,7 +704,7 @@ impl Decoder {
         imm.into()
     }
 
-    fn extract_ciw_nzuimm(
+    fn extract_ciw_nzuimm_9_2(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> UnsignedImmediate {
@@ -709,40 +714,45 @@ impl Decoder {
                | ((nzuimm << 1) & 0b00000010)  // bit 3
                | ((nzuimm >> 4) & 0b00001100)  // bits 5-4
                | ((nzuimm << 2) & 0b11110000); // bits 9-6
+        nzuimm <<= 2;
 
         nzuimm.into()
     }
 
-    fn extract_ciw_cl_rd_scaled(
+    fn extract_ciw_cl_rd_offset(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionTypeCompressed {
-        (instruction & COMPRESSED_CIW_CL_RD_SCALED_MASK)
-            >> (COMPRESSED_CIW_CL_RD_SCALED_OFFSET - 2)
+        ((instruction & COMPRESSED_CIW_CL_DESTINATION_REGISTER_OFFSET_MASK)
+            >> COMPRESSED_CIW_CL_DESTINATION_REGISTER_OFFSET_OFFSET)
+            + GPRegisterName::x8_s0_fp as InstructionTypeCompressed
     }
 
-    fn extract_cl_cs_rs1_scaled(
+    fn extract_cl_cs_rs1_offset(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionTypeCompressed {
-        (instruction & COMPRESSED_CL_CS_RS1_SCALED_MASK)
-            >> (COMPRESSED_CL_CS_RS1_SCALED_OFFSET - 2)
+        ((instruction & COMPRESSED_CL_CS_RS1_OFFSET_MASK)
+            >> COMPRESSED_CL_CS_RS1_OFFSET_OFFSET)
+            + GPRegisterName::x8_s0_fp as InstructionTypeCompressed
     }
 
-    fn extract_cs_ca_rs2_scaled(
+    fn extract_cs_ca_rs2_offset(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionTypeCompressed {
-        (instruction & COMPRESSED_CS_CA_RS2_SCALED_MASK)
-            >> (COMPRESSED_CS_CA_RS2_SCALED_OFFSET - 2)
+        ((instruction & COMPRESSED_CS_CA_RS2_OFFSET_MASK)
+            >> COMPRESSED_CS_CA_RS2_OFFSET_OFFSET)
+            + GPRegisterName::x8_s0_fp as InstructionTypeCompressed
     }
 
-    fn extract_ca_cb_rd_or_rs1_scaled(
+    fn extract_ca_cb_rd_or_rs1_offset(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionTypeCompressed {
-        (instruction & COMPRESSED_CA_CB_RD_OR_RS1_SCALED_MASK)
-            >> (COMPRESSED_CA_CB_RD_OR_RS1_SCALED_OFFSET - 2)
+        ((instruction & COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK)
+            >> COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET)
+            + GPRegisterName::x8_s0_fp as InstructionTypeCompressed
     }
 
     fn extract_cj_jta_imm(
@@ -1115,13 +1125,26 @@ impl Decoder {
     }
 
     fn expand_to_addi4spn(&self) -> InstructionType {
-        // // C.ADDI4SPN expands into `addi rd', x2, nzuimm[9:2]`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
+        // C.ADDI4SPN expands into `addi rd', x2, nzuimm[9:2]`
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            Opcode::OP_IMM as InstructionType;
+        // set rd
+        expanded_instruction |= (self.compressedISA.ciw_cl_rd_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |=
+            (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (GPRegisterName::x2_sp as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set imm_11_0
+        expanded_instruction |= (self.compressedISA.ciw_nzuimm_9_2
+            as InstructionType)
+            << BIT_OFFSET_IMM_11_0;
 
-        // expanded_instruction
-        todo!()
+        expanded_instruction
     }
 
     fn expand_to_fld(&self) -> InstructionType {
@@ -1184,8 +1207,8 @@ impl Decoder {
         todo!()
     }
 
-    fn expand_to_fsw(&self) -> InstructionType {
-        // // C.FSW expands into `fsw rs2', offset(rs1')`
+    fn expand_to_sd(&self) -> InstructionType {
+        // // C.SD expands into `sd rs2', offset(rs1')`
         // // set opcode
         // let mut expanded_instruction: InstructionType =
         //     Opcode:: as InstructionType;
@@ -1194,8 +1217,8 @@ impl Decoder {
         todo!()
     }
 
-    fn expand_to_sd(&self) -> InstructionType {
-        // // C.SD expands into `sd rs2', offset(rs1')`
+    fn expand_to_fsw(&self) -> InstructionType {
+        // // C.FSW expands into `fsw rs2', offset(rs1')`
         // // set opcode
         // let mut expanded_instruction: InstructionType =
         //     Opcode:: as InstructionType;
