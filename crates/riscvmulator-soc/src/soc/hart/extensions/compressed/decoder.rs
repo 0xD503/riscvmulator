@@ -9,7 +9,8 @@ use crate::constants::arch::{
 };
 use crate::soc::hart::core::decoder::constants::{
     OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType, OPCODE_LOAD_Funct3, Opcode,
-    OpcodeQuadrant, SYSTEM_Funct3, SYSTEM_Imm_transfer_control_return_from,
+    OpcodeQuadrant, STORE_Funct3, SYSTEM_Funct3,
+    SYSTEM_Imm_transfer_control_return_from,
 };
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::core::{decoder::Decoder, fetch_unit::FetchUnit};
@@ -62,7 +63,7 @@ pub struct DecoderCompressedISAContext {
     ci_imm: SignedImmediate,
     ci_shamt: InstructionTypeCompressed,
     ciw_nzuimm_9_2: UnsignedImmediate,
-    ciw_cl_rd_offset: InstructionTypeCompressed,
+    ciw_cl_rd_offset: usize,
     cl_offset_6_2: InstructionTypeCompressed,
     cl_offset_7_3: InstructionTypeCompressed,
     cl_cs_rs1_offset: InstructionTypeCompressed,
@@ -231,8 +232,17 @@ impl Decoder {
                 {
                     trace!("HINT was met");
                 }
-                // C.ADD
-                self.expand_to_add()
+                // C.ADD expands to `add rd, rd, rs2`
+                self.expand_to_r_format(
+                    Opcode::OP,
+                    self.compressedISA
+                        .cr_ci_destination_or_source_register_1_offset,
+                    integer::constants::OP_Funct3::ARITH,
+                    self.compressedISA
+                        .cr_ci_destination_or_source_register_1_offset,
+                    self.compressedISA.cr_css_source_register_2_offset,
+                    OP_Funct7::F0,
+                )
             }
         } else {
             if self.compressedISA.cr_css_source_register_2_offset == 0 {
@@ -257,8 +267,16 @@ impl Decoder {
                 if self.destination_register_offset == 0 {
                     trace!("HINT was met");
                 }
-                // C.MV
-                self.expand_to_mv()
+                // C.MV expands into `add rd, x0, rs2`
+                self.expand_to_r_format(
+                    Opcode::OP,
+                    self.compressedISA
+                        .cr_ci_destination_or_source_register_1_offset,
+                    integer::constants::OP_Funct3::ARITH,
+                    GPRegisterName::x0_zero as usize,
+                    self.compressedISA.cr_css_source_register_2_offset,
+                    OP_Funct7::F0,
+                )
             }
         }
     }
@@ -279,7 +297,16 @@ impl Decoder {
                         self.compressedISA.ci_imm = self.extract_ci_nzimm_5_0(
                             fetch_unit.current_instruction_compressed,
                         );
-                        self.expand_to_addi()
+                        // C.ADDI expands into `addi rd, rd, imm`
+                        self.expand_to_i_format(
+                            Opcode::OP_IMM,
+                            self.compressedISA
+                                .cr_ci_destination_or_source_register_1_offset,
+                            OP_IMM_Funct3::ADDI,
+                            self.compressedISA
+                                .cr_ci_destination_or_source_register_1_offset,
+                            self.compressedISA.ci_imm,
+                        )
                     }
                     OpcodeQuadrant::Quadrant10 => {
                         self.compressedISA.ci_shamt = self.extract_ci_shamt(
@@ -316,7 +343,15 @@ impl Decoder {
                         self.compressedISA.ci_imm = self.extract_ci_imm_5_0(
                             fetch_unit.current_instruction_compressed,
                         );
-                        self.expand_to_li()
+                        // C.LI expands into `addi rd, x0, imm`
+                        self.expand_to_i_format(
+                            Opcode::OP_IMM,
+                            self.compressedISA
+                                .cr_ci_destination_or_source_register_1_offset,
+                            OP_IMM_Funct3::ADDI,
+                            GPRegisterName::x0_zero as usize,
+                            self.compressedISA.ci_imm,
+                        )
                     }
                     OpcodeQuadrant::Quadrant10 => {
                         self.compressedISA.ci_imm = self
@@ -364,7 +399,12 @@ impl Decoder {
                                 if self.compressedISA.cr_ci_destination_or_source_register_1_offset == 0 {
                                     trace!("HINT");
                                 }
-                                self.expand_to_addi16sp()
+                                // C.ADDI16SP expands into `addi x2, x2, nzimm[9:4]`
+                                self.expand_to_i_format(Opcode::OP_IMM, self
+                                    .compressedISA
+                                    .cr_ci_destination_or_source_register_1_offset, OP_IMM_Funct3::ADDI, self
+                                        .compressedISA
+                                        .cr_ci_destination_or_source_register_1_offset, self.compressedISA.ci_imm)
                             } else {
                                 // the code point with nzimm = 0 is reserved
                                 todo!(
@@ -441,7 +481,14 @@ impl Decoder {
             self.extract_ciw_cl_rd_offset(instruction);
 
         if self.compressedISA.ciw_nzuimm_9_2 != 0 {
-            self.expand_to_addi4spn()
+            // C.ADDI4SPN expands into `addi rd', x2, nzuimm[9:2]`
+            self.expand_to_i_format(
+                Opcode::OP_IMM,
+                self.compressedISA.ciw_cl_rd_offset,
+                OP_IMM_Funct3::ADDI,
+                GPRegisterName::x2_sp as usize,
+                self.compressedISA.ciw_nzuimm_9_2 as SignedImmediate,
+            )
         } else {
             // RESERVED, uimm == 0
             todo!("illegal instruction trap, reserved by specification");
@@ -738,10 +785,10 @@ impl Decoder {
     fn extract_ciw_cl_rd_offset(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> InstructionTypeCompressed {
+    ) -> usize {
         ((instruction & COMPRESSED_CIW_CL_RD_OFFSET_MASK)
-            >> COMPRESSED_CIW_CL_RD_OFFSET_OFFSET)
-            + GPRegisterName::x8_s0_fp as InstructionTypeCompressed
+            >> COMPRESSED_CIW_CL_RD_OFFSET_OFFSET) as usize
+            + GPRegisterName::x8_s0_fp as usize
     }
 
     fn extract_cl_offset_6_2(
@@ -822,6 +869,89 @@ impl Decoder {
     }
 
     // instruction expanders/decompressors
+    fn expand_to_r_format(
+        &self,
+        opcode: Opcode,
+        destination_register_offset: usize,
+        funct3: integer::constants::OP_Funct3,
+        source_register_1_offset: usize,
+        source_register_2_offset: usize,
+        funct7: OP_Funct7,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set rd
+        expanded_instruction |= (destination_register_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |=
+            (funct3 as InstructionType) << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (source_register_1_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set rs2
+        expanded_instruction |= (source_register_2_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_2;
+        // set funct7
+        expanded_instruction |=
+            (funct7 as InstructionType) << BIT_OFFSET_R_FUNCT7;
+
+        expanded_instruction
+    }
+
+    fn expand_to_i_format(
+        &self,
+        opcode: Opcode,
+        destination_register_offset: usize,
+        funct3: OP_IMM_Funct3,
+        source_register_1_offset: usize,
+        imm_11_0: SignedImmediate,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set rd
+        expanded_instruction |= (destination_register_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |=
+            (funct3 as InstructionType) << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (source_register_1_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set imm_11_0
+        expanded_instruction |=
+            (imm_11_0 as InstructionType) << BIT_OFFSET_IMM_11_0;
+
+        expanded_instruction
+    }
+
+    // fn expand_to_s_format(
+    //     &self,
+    //     opcode: Opcode,
+    //     source_register_1_offset: usize,
+    //     source_register_2_offset: usize,
+    //     imm:
+    //     funct3: STORE_Funct3
+    // ) -> InstructionType {
+    //     //
+    // }
+
+    // fn expand_to_b_format(&self) -> InstructionType {
+    //     //
+    // }
+
+    //     fn expand_to_u_format(&self) -> InstructionType {
+    //         //
+    //     }
+
+    //         fn expand_to_j_format(&self) -> InstructionType {
+    //             //
+    //         }
+
     fn expand_to_jalr(&self) -> InstructionType {
         // C.JALR expands to `jalr x1, 0(rs1)`
         // set opcode
@@ -864,38 +994,38 @@ impl Decoder {
         expanded_instruction
     }
 
-    fn expand_to_add(&self) -> InstructionType {
-        // C.ADD expands to `add rd, rd, rs2`
-        // set opcode
-        let mut expanded_instruction: InstructionType =
-            Opcode::OP as InstructionType;
-        // set rd
-        expanded_instruction |= (self
-            .compressedISA
-            .cr_ci_destination_or_source_register_1_offset
-            as InstructionType)
-            << BIT_OFFSET_DESTINATION_REGISTER;
-        // set funct3
-        expanded_instruction |= (integer::constants::OP_Funct3::ARITH
-            as InstructionType)
-            << BIT_OFFSET_FUNCT3;
-        // set rs1
-        expanded_instruction |= (self
-            .compressedISA
-            .cr_ci_destination_or_source_register_1_offset
-            as InstructionType)
-            << BIT_OFFSET_SOURCE_REGISTER_1;
-        // set rs2
-        expanded_instruction |=
-            (self.compressedISA.cr_css_source_register_2_offset
-                as InstructionType)
-                << BIT_OFFSET_SOURCE_REGISTER_2;
-        // set funct7
-        expanded_instruction |=
-            (OP_Funct7::F0 as InstructionType) << BIT_OFFSET_R_FUNCT7;
+    // fn expand_to_add(&self) -> InstructionType {
+    //     // C.ADD expands to `add rd, rd, rs2`
+    //     // set opcode
+    //     let mut expanded_instruction: InstructionType =
+    //         Opcode::OP as InstructionType;
+    //     // set rd
+    //     expanded_instruction |= (self
+    //         .compressedISA
+    //         .cr_ci_destination_or_source_register_1_offset
+    //         as InstructionType)
+    //         << BIT_OFFSET_DESTINATION_REGISTER;
+    //     // set funct3
+    //     expanded_instruction |= (integer::constants::OP_Funct3::ARITH
+    //         as InstructionType)
+    //         << BIT_OFFSET_FUNCT3;
+    //     // set rs1
+    //     expanded_instruction |= (self
+    //         .compressedISA
+    //         .cr_ci_destination_or_source_register_1_offset
+    //         as InstructionType)
+    //         << BIT_OFFSET_SOURCE_REGISTER_1;
+    //     // set rs2
+    //     expanded_instruction |=
+    //         (self.compressedISA.cr_css_source_register_2_offset
+    //             as InstructionType)
+    //             << BIT_OFFSET_SOURCE_REGISTER_2;
+    //     // set funct7
+    //     expanded_instruction |=
+    //         (OP_Funct7::F0 as InstructionType) << BIT_OFFSET_R_FUNCT7;
 
-        expanded_instruction
-    }
+    //     expanded_instruction
+    // }
 
     fn expand_to_jr(&self) -> InstructionType {
         // C.JR expands to `jalr x0, 0(rs1)`
@@ -916,62 +1046,62 @@ impl Decoder {
         expanded_instruction
     }
 
-    fn expand_to_mv(&self) -> InstructionType {
-        // C.MV expands into `add rd, x0, rs2`
-        // set opcode
-        let mut expanded_instruction: InstructionType =
-            Opcode::OP as InstructionType;
-        // set rd
-        expanded_instruction |= (self
-            .compressedISA
-            .cr_ci_destination_or_source_register_1_offset
-            as InstructionType)
-            << BIT_OFFSET_DESTINATION_REGISTER;
-        // set funct3
-        expanded_instruction |= (integer::constants::OP_Funct3::ARITH
-            as InstructionType)
-            << BIT_OFFSET_FUNCT3;
-        // set rs1
-        expanded_instruction |= (GPRegisterName::x0_zero as InstructionType)
-            << BIT_OFFSET_SOURCE_REGISTER_1;
-        // set rs2
-        expanded_instruction |=
-            (self.compressedISA.cr_css_source_register_2_offset
-                as InstructionType)
-                << BIT_OFFSET_SOURCE_REGISTER_2;
-        // set funct7
-        expanded_instruction |=
-            (OP_Funct7::F0 as InstructionType) << BIT_OFFSET_R_FUNCT7;
+    // fn expand_to_mv(&self) -> InstructionType {
+    //     // C.MV expands into `add rd, x0, rs2`
+    //     // set opcode
+    //     let mut expanded_instruction: InstructionType =
+    //         Opcode::OP as InstructionType;
+    //     // set rd
+    //     expanded_instruction |= (self
+    //         .compressedISA
+    //         .cr_ci_destination_or_source_register_1_offset
+    //         as InstructionType)
+    //         << BIT_OFFSET_DESTINATION_REGISTER;
+    //     // set funct3
+    //     expanded_instruction |= (integer::constants::OP_Funct3::ARITH
+    //         as InstructionType)
+    //         << BIT_OFFSET_FUNCT3;
+    //     // set rs1
+    //     expanded_instruction |= (GPRegisterName::x0_zero as InstructionType)
+    //         << BIT_OFFSET_SOURCE_REGISTER_1;
+    //     // set rs2
+    //     expanded_instruction |=
+    //         (self.compressedISA.cr_css_source_register_2_offset
+    //             as InstructionType)
+    //             << BIT_OFFSET_SOURCE_REGISTER_2;
+    //     // set funct7
+    //     expanded_instruction |=
+    //         (OP_Funct7::F0 as InstructionType) << BIT_OFFSET_R_FUNCT7;
 
-        expanded_instruction
-    }
+    //     expanded_instruction
+    // }
 
-    fn expand_to_addi(&self) -> InstructionType {
-        // C.ADDI expands into `addi rd, rd, imm`
-        // set opcode
-        let mut expanded_instruction: InstructionType =
-            Opcode::OP_IMM as InstructionType;
-        // set rd
-        expanded_instruction |= (self
-            .compressedISA
-            .cr_ci_destination_or_source_register_1_offset
-            as InstructionType)
-            << BIT_OFFSET_DESTINATION_REGISTER;
-        // set funct3
-        expanded_instruction |=
-            (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
-        // set rs1
-        expanded_instruction |= (self
-            .compressedISA
-            .cr_ci_destination_or_source_register_1_offset
-            as InstructionType)
-            << BIT_OFFSET_SOURCE_REGISTER_1;
-        // set imm_11_0
-        expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
-            << BIT_OFFSET_IMM_11_0;
+    // fn expand_to_addi(&self) -> InstructionType {
+    //     // C.ADDI expands into `addi rd, rd, imm`
+    //     // set opcode
+    //     let mut expanded_instruction: InstructionType =
+    //         Opcode::OP_IMM as InstructionType;
+    //     // set rd
+    //     expanded_instruction |= (self
+    //         .compressedISA
+    //         .cr_ci_destination_or_source_register_1_offset
+    //         as InstructionType)
+    //         << BIT_OFFSET_DESTINATION_REGISTER;
+    //     // set funct3
+    //     expanded_instruction |=
+    //         (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
+    //     // set rs1
+    //     expanded_instruction |= (self
+    //         .compressedISA
+    //         .cr_ci_destination_or_source_register_1_offset
+    //         as InstructionType)
+    //         << BIT_OFFSET_SOURCE_REGISTER_1;
+    //     // set imm_11_0
+    //     expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
+    //         << BIT_OFFSET_IMM_11_0;
 
-        expanded_instruction
-    }
+    //     expanded_instruction
+    // }
 
     fn expand_to_slli(&self) -> InstructionType {
         // C.SLLI expands into `slli rd, rd, shamt[5:0]`
@@ -1041,29 +1171,29 @@ impl Decoder {
         todo!()
     }
 
-    fn expand_to_li(&self) -> InstructionType {
-        // C.LI expands into `addi rd, x0, imm`
-        // set opcode
-        let mut expanded_instruction: InstructionType =
-            Opcode::OP_IMM as InstructionType;
-        // set rd
-        expanded_instruction |= (self
-            .compressedISA
-            .cr_ci_destination_or_source_register_1_offset
-            as InstructionType)
-            << BIT_OFFSET_DESTINATION_REGISTER;
-        // set funct3
-        expanded_instruction |=
-            (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
-        // set rs1
-        expanded_instruction |= (GPRegisterName::x0_zero as InstructionType)
-            << BIT_OFFSET_SOURCE_REGISTER_1;
-        // set imm_11_0
-        expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
-            << BIT_OFFSET_IMM_11_0;
+    // fn expand_to_li(&self) -> InstructionType {
+    //     // C.LI expands into `addi rd, x0, imm`
+    //     // set opcode
+    //     let mut expanded_instruction: InstructionType =
+    //         Opcode::OP_IMM as InstructionType;
+    //     // set rd
+    //     expanded_instruction |= (self
+    //         .compressedISA
+    //         .cr_ci_destination_or_source_register_1_offset
+    //         as InstructionType)
+    //         << BIT_OFFSET_DESTINATION_REGISTER;
+    //     // set funct3
+    //     expanded_instruction |=
+    //         (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
+    //     // set rs1
+    //     expanded_instruction |= (GPRegisterName::x0_zero as InstructionType)
+    //         << BIT_OFFSET_SOURCE_REGISTER_1;
+    //     // set imm_11_0
+    //     expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
+    //         << BIT_OFFSET_IMM_11_0;
 
-        expanded_instruction
-    }
+    //     expanded_instruction
+    // }
 
     fn expand_to_lwsp(&self) -> InstructionType {
         // C.LWSP expands into `lw rd, offset(x2)`
@@ -1107,32 +1237,32 @@ impl Decoder {
         expanded_instruction
     }
 
-    fn expand_to_addi16sp(&self) -> InstructionType {
-        // C.ADDI16SP expands into `addi x2, x2, nzimm[9:4]`
-        // set opcode
-        let mut expanded_instruction: InstructionType =
-            Opcode::OP_IMM as InstructionType;
-        // set rd
-        expanded_instruction |= (self
-            .compressedISA
-            .cr_ci_destination_or_source_register_1_offset
-            as InstructionType)
-            << BIT_OFFSET_DESTINATION_REGISTER;
-        // set funct3
-        expanded_instruction |=
-            (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
-        // set rs1
-        expanded_instruction |= (self
-            .compressedISA
-            .cr_ci_destination_or_source_register_1_offset
-            as InstructionType)
-            << BIT_OFFSET_SOURCE_REGISTER_1;
-        // set imm_11_0
-        expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
-            << BIT_OFFSET_IMM_11_0;
+    // fn expand_to_addi16sp(&self) -> InstructionType {
+    //     // C.ADDI16SP expands into `addi x2, x2, nzimm[9:4]`
+    //     // set opcode
+    //     let mut expanded_instruction: InstructionType =
+    //         Opcode::OP_IMM as InstructionType;
+    //     // set rd
+    //     expanded_instruction |= (self
+    //         .compressedISA
+    //         .cr_ci_destination_or_source_register_1_offset
+    //         as InstructionType)
+    //         << BIT_OFFSET_DESTINATION_REGISTER;
+    //     // set funct3
+    //     expanded_instruction |=
+    //         (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
+    //     // set rs1
+    //     expanded_instruction |= (self
+    //         .compressedISA
+    //         .cr_ci_destination_or_source_register_1_offset
+    //         as InstructionType)
+    //         << BIT_OFFSET_SOURCE_REGISTER_1;
+    //     // set imm_11_0
+    //     expanded_instruction |= (self.compressedISA.ci_imm as InstructionType)
+    //         << BIT_OFFSET_IMM_11_0;
 
-        expanded_instruction
-    }
+    //     expanded_instruction
+    // }
 
     fn expand_to_ldsp(&self) -> InstructionType {
         // C.LDSP expands into `ld rd, offset(x2)`
@@ -1168,28 +1298,28 @@ impl Decoder {
         todo!()
     }
 
-    fn expand_to_addi4spn(&self) -> InstructionType {
-        // C.ADDI4SPN expands into `addi rd', x2, nzuimm[9:2]`
-        // set opcode
-        let mut expanded_instruction: InstructionType =
-            Opcode::OP_IMM as InstructionType;
-        // set rd
-        expanded_instruction |= (self.compressedISA.ciw_cl_rd_offset
-            as InstructionType)
-            << BIT_OFFSET_DESTINATION_REGISTER;
-        // set funct3
-        expanded_instruction |=
-            (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
-        // set rs1
-        expanded_instruction |= (GPRegisterName::x2_sp as InstructionType)
-            << BIT_OFFSET_SOURCE_REGISTER_1;
-        // set imm_11_0
-        expanded_instruction |= (self.compressedISA.ciw_nzuimm_9_2
-            as InstructionType)
-            << BIT_OFFSET_IMM_11_0;
+    // fn expand_to_addi4spn(&self) -> InstructionType {
+    //     // C.ADDI4SPN expands into `addi rd', x2, nzuimm[9:2]`
+    //     // set opcode
+    //     let mut expanded_instruction: InstructionType =
+    //         Opcode::OP_IMM as InstructionType;
+    //     // set rd
+    //     expanded_instruction |= (self.compressedISA.ciw_cl_rd_offset
+    //         as InstructionType)
+    //         << BIT_OFFSET_DESTINATION_REGISTER;
+    //     // set funct3
+    //     expanded_instruction |=
+    //         (OP_IMM_Funct3::ADDI as InstructionType) << BIT_OFFSET_FUNCT3;
+    //     // set rs1
+    //     expanded_instruction |= (GPRegisterName::x2_sp as InstructionType)
+    //         << BIT_OFFSET_SOURCE_REGISTER_1;
+    //     // set imm_11_0
+    //     expanded_instruction |= (self.compressedISA.ciw_nzuimm_9_2
+    //         as InstructionType)
+    //         << BIT_OFFSET_IMM_11_0;
 
-        expanded_instruction
-    }
+    //     expanded_instruction
+    // }
 
     fn expand_to_fld(&self) -> InstructionType {
         // // C.FLD expands into `fld rd', offset(rs1')`

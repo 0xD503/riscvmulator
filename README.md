@@ -18,8 +18,9 @@ Currently project implements base RV64IM functionality. Project passes
 - [ ] `F` extension (floating point)
 - [ ] `D` extension
 - [ ] `C` extension (compressed instructions)
-- [ ] `G` extensions (general purpose `IMAFD`)
 - [ ] `Zicsr` extension (control and status registers (CSRs))
+- [ ] `Zifencei` extension (`FENCE.I`)
+- [ ] `G` extensions (general purpose `IMAFD_Zicsr_Zifencei`)
 - [ ] basic privileged ISA
 - [ ] Linux-able
 - [ ] `RV64/32E` (embedded)
