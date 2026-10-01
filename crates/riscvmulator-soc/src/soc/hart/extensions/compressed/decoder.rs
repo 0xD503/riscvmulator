@@ -47,7 +47,11 @@ use crate::soc::hart::extensions::compressed::constants::{
     COMPRESSED_CL_OFFSET_7_OFFSET, COMPRESSED_CR_CI_RD_RS1_MASK,
     COMPRESSED_CR_CI_RD_RS1_OFFSET, COMPRESSED_CR_CSS_RS2_MASK,
     COMPRESSED_CR_CSS_RS2_OFFSET, COMPRESSED_CS_CA_RS2_OFFSET_MASK,
-    COMPRESSED_CS_CA_RS2_OFFSET_OFFSET, COMPRESSED_FUNCT3_MASK,
+    COMPRESSED_CS_CA_RS2_OFFSET_OFFSET, COMPRESSED_CSS_UIMM_5_2_MASK,
+    COMPRESSED_CSS_UIMM_5_2_OFFSET, COMPRESSED_CSS_UIMM_5_3_MASK,
+    COMPRESSED_CSS_UIMM_5_3_OFFSET, COMPRESSED_CSS_UIMM_7_6_MASK,
+    COMPRESSED_CSS_UIMM_7_6_OFFSET, COMPRESSED_CSS_UIMM_8_6_MASK,
+    COMPRESSED_CSS_UIMM_8_6_OFFSET, COMPRESSED_FUNCT3_MASK,
     COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
     InstructionTypeCompressed,
 };
@@ -62,6 +66,7 @@ pub struct DecoderCompressedISAContext {
     cr_css_source_register_2_offset: usize,
     ci_imm: SignedImmediate,
     ci_shamt: InstructionTypeCompressed,
+    css_imm: SignedImmediate,
     ciw_nzuimm_9_2: UnsignedImmediate,
     ciw_cl_rd_offset: usize,
     cl_offset_6_2: InstructionTypeCompressed,
@@ -82,6 +87,7 @@ impl Default for DecoderCompressedISAContext {
             cr_css_source_register_2_offset: GPRegisterName::x0_zero as usize,
             ci_imm: 0,
             ci_shamt: 0,
+            css_imm: 0,
             ciw_nzuimm_9_2: 0,
             ciw_cl_rd_offset: 0,
             cl_offset_6_2: 0,
@@ -500,6 +506,48 @@ impl Decoder {
         self.compressedISA.cr_css_source_register_2_offset =
             self.extract_cr_css_source_register_2_offset(instruction);
 
+        match self.compressedISA.funct3 {
+            compressed::constants::OP_Funct3::F101 => {
+                self.compressedISA.css_imm =
+                    self.extract_css_uimm_8_3(instruction);
+                // C.FSDSP expands to ``
+
+                todo!("TODO: unimplemented");
+            }
+            compressed::constants::OP_Funct3::F110 => {
+                self.compressedISA.css_imm =
+                    self.extract_css_uimm_7_2(instruction);
+                // C.SWSP expands to ``
+
+                todo!("TODO: unimplemented");
+            }
+            compressed::constants::OP_Funct3::F111 => {
+                todo!("TODO: check unimplemented");
+
+                // if RV64IC
+                self.compressedISA.css_imm =
+                    self.extract_css_uimm_8_3(instruction);
+                // C.SDSP expands to ``
+                // else if RV32IFC
+                self.compressedISA.css_imm =
+                    self.extract_css_uimm_7_2(instruction);
+                // C.FSWSP expands to ``
+
+                todo!("TODO: unimplemented");
+            }
+
+            _ => {
+                error!(
+                    "unreachable funct3 ({}) for CI instruction",
+                    self.compressedISA.funct3
+                );
+                unreachable!(
+                    "unreachable funct3 ({}) for CI instruction",
+                    self.compressedISA.funct3
+                );
+            }
+        }
+
         todo!("TODO: unimplemented");
     }
 
@@ -628,14 +676,7 @@ impl Decoder {
             }
 
             _ => {
-                error!(
-                    "unreachable funct3 ({}) for CS instruction",
-                    self.compressedISA.funct3
-                );
-                unreachable!(
-                    "unreachable funct3 ({}) for CS instruction",
-                    self.compressedISA.funct3
-                );
+                todo!("illegal instruction trap, reserved by specification");
             }
         }
     }
@@ -651,6 +692,12 @@ impl Decoder {
         self.compressedISA.ca_cb_rd_or_rs1_offset =
             self.extract_ca_cb_rd_or_rs1_offset(instruction);
 
+        match self.compressedISA.funct3 {
+            _ => {
+                todo!("illegal instruction trap, reserved by specification");
+            }
+        }
+
         todo!("TODO: unimplemented");
     }
 
@@ -663,6 +710,12 @@ impl Decoder {
         self.compressedISA.ca_cb_rd_or_rs1_offset =
             self.extract_ca_cb_rd_or_rs1_offset(instruction);
 
+        match self.compressedISA.funct3 {
+            _ => {
+                todo!("illegal instruction trap, reserved by specification");
+            }
+        }
+
         todo!("TODO: unimplemented");
     }
 
@@ -674,7 +727,11 @@ impl Decoder {
 
         self.compressedISA.cj_jta_imm = self.extract_cj_jta_imm(instruction);
 
-        //
+        match self.compressedISA.funct3 {
+            _ => {
+                todo!("illegal instruction trap, reserved by specification");
+            }
+        }
 
         todo!("TODO: unimplemented");
     }
@@ -814,6 +871,30 @@ impl Decoder {
         imm >>= 3;
 
         imm.into()
+    }
+
+    fn extract_css_uimm_8_3(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut uimm = (instruction & COMPRESSED_CSS_UIMM_8_6_MASK)
+            >> (COMPRESSED_CSS_UIMM_8_6_OFFSET - 6);
+        uimm |= (instruction & COMPRESSED_CSS_UIMM_5_3_MASK)
+            >> (COMPRESSED_CSS_UIMM_5_3_OFFSET - 3);
+
+        uimm as SignedImmediate
+    }
+
+    fn extract_css_uimm_7_2(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut uimm = (instruction & COMPRESSED_CSS_UIMM_7_6_MASK)
+            >> (COMPRESSED_CSS_UIMM_7_6_OFFSET - 6);
+        uimm |= (instruction & COMPRESSED_CSS_UIMM_5_2_MASK)
+            >> (COMPRESSED_CSS_UIMM_5_2_OFFSET - 3);
+
+        uimm as SignedImmediate
     }
 
     fn extract_ciw_nzuimm_9_2(
