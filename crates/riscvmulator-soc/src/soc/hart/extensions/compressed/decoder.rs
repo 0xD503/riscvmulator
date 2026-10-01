@@ -693,6 +693,10 @@ impl Decoder {
             self.extract_ca_cb_rd_or_rs1_offset(instruction);
 
         match self.compressedISA.funct3 {
+            compressed::constants::OP_Funct3::F000 => {
+                todo!("condition unimplemented yet");
+            }
+
             _ => {
                 todo!("illegal instruction trap, reserved by specification");
             }
@@ -711,6 +715,10 @@ impl Decoder {
             self.extract_ca_cb_rd_or_rs1_offset(instruction);
 
         match self.compressedISA.funct3 {
+            compressed::constants::OP_Funct3::F000 => {
+                todo!("condition unimplemented yet");
+            }
+
             _ => {
                 todo!("illegal instruction trap, reserved by specification");
             }
@@ -728,6 +736,10 @@ impl Decoder {
         self.compressedISA.cj_jta_imm = self.extract_cj_jta_imm(instruction);
 
         match self.compressedISA.funct3 {
+            compressed::constants::OP_Funct3::F000 => {
+                todo!("condition unimplemented yet");
+            }
+
             _ => {
                 todo!("illegal instruction trap, reserved by specification");
             }
