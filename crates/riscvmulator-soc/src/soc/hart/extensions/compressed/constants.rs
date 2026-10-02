@@ -18,6 +18,9 @@ pub const COMPRESSED_FUNCT4_OFFSET: usize = 12;
 pub const COMPRESSED_FUNCT4_MASK: InstructionTypeCompressed =
     0b1111 << COMPRESSED_FUNCT4_OFFSET;
 
+pub const COMPRESSED_BITS_12_OFFSET: usize = 12;
+pub const COMPRESSED_BITS_12_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_BITS_12_OFFSET;
 pub const COMPRESSED_BITS_11_10_OFFSET: usize = 10;
 pub const COMPRESSED_BITS_11_10_MASK: InstructionTypeCompressed =
     0b11 << COMPRESSED_BITS_11_10_OFFSET;
@@ -128,6 +131,10 @@ pub const COMPRESSED_CS_CA_RS2_OFFSET_OFFSET: usize = 2;
 pub const COMPRESSED_CS_CA_RS2_OFFSET_MASK: InstructionTypeCompressed =
     0b111 << COMPRESSED_CS_CA_RS2_OFFSET_OFFSET;
 
+pub const COMPRESSED_CA_FUNCT_2_OFFSET: usize = 5;
+pub const COMPRESSED_CA_FUNCT_2_MASK: InstructionTypeCompressed =
+    0b11 << COMPRESSED_CA_FUNCT_2_OFFSET;
+
 pub const COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET: usize = 7;
 pub const COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK: InstructionTypeCompressed =
     0b111 << COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET;
@@ -236,6 +243,31 @@ impl From<InstructionTypeCompressed> for Bits11_10_quadrant_01 {
             0b01 => Bits11_10_quadrant_01::CB_01,
             0b10 => Bits11_10_quadrant_01::CB_10,
             0b11 => Bits11_10_quadrant_01::CA_11,
+
+            _ => {
+                error!("Unknown bits[11:10]: {value:#04b}");
+                unreachable!("Unknown bits[11:10]: {value:#04b}");
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Clone)]
+pub enum CA_Funct_2 {
+    F00 = 0b00,
+    F01 = 0b01,
+    F10 = 0b10,
+    F11 = 0b11,
+}
+
+impl From<InstructionTypeCompressed> for CA_Funct_2 {
+    fn from(value: InstructionTypeCompressed) -> Self {
+        match value {
+            0b00 => CA_Funct_2::F00,
+            0b01 => CA_Funct_2::F01,
+            0b10 => CA_Funct_2::F10,
+            0b11 => CA_Funct_2::F11,
 
             _ => {
                 error!("Unknown bits[11:10]: {value:#04b}");

@@ -16,9 +16,10 @@ use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::core::{decoder::Decoder, fetch_unit::FetchUnit};
 use crate::soc::hart::extensions::compressed;
 use crate::soc::hart::extensions::compressed::constants::{
-    Bits11_10_quadrant_01, COMPRESSED_BITS_11_10_MASK,
+    Bits11_10_quadrant_01, CA_Funct_2, COMPRESSED_BITS_11_10_MASK,
     COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK,
-    COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET, COMPRESSED_CI_IMM_4_0_MASK,
+    COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET, COMPRESSED_CA_FUNCT_2_MASK,
+    COMPRESSED_CA_FUNCT_2_OFFSET, COMPRESSED_CI_IMM_4_0_MASK,
     COMPRESSED_CI_IMM_4_0_OFFSET, COMPRESSED_CI_IMM_5_MASK,
     COMPRESSED_CI_IMM_5_OFFSET, COMPRESSED_CI_NZIMM_4_0_MASK,
     COMPRESSED_CI_NZIMM_4_0_OFFSET, COMPRESSED_CI_NZIMM_4_MASK,
@@ -73,7 +74,9 @@ pub struct DecoderCompressedISAContext {
     cl_offset_7_3: InstructionTypeCompressed,
     cl_cs_rs1_offset: usize,
     cs_ca_rs2_offset: usize,
+    ca_funct2: CA_Funct_2,
     ca_cb_rd_or_rs1_offset: InstructionTypeCompressed,
+    ca_cb_bit_12: bool,
     ca_cb_bits_11_10_quadrant_01_funct3_100: Bits11_10_quadrant_01,
     cj_jta_imm: InstructionTypeCompressed,
 }
@@ -94,7 +97,9 @@ impl Default for DecoderCompressedISAContext {
             cl_offset_7_3: 0,
             cl_cs_rs1_offset: 0,
             cs_ca_rs2_offset: 0,
+            ca_funct2: CA_Funct_2::F00,
             ca_cb_rd_or_rs1_offset: 0,
+            ca_cb_bit_12: false,
             ca_cb_bits_11_10_quadrant_01_funct3_100:
                 Bits11_10_quadrant_01::CA_11,
             cj_jta_imm: 0,
@@ -141,9 +146,17 @@ impl Decoder {
                         todo!("distiguish between RV32/RV64");
                     }
                     compressed::constants::OP_Funct3::F100 => {
+                        self.compressedISA.ca_cb_bit_12 = self
+                            .extract_ca_cb_bit_12(
+                                fetch_unit.current_instruction_compressed,
+                            );
                         self.compressedISA
                             .ca_cb_bits_11_10_quadrant_01_funct3_100 = self
                             .extract_bits_11_10_quadrant_01_funct3_100(
+                                fetch_unit.current_instruction_compressed,
+                            );
+                        self.compressedISA.ca_cb_rd_or_rs1_offset = self
+                            .extract_ca_cb_rd_or_rs1_offset(
                                 fetch_unit.current_instruction_compressed,
                             );
                         match self
@@ -687,10 +700,9 @@ impl Decoder {
     ) -> InstructionType {
         trace!("Decoding CA-format instruction..");
 
+        self.compressedISA.ca_funct2 = self.extract_ca_funct2(instruction);
         self.compressedISA.cs_ca_rs2_offset =
             self.extract_cs_ca_rs2_offset(instruction);
-        self.compressedISA.ca_cb_rd_or_rs1_offset =
-            self.extract_ca_cb_rd_or_rs1_offset(instruction);
 
         match self.compressedISA.funct3 {
             compressed::constants::OP_Funct3::F000 => {
@@ -979,6 +991,16 @@ impl Decoder {
             + GPRegisterName::x8_s0_fp as usize
     }
 
+    fn extract_ca_funct2(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> CA_Funct_2 {
+        CA_Funct_2::from(
+            (instruction & COMPRESSED_CA_FUNCT_2_MASK)
+                >> COMPRESSED_CA_FUNCT_2_OFFSET,
+        )
+    }
+
     fn extract_ca_cb_rd_or_rs1_offset(
         &self,
         instruction: InstructionTypeCompressed,
@@ -986,6 +1008,25 @@ impl Decoder {
         ((instruction & COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK)
             >> COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET)
             + GPRegisterName::x8_s0_fp as InstructionTypeCompressed
+    }
+
+    fn extract_ca_cb_bit_12(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> bool {
+        let bit_12 = (instruction & COMPRESSED_BITS_11_10_MASK) != 0;
+
+        bit_12
+    }
+
+    fn extract_bits_11_10_quadrant_01_funct3_100(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> Bits11_10_quadrant_01 {
+        let bits_11_10 = (instruction & COMPRESSED_BITS_11_10_MASK)
+            >> COMPRESSED_BITS_11_10_OFFSET;
+
+        Bits11_10_quadrant_01::from(bits_11_10)
     }
 
     fn extract_cj_jta_imm(
@@ -998,16 +1039,6 @@ impl Decoder {
         // jta_imm =
 
         jta_imm
-    }
-
-    fn extract_bits_11_10_quadrant_01_funct3_100(
-        &self,
-        instruction: InstructionTypeCompressed,
-    ) -> Bits11_10_quadrant_01 {
-        let bits_11_10 = (instruction & COMPRESSED_BITS_11_10_MASK)
-            >> COMPRESSED_BITS_11_10_OFFSET;
-
-        Bits11_10_quadrant_01::from(bits_11_10)
     }
 
     // instruction expanders/decompressors
