@@ -104,6 +104,8 @@ pub const BITS_NUM_IMM_11_0: usize = 12;
 //     ((1 << BITS_NUM_IMM_11_0) - 1) << BIT_OFFSET_IMM_11_0_FINAL;
 pub const BIT_OFFSET_IMM_11_5: usize = 25;
 pub const BIT_OFFSET_IMM_11_5_FINAL: usize = 5;
+pub const MASK_IMM_11_5: InstructionType =
+    0b1111111 << BIT_OFFSET_IMM_11_5_FINAL;
 pub const BIT_OFFSET_IMM_4_0: usize = 7;
 pub const BIT_OFFSET_IMM_4_0_FINAL: usize = 0;
 pub const MASK_IMM_4_0: InstructionType = 0x1F << BIT_OFFSET_IMM_4_0_FINAL;

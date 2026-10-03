@@ -56,14 +56,15 @@ use super::constants::{
 };
 use crate::constants::arch::{
     BIT_OFFSET_DESTINATION_REGISTER, BIT_OFFSET_FUNCT3, BIT_OFFSET_I_FUNCT7,
-    BIT_OFFSET_IMM_11_0, BIT_OFFSET_IMM_31_12, BIT_OFFSET_R_FUNCT7,
-    BIT_OFFSET_SHAMT, BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
-    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, SignedImmediate,
-    UnsignedImmediate,
+    BIT_OFFSET_IMM_4_0, BIT_OFFSET_IMM_11_0, BIT_OFFSET_IMM_11_5,
+    BIT_OFFSET_IMM_31_12, BIT_OFFSET_R_FUNCT7, BIT_OFFSET_SHAMT,
+    BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
+    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, MASK_IMM_4_0, MASK_IMM_11_5,
+    SignedImmediate, UnsignedImmediate,
 };
 use crate::soc::hart::core::decoder::constants::{
     JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
-    OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant, SYSTEM_Funct3,
+    OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant, STORE_Funct3, SYSTEM_Funct3,
     SYSTEM_Imm_transfer_control_return_from,
 };
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
@@ -378,7 +379,10 @@ impl Decoder {
                             self.compressedISA.c_imm,
                         )
                     }
-                    OpcodeQuadrant::Quadrant10 => self.expand_to_fldsp(),
+                    OpcodeQuadrant::Quadrant10 => {
+                        // C.FLDSP expands into `fld rd, offset(x2)`
+                        todo!()
+                    }
 
                     _ => {
                         error!("unreachable opcode for CI instruction");
@@ -498,7 +502,8 @@ impl Decoder {
                             );
                         }
                         // else RV32FC
-                        // self.expand_to_flwsp()
+                        // // C.FLW expands into `flw rd', offset(rs1')`
+                        // todo!();
                     }
 
                     _ => {
@@ -573,8 +578,6 @@ impl Decoder {
                 );
             }
         }
-
-        todo!("TODO: unimplemented");
     }
 
     fn expand_ciw(
@@ -654,7 +657,8 @@ impl Decoder {
                 )
                 // } else if RV32IFC {
                 // self.compressedISA.cl_offset_6_2 = self.extract_cl_offset_6_2(instruction);
-                // self.expand_to_flw()
+                // // C.FLW expands into `flw rd', offset(rs1')`
+                // todo!();
                 // }
             }
 
@@ -686,21 +690,24 @@ impl Decoder {
             extensions::compressed::constants::OP_Funct3::F101 => {
                 todo!("condition unimplemented yet");
                 // if RV(32|64)DC {
-                self.expand_to_fsd()
+                // // C.FSD expands into `fsd rs2', offset(rs1')`
+                // todo!();
                 // } else {
                 // todo!();
                 // }
             }
             extensions::compressed::constants::OP_Funct3::F110 => {
-                //
-                self.expand_to_sw()
+                // // C.SW expands into `sw rs2', offset(rs1')`
+                todo!();
             }
             extensions::compressed::constants::OP_Funct3::F111 => {
                 todo!("condition unimplemented yet");
                 // if { // RV64IC only
-                self.expand_to_sd()
+                // // C.SD expands into `sd rs2', offset(rs1')`
+                // todo!();
                 // } else if RV32IFC {
-                // self.expand_to_fsw()
+                // // C.FSW expands into `fsw rs2', offset(rs1')`
+                // todo!();
                 // }
             }
 
@@ -1328,16 +1335,34 @@ impl Decoder {
         expanded_instruction
     }
 
-    // fn expand_to_s_format(
-    //     &self,
-    //     opcode: Opcode,
-    //     source_register_1_offset: usize,
-    //     source_register_2_offset: usize,
-    //     imm:
-    //     funct3: STORE_Funct3
-    // ) -> InstructionType {
-    //     //
-    // }
+    fn expand_to_s_format(
+        &self,
+        opcode: Opcode,
+        source_register_1_offset: usize,
+        source_register_2_offset: usize,
+        imm_11_0: SignedImmediate,
+        funct3: InstructionType,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set imm[4:0]
+        expanded_instruction |= ((imm_11_0 as InstructionType) & MASK_IMM_4_0)
+            << BIT_OFFSET_IMM_4_0;
+        // set funct3
+        expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (source_register_1_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set rs2
+        expanded_instruction |= (source_register_2_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_2;
+        // set imm[11:5]
+        expanded_instruction |= ((imm_11_0 as InstructionType) & MASK_IMM_11_5)
+            << BIT_OFFSET_IMM_11_5;
+
+        expanded_instruction
+    }
 
     // fn expand_to_b_format(&self) -> InstructionType {
     //     //
