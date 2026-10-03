@@ -59,11 +59,12 @@ use crate::constants::arch::{
     BIT_OFFSET_B_FORMAT_IMM_11, BIT_OFFSET_B_FORMAT_IMM_12,
     BIT_OFFSET_DESTINATION_REGISTER, BIT_OFFSET_FUNCT3, BIT_OFFSET_I_FUNCT7,
     BIT_OFFSET_IMM_4_0, BIT_OFFSET_IMM_11_0, BIT_OFFSET_IMM_11_5,
-    BIT_OFFSET_IMM_31_12, BIT_OFFSET_R_FUNCT7, BIT_OFFSET_SHAMT,
-    BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
+    BIT_OFFSET_IMM_31_12, BIT_OFFSET_J_FORMAT_IMM_19_12, BIT_OFFSET_R_FUNCT7,
+    BIT_OFFSET_SHAMT, BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
     BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, MASK_B_FORMAT_IMM_4_1,
     MASK_B_FORMAT_IMM_10_5, MASK_B_FORMAT_IMM_11, MASK_B_FORMAT_IMM_12,
-    MASK_IMM_4_0, MASK_IMM_11_5, SignedImmediate, UnsignedImmediate,
+    MASK_IMM_4_0, MASK_IMM_11_5, MASK_J_FORMAT_IMM_19_12, SignedImmediate,
+    UnsignedImmediate,
 };
 use crate::soc::hart::core::decoder::constants::{
     JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
@@ -1426,16 +1427,26 @@ impl Decoder {
         expanded_instruction
     }
 
-    // fn expand_to_j_format(
-    //     &self,
-    //     opcode: Opcode,
-    //     destination_register_offset: usize,
-    //     funct3: OP_IMM_Funct3,
-    //     source_register_1_offset: usize,
-    //     imm_11_0: SignedImmediate,
-    // ) -> InstructionType {
-    //     //
-    // }
+    fn expand_to_j_format(
+        &self,
+        opcode: Opcode,
+        destination_register_offset: usize,
+        imm_20_1: SignedImmediate,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set rd
+        expanded_instruction |= (destination_register_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // // set imm[19:12]
+        // expanded_instruction |= ((imm_20_1 as InstructionType)
+        //     & MASK_J_FORMAT_IMM_19_12)
+        //     >> (BIT_OFFSET_J_FORMAT_IMM_19_12 - 12);
+
+        expanded_instruction
+    }
 
     fn expand_to_fldsp(&self) -> InstructionType {
         // C.FLDSP expands into `fld rd, offset(x2)`

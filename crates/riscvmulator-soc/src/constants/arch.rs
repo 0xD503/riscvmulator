@@ -120,6 +120,23 @@ pub const BIT_OFFSET_B_FORMAT_IMM_12: usize = 31;
 pub const MASK_B_FORMAT_IMM_12: InstructionType =
     0b1 << BIT_OFFSET_B_FORMAT_IMM_12;
 
+pub const BIT_OFFSET_J_FORMAT_IMM_19_12: usize = 12;
+pub const BIT_OFFSET_FINAL_J_FORMAT_IMM_19_12: usize = 12;
+pub const MASK_J_FORMAT_IMM_19_12: InstructionType =
+    0b11111111 << BIT_OFFSET_J_FORMAT_IMM_19_12;
+pub const BIT_OFFSET_J_FORMAT_IMM_11: usize = 20;
+pub const BIT_OFFSET_FINAL_J_FORMAT_IMM_11: usize = 11;
+pub const MASK_J_FORMAT_IMM_11: InstructionType =
+    0b1 << BIT_OFFSET_J_FORMAT_IMM_11;
+pub const BIT_OFFSET_J_FORMAT_IMM_10_1: usize = 12;
+pub const BIT_OFFSET_FINAL_J_FORMAT_IMM_10_1: usize = 1;
+pub const MASK_J_FORMAT_IMM_10_1: InstructionType =
+    0b1111111111 << BIT_OFFSET_J_FORMAT_IMM_10_1;
+pub const BIT_OFFSET_J_FORMAT_IMM_20: usize = 31;
+pub const BIT_OFFSET_FINAL_J_FORMAT_IMM_20: usize = 20;
+pub const MASK_J_FORMAT_IMM_20: InstructionType =
+    0b1 << BIT_OFFSET_J_FORMAT_IMM_20;
+
 pub const BIT_OFFSET_IMM_4_0: usize = 7;
 pub const BIT_OFFSET_IMM_4_0_FINAL: usize = 0;
 pub const MASK_IMM_4_0: InstructionType = 0x1F << BIT_OFFSET_IMM_4_0_FINAL;
