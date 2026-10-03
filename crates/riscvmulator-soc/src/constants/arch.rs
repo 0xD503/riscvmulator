@@ -106,6 +106,20 @@ pub const BIT_OFFSET_IMM_11_5: usize = 25;
 pub const BIT_OFFSET_IMM_11_5_FINAL: usize = 5;
 pub const MASK_IMM_11_5: InstructionType =
     0b1111111 << BIT_OFFSET_IMM_11_5_FINAL;
+
+pub const BIT_OFFSET_B_FORMAT_IMM_11: usize = 7;
+pub const MASK_B_FORMAT_IMM_11: InstructionType =
+    0b1 << BIT_OFFSET_B_FORMAT_IMM_11;
+pub const BIT_OFFSET_B_FORMAT_IMM_4_1: usize = 8;
+pub const MASK_B_FORMAT_IMM_4_1: InstructionType =
+    0b1111 << BIT_OFFSET_B_FORMAT_IMM_4_1;
+pub const BIT_OFFSET_B_FORMAT_IMM_10_5: usize = 25;
+pub const MASK_B_FORMAT_IMM_10_5: InstructionType =
+    0b111111 << BIT_OFFSET_B_FORMAT_IMM_10_5;
+pub const BIT_OFFSET_B_FORMAT_IMM_12: usize = 31;
+pub const MASK_B_FORMAT_IMM_12: InstructionType =
+    0b1 << BIT_OFFSET_B_FORMAT_IMM_12;
+
 pub const BIT_OFFSET_IMM_4_0: usize = 7;
 pub const BIT_OFFSET_IMM_4_0_FINAL: usize = 0;
 pub const MASK_IMM_4_0: InstructionType = 0x1F << BIT_OFFSET_IMM_4_0_FINAL;

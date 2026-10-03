@@ -55,12 +55,15 @@ use super::constants::{
     InstructionTypeCompressed,
 };
 use crate::constants::arch::{
+    BIT_OFFSET_B_FORMAT_IMM_4_1, BIT_OFFSET_B_FORMAT_IMM_10_5,
+    BIT_OFFSET_B_FORMAT_IMM_11, BIT_OFFSET_B_FORMAT_IMM_12,
     BIT_OFFSET_DESTINATION_REGISTER, BIT_OFFSET_FUNCT3, BIT_OFFSET_I_FUNCT7,
     BIT_OFFSET_IMM_4_0, BIT_OFFSET_IMM_11_0, BIT_OFFSET_IMM_11_5,
     BIT_OFFSET_IMM_31_12, BIT_OFFSET_R_FUNCT7, BIT_OFFSET_SHAMT,
     BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
-    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, MASK_IMM_4_0, MASK_IMM_11_5,
-    SignedImmediate, UnsignedImmediate,
+    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, MASK_B_FORMAT_IMM_4_1,
+    MASK_B_FORMAT_IMM_10_5, MASK_B_FORMAT_IMM_11, MASK_B_FORMAT_IMM_12,
+    MASK_IMM_4_0, MASK_IMM_11_5, SignedImmediate, UnsignedImmediate,
 };
 use crate::soc::hart::core::decoder::constants::{
     JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
@@ -1364,9 +1367,44 @@ impl Decoder {
         expanded_instruction
     }
 
-    // fn expand_to_b_format(&self) -> InstructionType {
-    //     //
-    // }
+    fn expand_to_b_format(
+        &self,
+        opcode: Opcode,
+        source_register_1_offset: usize,
+        source_register_2_offset: usize,
+        imm_12_1: SignedImmediate,
+        funct3: InstructionType,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set imm[11]
+        expanded_instruction |= ((imm_12_1 as InstructionType)
+            & MASK_B_FORMAT_IMM_11)
+            << BIT_OFFSET_B_FORMAT_IMM_11;
+        // set imm[4:1]
+        expanded_instruction |= ((imm_12_1 as InstructionType)
+            & MASK_B_FORMAT_IMM_4_1)
+            << BIT_OFFSET_B_FORMAT_IMM_4_1;
+        // set funct3
+        expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (source_register_1_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set rs2
+        expanded_instruction |= (source_register_2_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_2;
+        // set imm[10:5]
+        expanded_instruction |= ((imm_12_1 as InstructionType)
+            & MASK_B_FORMAT_IMM_10_5)
+            << BIT_OFFSET_B_FORMAT_IMM_10_5;
+        // set imm[11]
+        expanded_instruction |= ((imm_12_1 as InstructionType)
+            & MASK_B_FORMAT_IMM_12)
+            << BIT_OFFSET_B_FORMAT_IMM_12;
+
+        expanded_instruction
+    }
 
     fn expand_to_u_format(
         &self,
