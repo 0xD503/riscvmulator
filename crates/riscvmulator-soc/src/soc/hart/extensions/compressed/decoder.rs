@@ -14,7 +14,7 @@ use crate::soc::hart::core::decoder::constants::{
 };
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::core::{decoder::Decoder, fetch_unit::FetchUnit};
-use crate::soc::hart::extensions::compressed;
+use crate::soc::hart::extensions;
 use crate::soc::hart::extensions::compressed::constants::{
     Bits11_10_quadrant_01, CA_Funct_2, COMPRESSED_BITS_11_10_MASK,
     COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK,
@@ -56,12 +56,11 @@ use crate::soc::hart::extensions::compressed::constants::{
     COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
     InstructionTypeCompressed,
 };
-use crate::soc::hart::extensions::integer;
 use crate::soc::hart::extensions::integer::constants::OP_IMM_32_Funct3;
 
 #[derive(Clone)]
 pub struct DecoderCompressedISAContext {
-    funct3: compressed::constants::OP_Funct3,
+    funct3: extensions::compressed::constants::OP_Funct3,
     cr_funct4_lsb_compressed: bool,
     cr_ci_rd_or_rs1_offset: usize,
     cr_css_source_register_2_offset: usize,
@@ -75,16 +74,16 @@ pub struct DecoderCompressedISAContext {
     cl_cs_rs1_offset: usize,
     cs_ca_rs2_offset: usize,
     ca_funct2: CA_Funct_2,
-    ca_cb_rd_or_rs1_offset: InstructionTypeCompressed,
+    ca_cb_rd_or_rs1_offset: usize,
     ca_cb_bit_12: bool,
-    ca_cb_bits_11_10_quadrant_01_funct3_100: Bits11_10_quadrant_01,
+    ca_cb_bits_11_10_quad_01_funct3_100: Bits11_10_quadrant_01,
     cj_jta_imm: InstructionTypeCompressed,
 }
 
 impl Default for DecoderCompressedISAContext {
     fn default() -> Self {
         DecoderCompressedISAContext {
-            funct3: compressed::constants::OP_Funct3::F000,
+            funct3: extensions::compressed::constants::OP_Funct3::F000,
             cr_funct4_lsb_compressed: false,
             cr_ci_rd_or_rs1_offset: GPRegisterName::x0_zero as usize,
             cr_css_source_register_2_offset: GPRegisterName::x0_zero as usize,
@@ -100,8 +99,7 @@ impl Default for DecoderCompressedISAContext {
             ca_funct2: CA_Funct_2::F00,
             ca_cb_rd_or_rs1_offset: 0,
             ca_cb_bit_12: false,
-            ca_cb_bits_11_10_quadrant_01_funct3_100:
-                Bits11_10_quadrant_01::CA_11,
+            ca_cb_bits_11_10_quad_01_funct3_100: Bits11_10_quadrant_01::CA_11,
             cj_jta_imm: 0,
         }
     }
@@ -117,85 +115,83 @@ impl Decoder {
         );
 
         match fetch_unit.current_quadrant {
-            OpcodeQuadrant::Quadrant00 => {
-                match self.compressedISA.funct3 {
-                    compressed::constants::OP_Funct3::F000 => self
-                        .expand_ciw(fetch_unit.current_instruction_compressed),
-                    compressed::constants::OP_Funct3::F001
-                    | compressed::constants::OP_Funct3::F010
-                    | compressed::constants::OP_Funct3::F011 => self
-                        .expand_cl(fetch_unit.current_instruction_compressed),
-                    compressed::constants::OP_Funct3::F101
-                    | compressed::constants::OP_Funct3::F110
-                    | compressed::constants::OP_Funct3::F111 => self
-                        .expand_cs(fetch_unit.current_instruction_compressed),
+            OpcodeQuadrant::Quadrant00 => match self.compressedISA.funct3 {
+                extensions::compressed::constants::OP_Funct3::F000 => {
+                    self.expand_ciw(fetch_unit.current_instruction_compressed)
+                }
+                extensions::compressed::constants::OP_Funct3::F001
+                | extensions::compressed::constants::OP_Funct3::F010
+                | extensions::compressed::constants::OP_Funct3::F011 => {
+                    self.expand_cl(fetch_unit.current_instruction_compressed)
+                }
+                extensions::compressed::constants::OP_Funct3::F101
+                | extensions::compressed::constants::OP_Funct3::F110
+                | extensions::compressed::constants::OP_Funct3::F111 => {
+                    self.expand_cs(fetch_unit.current_instruction_compressed)
+                }
 
-                    compressed::constants::OP_Funct3::F100 => {
-                        todo!("illegal instruction, reserved by specification");
+                extensions::compressed::constants::OP_Funct3::F100 => {
+                    todo!("illegal instruction, reserved by specification");
+                }
+            },
+            OpcodeQuadrant::Quadrant01 => match self.compressedISA.funct3 {
+                extensions::compressed::constants::OP_Funct3::F000
+                | extensions::compressed::constants::OP_Funct3::F010
+                | extensions::compressed::constants::OP_Funct3::F011 => {
+                    self.expand_ci(fetch_unit)
+                }
+                extensions::compressed::constants::OP_Funct3::F001 => {
+                    todo!("distiguish between RV32/RV64");
+                }
+                extensions::compressed::constants::OP_Funct3::F100 => {
+                    self.compressedISA.ca_cb_bit_12 = self
+                        .extract_ca_cb_bit_12(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                    self.compressedISA.ca_cb_bits_11_10_quad_01_funct3_100 =
+                        self.extract_bits_11_10_quadrant_01_funct3_100(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                    self.compressedISA.ca_cb_rd_or_rs1_offset = self
+                        .extract_ca_cb_rd_or_rs1_offset(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                    match self.compressedISA.ca_cb_bits_11_10_quad_01_funct3_100
+                    {
+                        Bits11_10_quadrant_01::CA_11 => self.expand_ca(
+                            fetch_unit.current_instruction_compressed,
+                        ),
+                        Bits11_10_quadrant_01::CB_00
+                        | Bits11_10_quadrant_01::CB_01
+                        | Bits11_10_quadrant_01::CB_10 => self.expand_cb(
+                            fetch_unit.current_instruction_compressed,
+                        ),
                     }
                 }
-            }
-            OpcodeQuadrant::Quadrant01 => {
-                match self.compressedISA.funct3 {
-                    compressed::constants::OP_Funct3::F000
-                    | compressed::constants::OP_Funct3::F010
-                    | compressed::constants::OP_Funct3::F011 => {
-                        self.expand_ci(fetch_unit)
-                    }
-                    compressed::constants::OP_Funct3::F001 => {
-                        todo!("distiguish between RV32/RV64");
-                    }
-                    compressed::constants::OP_Funct3::F100 => {
-                        self.compressedISA.ca_cb_bit_12 = self
-                            .extract_ca_cb_bit_12(
-                                fetch_unit.current_instruction_compressed,
-                            );
-                        self.compressedISA
-                            .ca_cb_bits_11_10_quadrant_01_funct3_100 = self
-                            .extract_bits_11_10_quadrant_01_funct3_100(
-                                fetch_unit.current_instruction_compressed,
-                            );
-                        self.compressedISA.ca_cb_rd_or_rs1_offset = self
-                            .extract_ca_cb_rd_or_rs1_offset(
-                                fetch_unit.current_instruction_compressed,
-                            );
-                        match self
-                            .compressedISA
-                            .ca_cb_bits_11_10_quadrant_01_funct3_100
-                        {
-                            Bits11_10_quadrant_01::CA_11 => self.expand_ca(
-                                fetch_unit.current_instruction_compressed,
-                            ),
-                            Bits11_10_quadrant_01::CB_00
-                            | Bits11_10_quadrant_01::CB_01
-                            | Bits11_10_quadrant_01::CB_10 => self.expand_cb(
-                                fetch_unit.current_instruction_compressed,
-                            ),
-                        }
-                    }
-                    compressed::constants::OP_Funct3::F101 => self
-                        .expand_cj(fetch_unit.current_instruction_compressed),
-                    compressed::constants::OP_Funct3::F110
-                    | compressed::constants::OP_Funct3::F111 => self
-                        .expand_cb(fetch_unit.current_instruction_compressed),
+                extensions::compressed::constants::OP_Funct3::F101 => {
+                    self.expand_cj(fetch_unit.current_instruction_compressed)
                 }
-            }
-            OpcodeQuadrant::Quadrant10 => {
-                match self.compressedISA.funct3 {
-                    compressed::constants::OP_Funct3::F000
-                    | compressed::constants::OP_Funct3::F001
-                    | compressed::constants::OP_Funct3::F010
-                    | compressed::constants::OP_Funct3::F011 => {
-                        self.expand_ci(fetch_unit)
-                    }
-                    compressed::constants::OP_Funct3::F100 => self
-                        .expand_cr(fetch_unit.current_instruction_compressed),
-                    compressed::constants::OP_Funct3::F101
-                    | compressed::constants::OP_Funct3::F110
-                    | compressed::constants::OP_Funct3::F111 => self
-                        .expand_css(fetch_unit.current_instruction_compressed),
+                extensions::compressed::constants::OP_Funct3::F110
+                | extensions::compressed::constants::OP_Funct3::F111 => {
+                    self.expand_cb(fetch_unit.current_instruction_compressed)
                 }
-            }
+            },
+            OpcodeQuadrant::Quadrant10 => match self.compressedISA.funct3 {
+                extensions::compressed::constants::OP_Funct3::F000
+                | extensions::compressed::constants::OP_Funct3::F001
+                | extensions::compressed::constants::OP_Funct3::F010
+                | extensions::compressed::constants::OP_Funct3::F011 => {
+                    self.expand_ci(fetch_unit)
+                }
+                extensions::compressed::constants::OP_Funct3::F100 => {
+                    self.expand_cr(fetch_unit.current_instruction_compressed)
+                }
+                extensions::compressed::constants::OP_Funct3::F101
+                | extensions::compressed::constants::OP_Funct3::F110
+                | extensions::compressed::constants::OP_Funct3::F111 => {
+                    self.expand_css(fetch_unit.current_instruction_compressed)
+                }
+            },
 
             OpcodeQuadrant::Quadrant11 => {
                 error!(
@@ -230,7 +226,7 @@ impl Decoder {
         if self.compressedISA.cr_funct4_lsb_compressed {
             if self.compressedISA.cr_css_source_register_2_offset == 0 {
                 if self.compressedISA.cr_ci_rd_or_rs1_offset != 0 {
-                    // C.JALR expands to `jalr x1, 0(rs1)`
+                    // C.JALR expands into `jalr x1, 0(rs1)`
                     self.expand_to_i_format(
                         Opcode::JALR,
                         GPRegisterName::x1_ra as usize,
@@ -240,7 +236,7 @@ impl Decoder {
                         0,
                     )
                 } else {
-                    // C.EBREAK expands to `ebreak`
+                    // C.EBREAK expands into `ebreak`
                     self.expand_to_i_format(
                         Opcode::SYSTEM,
                         GPRegisterName::x0_zero as usize,
@@ -256,21 +252,22 @@ impl Decoder {
                 if self.compressedISA.cr_ci_rd_or_rs1_offset == 0 {
                     trace!("HINT was met");
                 }
-                // C.ADD expands to `add rd, rd, rs2`
+                // C.ADD expands into `add rd, rd, rs2`
                 self.expand_to_r_format(
                     Opcode::OP,
                     self.compressedISA.cr_ci_rd_or_rs1_offset,
-                    integer::constants::OP_Funct3::ARITH as InstructionType,
+                    extensions::integer::constants::OP_Funct3::ARITH
+                        as InstructionType,
                     self.compressedISA.cr_ci_rd_or_rs1_offset,
                     self.compressedISA.cr_css_source_register_2_offset,
-                    OP_Funct7::F0,
+                    OP_Funct7::F0 as InstructionType,
                 )
             }
         } else {
             if self.compressedISA.cr_css_source_register_2_offset == 0 {
                 // C.JR is valid only when rs1 != x0; the code point with rs1 = x0 is reserved.
                 if self.compressedISA.cr_ci_rd_or_rs1_offset != 0 {
-                    // C.JR expands to `jalr x0, 0(rs1)`
+                    // C.JR expands into `jalr x0, 0(rs1)`
                     self.expand_to_i_format(
                         Opcode::JALR,
                         GPRegisterName::x0_zero as usize,
@@ -295,10 +292,11 @@ impl Decoder {
                 self.expand_to_r_format(
                     Opcode::OP,
                     self.compressedISA.cr_ci_rd_or_rs1_offset,
-                    integer::constants::OP_Funct3::ARITH as InstructionType,
+                    extensions::integer::constants::OP_Funct3::ARITH
+                        as InstructionType,
                     GPRegisterName::x0_zero as usize,
                     self.compressedISA.cr_css_source_register_2_offset,
-                    OP_Funct7::F0,
+                    OP_Funct7::F0 as InstructionType,
                 )
             }
         }
@@ -313,7 +311,7 @@ impl Decoder {
             );
 
         match self.compressedISA.funct3 {
-            compressed::constants::OP_Funct3::F000 => {
+            extensions::compressed::constants::OP_Funct3::F000 => {
                 match fetch_unit.current_quadrant {
                     OpcodeQuadrant::Quadrant01 => {
                         self.compressedISA.ci_imm = self.extract_ci_nzimm_5_0(
@@ -352,7 +350,7 @@ impl Decoder {
                     }
                 }
             }
-            compressed::constants::OP_Funct3::F001 => {
+            extensions::compressed::constants::OP_Funct3::F001 => {
                 match fetch_unit.current_quadrant {
                     OpcodeQuadrant::Quadrant01 => {
                         self.compressedISA.ci_imm = self.extract_ci_imm_5_0(
@@ -375,7 +373,7 @@ impl Decoder {
                     }
                 }
             }
-            compressed::constants::OP_Funct3::F010 => {
+            extensions::compressed::constants::OP_Funct3::F010 => {
                 match fetch_unit.current_quadrant {
                     OpcodeQuadrant::Quadrant01 => {
                         self.compressedISA.ci_imm = self.extract_ci_imm_5_0(
@@ -411,7 +409,7 @@ impl Decoder {
                     }
                 }
             }
-            compressed::constants::OP_Funct3::F011 => {
+            extensions::compressed::constants::OP_Funct3::F011 => {
                 match fetch_unit.current_quadrant {
                     OpcodeQuadrant::Quadrant01 => {
                         if self.compressedISA.cr_ci_rd_or_rs1_offset != 2 {
@@ -520,31 +518,31 @@ impl Decoder {
             self.extract_cr_css_source_register_2_offset(instruction);
 
         match self.compressedISA.funct3 {
-            compressed::constants::OP_Funct3::F101 => {
+            extensions::compressed::constants::OP_Funct3::F101 => {
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_8_3(instruction);
-                // C.FSDSP expands to ``
+                // C.FSDSP expands into ``
 
                 todo!("TODO: unimplemented");
             }
-            compressed::constants::OP_Funct3::F110 => {
+            extensions::compressed::constants::OP_Funct3::F110 => {
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_7_2(instruction);
-                // C.SWSP expands to ``
+                // C.SWSP expands into ``
 
                 todo!("TODO: unimplemented");
             }
-            compressed::constants::OP_Funct3::F111 => {
+            extensions::compressed::constants::OP_Funct3::F111 => {
                 todo!("TODO: check unimplemented");
 
                 // if RV64IC
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_8_3(instruction);
-                // C.SDSP expands to ``
+                // C.SDSP expands into ``
                 // else if RV32IFC
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_7_2(instruction);
-                // C.FSWSP expands to ``
+                // C.FSWSP expands into ``
 
                 todo!("TODO: unimplemented");
             }
@@ -603,7 +601,7 @@ impl Decoder {
             self.extract_cl_cs_rs1_offset(instruction);
 
         match self.compressedISA.funct3 {
-            compressed::constants::OP_Funct3::F001 => {
+            extensions::compressed::constants::OP_Funct3::F001 => {
                 todo!("condition unimplemented yet");
                 // if RV(32|64)DC {
                 self.compressedISA.cl_offset_7_3 =
@@ -611,7 +609,7 @@ impl Decoder {
                 self.expand_to_fld()
                 // }
             }
-            compressed::constants::OP_Funct3::F010 => {
+            extensions::compressed::constants::OP_Funct3::F010 => {
                 self.compressedISA.cl_offset_6_2 =
                     self.extract_cl_offset_6_2(instruction);
                 // C.LW expands into `lw rd', offset(rs1')`
@@ -623,7 +621,7 @@ impl Decoder {
                     self.compressedISA.cl_offset_6_2 as SignedImmediate,
                 )
             }
-            compressed::constants::OP_Funct3::F011 => {
+            extensions::compressed::constants::OP_Funct3::F011 => {
                 todo!("condition unimplemented yet");
                 // if RV64IC only
                 self.compressedISA.cl_offset_7_3 =
@@ -667,7 +665,7 @@ impl Decoder {
             self.extract_cs_ca_rs2_offset(instruction);
 
         match self.compressedISA.funct3 {
-            compressed::constants::OP_Funct3::F101 => {
+            extensions::compressed::constants::OP_Funct3::F101 => {
                 todo!("condition unimplemented yet");
                 // if RV(32|64)DC {
                 self.expand_to_fsd()
@@ -675,11 +673,11 @@ impl Decoder {
                 // todo!();
                 // }
             }
-            compressed::constants::OP_Funct3::F110 => {
+            extensions::compressed::constants::OP_Funct3::F110 => {
                 //
                 self.expand_to_sw()
             }
-            compressed::constants::OP_Funct3::F111 => {
+            extensions::compressed::constants::OP_Funct3::F111 => {
                 todo!("condition unimplemented yet");
                 // if { // RV64IC only
                 self.expand_to_sd()
@@ -704,17 +702,91 @@ impl Decoder {
         self.compressedISA.cs_ca_rs2_offset =
             self.extract_cs_ca_rs2_offset(instruction);
 
-        match self.compressedISA.funct3 {
-            compressed::constants::OP_Funct3::F000 => {
-                todo!("condition unimplemented yet");
+        if self.compressedISA.ca_cb_bit_12 {
+            match self.compressedISA.ca_funct2 {
+                CA_Funct_2::F00 => {
+                    // C.SUB expands into `sub rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_Funct3::ARITH
+                            as InstructionType,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        self.compressedISA.cs_ca_rs2_offset,
+                        OP_Funct7::F1 as InstructionType,
+                    )
+                }
+                CA_Funct_2::F01 => {
+                    // C.XOR expands into `xor rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_Funct3::XOR
+                            as InstructionType,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        self.compressedISA.cs_ca_rs2_offset,
+                        OP_Funct7::F0 as InstructionType,
+                    )
+                }
+                CA_Funct_2::F10 => {
+                    // C.OR expands into or `rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_Funct3::OR
+                            as InstructionType,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        self.compressedISA.cs_ca_rs2_offset,
+                        OP_Funct7::F0 as InstructionType,
+                    )
+                }
+                CA_Funct_2::F11 => {
+                    // C.AND expands into `and rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_Funct3::AND
+                            as InstructionType,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        self.compressedISA.cs_ca_rs2_offset,
+                        OP_Funct7::F0 as InstructionType,
+                    )
+                }
             }
+        } else {
+            match self.compressedISA.ca_funct2 {
+                CA_Funct_2::F00 => {
+                    // C.SUBW expands into subw `rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP_32,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_32_Funct3::ARITHW
+                            as InstructionType,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        self.compressedISA.cs_ca_rs2_offset,
+                        OP_Funct7::F1 as InstructionType,
+                    )
+                }
+                CA_Funct_2::F01 => {
+                    // C.ADDW expands into addw `rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP_32,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_32_Funct3::ARITHW
+                            as InstructionType,
+                        self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
+                        self.compressedISA.cs_ca_rs2_offset,
+                        OP_Funct7::F0 as InstructionType,
+                    )
+                }
 
-            _ => {
-                todo!("illegal instruction trap, reserved by specification");
+                _ => {
+                    todo!(
+                        "illegal instruction trap, reserved by specification"
+                    );
+                }
             }
         }
-
-        todo!("TODO: unimplemented");
     }
 
     fn expand_cb(
@@ -727,7 +799,7 @@ impl Decoder {
             self.extract_ca_cb_rd_or_rs1_offset(instruction);
 
         match self.compressedISA.funct3 {
-            compressed::constants::OP_Funct3::F000 => {
+            extensions::compressed::constants::OP_Funct3::F000 => {
                 todo!("condition unimplemented yet");
             }
 
@@ -748,7 +820,7 @@ impl Decoder {
         self.compressedISA.cj_jta_imm = self.extract_cj_jta_imm(instruction);
 
         match self.compressedISA.funct3 {
-            compressed::constants::OP_Funct3::F000 => {
+            extensions::compressed::constants::OP_Funct3::F000 => {
                 todo!("condition unimplemented yet");
             }
 
@@ -764,8 +836,8 @@ impl Decoder {
     fn extract_funct3_compressed(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> compressed::constants::OP_Funct3 {
-        compressed::constants::OP_Funct3::from(
+    ) -> extensions::compressed::constants::OP_Funct3 {
+        extensions::compressed::constants::OP_Funct3::from(
             instruction & COMPRESSED_FUNCT3_MASK,
         )
     }
@@ -1004,10 +1076,11 @@ impl Decoder {
     fn extract_ca_cb_rd_or_rs1_offset(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> InstructionTypeCompressed {
-        ((instruction & COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK)
+    ) -> usize {
+        (((instruction & COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK)
             >> COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET)
-            + GPRegisterName::x8_s0_fp as InstructionTypeCompressed
+            + GPRegisterName::x8_s0_fp as InstructionTypeCompressed)
+            as usize
     }
 
     fn extract_ca_cb_bit_12(
@@ -1049,7 +1122,7 @@ impl Decoder {
         funct3: InstructionType,
         source_register_1_offset: usize,
         source_register_2_offset: usize,
-        funct7: OP_Funct7,
+        funct7: InstructionType,
     ) -> InstructionType {
         // set opcode
         let mut expanded_instruction: InstructionType =
@@ -1067,8 +1140,7 @@ impl Decoder {
         expanded_instruction |= (source_register_2_offset as InstructionType)
             << BIT_OFFSET_SOURCE_REGISTER_2;
         // set funct7
-        expanded_instruction |=
-            (funct7 as InstructionType) << BIT_OFFSET_R_FUNCT7;
+        expanded_instruction |= funct7 << BIT_OFFSET_R_FUNCT7;
 
         expanded_instruction
     }
