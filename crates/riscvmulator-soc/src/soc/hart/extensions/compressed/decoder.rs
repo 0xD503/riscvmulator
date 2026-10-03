@@ -1,22 +1,6 @@
 use log::{error, trace};
 
-use crate::constants::arch::{
-    BIT_OFFSET_DESTINATION_REGISTER, BIT_OFFSET_FUNCT3, BIT_OFFSET_FUNCT12,
-    BIT_OFFSET_I_FUNCT7, BIT_OFFSET_IMM_11_0, BIT_OFFSET_IMM_11_5,
-    BIT_OFFSET_IMM_31_12, BIT_OFFSET_R_FUNCT7, BIT_OFFSET_SHAMT,
-    BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
-    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, MASK_SHAMT, SignedImmediate,
-    UnsignedImmediate,
-};
-use crate::soc::hart::core::decoder::constants::{
-    JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
-    OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant, STORE_Funct3, SYSTEM_Funct3,
-    SYSTEM_Imm_transfer_control_return_from,
-};
-use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
-use crate::soc::hart::core::{decoder::Decoder, fetch_unit::FetchUnit};
-use crate::soc::hart::extensions;
-use crate::soc::hart::extensions::compressed::constants::{
+use super::constants::{
     Bits11_10_quadrant_01, CA_Funct_2, COMPRESSED_BITS_11_10_MASK,
     COMPRESSED_BITS_11_10_OFFSET, COMPRESSED_BITS_12_MASK,
     COMPRESSED_BITS_12_OFFSET, COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK,
@@ -70,6 +54,21 @@ use crate::soc::hart::extensions::compressed::constants::{
     COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
     InstructionTypeCompressed,
 };
+use crate::constants::arch::{
+    BIT_OFFSET_DESTINATION_REGISTER, BIT_OFFSET_FUNCT3, BIT_OFFSET_I_FUNCT7,
+    BIT_OFFSET_IMM_11_0, BIT_OFFSET_IMM_31_12, BIT_OFFSET_R_FUNCT7,
+    BIT_OFFSET_SHAMT, BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
+    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, SignedImmediate,
+    UnsignedImmediate,
+};
+use crate::soc::hart::core::decoder::constants::{
+    JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
+    OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant, SYSTEM_Funct3,
+    SYSTEM_Imm_transfer_control_return_from,
+};
+use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
+use crate::soc::hart::core::{decoder::Decoder, fetch_unit::FetchUnit};
+use crate::soc::hart::extensions;
 use crate::soc::hart::extensions::integer::constants::OP_IMM_32_Funct3;
 
 #[derive(Clone)]
@@ -228,7 +227,7 @@ impl Decoder {
         &mut self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionType {
-        trace!("Decoding CR-format instruction..");
+        trace!("Expanding CR-format instruction..");
 
         self.compressedISA.cr_funct4_lsb_compressed =
             self.extract_cr_funct4_lsb_compressed(instruction);
@@ -317,7 +316,7 @@ impl Decoder {
     }
 
     fn expand_ci(&mut self, fetch_unit: &FetchUnit) -> InstructionType {
-        trace!("Decoding CI-format instruction..");
+        trace!("Expanding CI-format instruction..");
 
         self.compressedISA.cr_ci_rd_or_rs1_offset = self
             .extract_cr_ci_destination_or_source_register_1_offset(
@@ -526,7 +525,7 @@ impl Decoder {
         &mut self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionType {
-        trace!("Decoding CSS-format instruction..");
+        trace!("Expanding CSS-format instruction..");
 
         self.compressedISA.cr_css_source_register_2_offset =
             self.extract_cr_css_source_register_2_offset(instruction);
@@ -535,14 +534,14 @@ impl Decoder {
             extensions::compressed::constants::OP_Funct3::F101 => {
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_8_3(instruction);
-                // C.FSDSP expands into ``
+                // C.FSDSP expands into `fsd rs2, offset(x2)`
 
                 todo!("TODO: unimplemented");
             }
             extensions::compressed::constants::OP_Funct3::F110 => {
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_7_2(instruction);
-                // C.SWSP expands into ``
+                // C.SWSP expands into `sw rs2, offset(x2)`
 
                 todo!("TODO: unimplemented");
             }
@@ -552,11 +551,13 @@ impl Decoder {
                 // if RV64IC
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_8_3(instruction);
-                // C.SDSP expands into ``
+                // C.SDSP expands into `sd rs2, offset(x2)`
+                //
                 // else if RV32IFC
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_7_2(instruction);
-                // C.FSWSP expands into ``
+                // C.FSWSP expands into `fsw rs2, offset(x2)`
+                //
 
                 todo!("TODO: unimplemented");
             }
@@ -580,7 +581,7 @@ impl Decoder {
         &mut self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionType {
-        trace!("Decoding CIW-format instruction..");
+        trace!("Expanding CIW-format instruction..");
 
         // C.ADDI4SPN (RESERVED when uimm == 0)
         self.compressedISA.c_uimm = self.extract_ciw_nzuimm_9_2(instruction);
@@ -606,7 +607,7 @@ impl Decoder {
         &mut self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionType {
-        trace!("Decoding CL-format instruction..");
+        trace!("Expanding CL-format instruction..");
 
         self.compressedISA.ciw_cl_rd_offset =
             self.extract_ciw_cl_rd_offset(instruction);
@@ -619,7 +620,11 @@ impl Decoder {
                 // if RV(32|64)DC {
                 self.compressedISA.cl_offset_7_3 =
                     self.extract_cl_offset_7_3(instruction);
-                self.expand_to_fld()
+                // C.FLD expands into `fld rd', offset(rs1')`
+                //
+                // }
+                // else {
+                //
                 // }
             }
             extensions::compressed::constants::OP_Funct3::F010 => {
@@ -670,7 +675,7 @@ impl Decoder {
         &mut self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionType {
-        trace!("Decoding CS-format instruction..");
+        trace!("Expanding CS-format instruction..");
 
         self.compressedISA.cl_cs_rs1_offset =
             self.extract_cl_cs_rs1_offset(instruction);
@@ -709,7 +714,7 @@ impl Decoder {
         &mut self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionType {
-        trace!("Decoding CA-format instruction..");
+        trace!("Expanding CA-format instruction..");
 
         self.compressedISA.ca_funct2 = self.extract_ca_funct2(instruction);
         self.compressedISA.cs_ca_rs2_offset =
@@ -820,7 +825,7 @@ impl Decoder {
         &mut self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionType {
-        trace!("Decoding CB-format instruction..");
+        trace!("Expanding CB-format instruction..");
 
         if self.compressedISA.funct3
             == extensions::compressed::constants::OP_Funct3::F100
@@ -906,12 +911,17 @@ impl Decoder {
         &mut self,
         instruction: InstructionTypeCompressed,
     ) -> InstructionType {
-        trace!("Decoding CJ-format instruction..");
+        trace!("Expanding CJ-format instruction..");
 
         self.compressedISA.cj_jta_imm = self.extract_cj_jta_imm(instruction);
 
         match self.compressedISA.funct3 {
-            extensions::compressed::constants::OP_Funct3::F000 => {
+            extensions::compressed::constants::OP_Funct3::F001 => {
+                // C.JAL expands into `jal x1, offset`
+                todo!("condition unimplemented yet");
+            }
+            extensions::compressed::constants::OP_Funct3::F101 => {
+                // C.J expands into `jal x0, offset`
                 todo!("condition unimplemented yet");
             }
 
