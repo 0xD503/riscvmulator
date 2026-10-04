@@ -88,6 +88,10 @@ test:
   {{RUN_IN_CONTAINER_DEBUG}} scripts/riscv_tests.temp.sh
   {{RUN_IN_CONTAINER_DEBUG}} cargo test --workspace --profile=release-checked
 
+test-debug:
+  {{RUN_IN_CONTAINER_DEBUG}} scripts/riscv_tests.temp.sh
+  {{RUN_IN_CONTAINER_DEBUG}} cargo test --workspace --profile=dev
+
 bench:
   {{RUN_IN_CONTAINER_DEBUG}} cargo bench --workspace  --profile=release-checked
 
