@@ -55,25 +55,36 @@ use super::constants::{
     InstructionTypeCompressed,
 };
 use crate::constants::arch::{
-    BIT_OFFSET_B_FORMAT_IMM_4_1, BIT_OFFSET_B_FORMAT_IMM_10_5,
-    BIT_OFFSET_B_FORMAT_IMM_11, BIT_OFFSET_B_FORMAT_IMM_12,
     BIT_OFFSET_DESTINATION_REGISTER, BIT_OFFSET_FUNCT3, BIT_OFFSET_I_FUNCT7,
-    BIT_OFFSET_IMM_4_0, BIT_OFFSET_IMM_11_0, BIT_OFFSET_IMM_11_5,
-    BIT_OFFSET_IMM_31_12, BIT_OFFSET_J_FORMAT_IMM_19_12, BIT_OFFSET_R_FUNCT7,
+    BIT_OFFSET_IMM_11_0, BIT_OFFSET_IMM_31_12, BIT_OFFSET_R_FUNCT7,
     BIT_OFFSET_SHAMT, BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
-    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, MASK_B_FORMAT_IMM_4_1,
-    MASK_B_FORMAT_IMM_10_5, MASK_B_FORMAT_IMM_11, MASK_B_FORMAT_IMM_12,
-    MASK_IMM_4_0, MASK_IMM_11_5, MASK_J_FORMAT_IMM_19_12, SignedImmediate,
+    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType, SignedImmediate,
     UnsignedImmediate,
 };
 use crate::soc::hart::core::decoder::constants::{
     JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
-    OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant, STORE_Funct3, SYSTEM_Funct3,
+    OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant, SYSTEM_Funct3,
     SYSTEM_Imm_transfer_control_return_from,
 };
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::core::{decoder::Decoder, fetch_unit::FetchUnit};
 use crate::soc::hart::extensions;
+use crate::soc::hart::extensions::compressed::constants::{
+    COMPRESSED_CB_IMM_4_1_MASK, COMPRESSED_CB_IMM_4_1_OFFSET,
+    COMPRESSED_CB_IMM_4_1_OFFSET_FINAL, COMPRESSED_CB_IMM_10_5_MASK,
+    COMPRESSED_CB_IMM_10_5_OFFSET, COMPRESSED_CB_IMM_10_5_OFFSET_FINAL,
+    COMPRESSED_CB_IMM_11_MASK, COMPRESSED_CB_IMM_11_OFFSET,
+    COMPRESSED_CB_IMM_11_OFFSET_FINAL, COMPRESSED_CB_IMM_12_MASK,
+    COMPRESSED_CB_IMM_12_OFFSET, COMPRESSED_CB_IMM_12_OFFSET_FINAL,
+    COMPRESSED_CJ_IMM_11_MASK, COMPRESSED_CJ_IMM_11_OFFSET,
+    COMPRESSED_CJ_IMM_11_OFFSET_FINAL, COMPRESSED_CJ_IMM_19_12_MASK,
+    COMPRESSED_CJ_IMM_19_12_OFFSET, COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL,
+    COMPRESSED_CJ_IMM_20_MASK, COMPRESSED_CJ_IMM_20_OFFSET,
+    COMPRESSED_CJ_IMM_20_OFFSET_FINAL, COMPRESSED_CS_IMM_4_0_MASK,
+    COMPRESSED_CS_IMM_4_0_OFFSET, COMPRESSED_CS_IMM_4_0_OFFSET_FINAL,
+    COMPRESSED_CS_IMM_11_5_MASK, COMPRESSED_CS_IMM_11_5_OFFSET,
+    COMPRESSED_CS_IMM_11_5_OFFSET_FINAL,
+};
 use crate::soc::hart::extensions::integer::constants::OP_IMM_32_Funct3;
 
 #[derive(Clone)]
@@ -548,7 +559,11 @@ impl Decoder {
             extensions::compressed::constants::OP_Funct3::F011 => {
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_7_2(instruction);
+                // if RV32IFC {
                 // C.FLWSP expands into `flw rd, offset(x2)`
+                // } else if RV64IFC {
+                //
+                // }
 
                 todo!("TODO: unimplemented");
             }
@@ -1368,8 +1383,10 @@ impl Decoder {
         let mut expanded_instruction: InstructionType =
             opcode as InstructionType;
         // set imm[4:0]
-        expanded_instruction |= ((imm_11_0 as InstructionType) & MASK_IMM_4_0)
-            << BIT_OFFSET_IMM_4_0;
+        expanded_instruction |= ((imm_11_0 as InstructionType)
+            & COMPRESSED_CS_IMM_4_0_MASK as InstructionType)
+            << (COMPRESSED_CS_IMM_4_0_OFFSET_FINAL
+                - COMPRESSED_CS_IMM_4_0_OFFSET);
         // set funct3
         expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
         // set rs1
@@ -1379,8 +1396,10 @@ impl Decoder {
         expanded_instruction |= (source_register_2_offset as InstructionType)
             << BIT_OFFSET_SOURCE_REGISTER_2;
         // set imm[11:5]
-        expanded_instruction |= ((imm_11_0 as InstructionType) & MASK_IMM_11_5)
-            << BIT_OFFSET_IMM_11_5;
+        expanded_instruction |= ((imm_11_0 as InstructionType)
+            & COMPRESSED_CS_IMM_11_5_MASK as InstructionType)
+            << (COMPRESSED_CS_IMM_11_5_OFFSET_FINAL
+                - COMPRESSED_CS_IMM_11_5_OFFSET);
 
         expanded_instruction
     }
@@ -1398,12 +1417,14 @@ impl Decoder {
             opcode as InstructionType;
         // set imm[11]
         expanded_instruction |= ((imm_12_1 as InstructionType)
-            & MASK_B_FORMAT_IMM_11)
-            << BIT_OFFSET_B_FORMAT_IMM_11;
+            & COMPRESSED_CB_IMM_11_MASK as InstructionType)
+            >> (COMPRESSED_CB_IMM_11_OFFSET
+                - COMPRESSED_CB_IMM_11_OFFSET_FINAL);
         // set imm[4:1]
         expanded_instruction |= ((imm_12_1 as InstructionType)
-            & MASK_B_FORMAT_IMM_4_1)
-            << BIT_OFFSET_B_FORMAT_IMM_4_1;
+            & COMPRESSED_CB_IMM_4_1_MASK as InstructionType)
+            << (COMPRESSED_CB_IMM_4_1_OFFSET_FINAL
+                - COMPRESSED_CB_IMM_4_1_OFFSET);
         // set funct3
         expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
         // set rs1
@@ -1414,12 +1435,14 @@ impl Decoder {
             << BIT_OFFSET_SOURCE_REGISTER_2;
         // set imm[10:5]
         expanded_instruction |= ((imm_12_1 as InstructionType)
-            & MASK_B_FORMAT_IMM_10_5)
-            << BIT_OFFSET_B_FORMAT_IMM_10_5;
-        // set imm[11]
+            & COMPRESSED_CB_IMM_10_5_MASK as InstructionType)
+            << (COMPRESSED_CB_IMM_10_5_OFFSET_FINAL
+                - COMPRESSED_CB_IMM_10_5_OFFSET);
+        // set imm[12]
         expanded_instruction |= ((imm_12_1 as InstructionType)
-            & MASK_B_FORMAT_IMM_12)
-            << BIT_OFFSET_B_FORMAT_IMM_12;
+            & COMPRESSED_CB_IMM_12_MASK as InstructionType)
+            << (COMPRESSED_CB_IMM_12_OFFSET_FINAL
+                - COMPRESSED_CB_IMM_12_OFFSET);
 
         expanded_instruction
     }
@@ -1457,10 +1480,26 @@ impl Decoder {
         expanded_instruction |= (destination_register_offset
             as InstructionType)
             << BIT_OFFSET_DESTINATION_REGISTER;
-        // // set imm[19:12]
-        // expanded_instruction |= ((imm_20_1 as InstructionType)
-        //     & MASK_J_FORMAT_IMM_19_12)
-        //     >> (BIT_OFFSET_J_FORMAT_IMM_19_12 - 12);
+        // set imm[19:12]
+        expanded_instruction |= ((imm_20_1 as InstructionType)
+            & COMPRESSED_CJ_IMM_19_12_MASK as InstructionType)
+            >> (COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL
+                - COMPRESSED_CJ_IMM_19_12_OFFSET);
+        // set imm[11]
+        expanded_instruction |= ((imm_20_1 as InstructionType)
+            & COMPRESSED_CJ_IMM_11_MASK as InstructionType)
+            >> (COMPRESSED_CJ_IMM_11_OFFSET_FINAL
+                - COMPRESSED_CJ_IMM_11_OFFSET);
+        // set imm[10:1]
+        expanded_instruction |= ((imm_20_1 as InstructionType)
+            & COMPRESSED_CJ_IMM_19_12_MASK as InstructionType)
+            >> (COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL
+                - COMPRESSED_CJ_IMM_19_12_OFFSET);
+        // set imm[20]
+        expanded_instruction |= ((imm_20_1 as InstructionType)
+            & COMPRESSED_CJ_IMM_20_MASK)
+            >> (COMPRESSED_CJ_IMM_20_OFFSET_FINAL
+                - COMPRESSED_CJ_IMM_20_OFFSET);
 
         expanded_instruction
     }

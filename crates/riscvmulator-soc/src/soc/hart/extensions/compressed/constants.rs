@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use log::error;
 
-use crate::constants::arch::RISCV_NUM_OF_REGISTERS;
+use crate::constants::arch::{InstructionType, RISCV_NUM_OF_REGISTERS};
 
 pub type InstructionTypeCompressed = u16;
 pub type SignedInstructionTypeCompressed = i16;
@@ -130,6 +130,55 @@ pub const COMPRESSED_CL_CS_RS1_OFFSET_MASK: InstructionTypeCompressed =
 pub const COMPRESSED_CS_CA_RS2_OFFSET_OFFSET: usize = 2;
 pub const COMPRESSED_CS_CA_RS2_OFFSET_MASK: InstructionTypeCompressed =
     0b111 << COMPRESSED_CS_CA_RS2_OFFSET_OFFSET;
+
+pub const COMPRESSED_CS_IMM_4_0_OFFSET: usize = 0;
+pub const COMPRESSED_CS_IMM_4_0_MASK: InstructionTypeCompressed =
+    0b11111 << COMPRESSED_CS_IMM_4_0_OFFSET;
+pub const COMPRESSED_CS_IMM_4_0_OFFSET_FINAL: usize = 7;
+pub const COMPRESSED_CS_IMM_11_5_OFFSET: usize = 5;
+pub const COMPRESSED_CS_IMM_11_5_MASK: InstructionTypeCompressed =
+    0b11111 << COMPRESSED_CS_IMM_11_5_OFFSET;
+pub const COMPRESSED_CS_IMM_11_5_OFFSET_FINAL: usize = 25;
+
+pub const COMPRESSED_CB_IMM_11_OFFSET: usize = 11;
+pub const COMPRESSED_CB_IMM_11_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CB_IMM_11_OFFSET;
+pub const COMPRESSED_CB_IMM_11_OFFSET_FINAL: usize = 7;
+
+pub const COMPRESSED_CB_IMM_4_1_OFFSET: usize = 0;
+pub const COMPRESSED_CB_IMM_4_1_MASK: InstructionTypeCompressed =
+    0b11111 << COMPRESSED_CB_IMM_4_1_OFFSET;
+pub const COMPRESSED_CB_IMM_4_1_OFFSET_FINAL: usize = 7;
+
+pub const COMPRESSED_CB_IMM_10_5_OFFSET: usize = 5;
+pub const COMPRESSED_CB_IMM_10_5_MASK: InstructionTypeCompressed =
+    0b111111 << COMPRESSED_CB_IMM_10_5_OFFSET;
+pub const COMPRESSED_CB_IMM_10_5_OFFSET_FINAL: usize = 7;
+
+pub const COMPRESSED_CB_IMM_12_OFFSET: usize = 12;
+pub const COMPRESSED_CB_IMM_12_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CB_IMM_12_OFFSET;
+pub const COMPRESSED_CB_IMM_12_OFFSET_FINAL: usize = 31;
+
+pub const COMPRESSED_CJ_IMM_19_12_OFFSET: usize = 12;
+pub const COMPRESSED_CJ_IMM_19_12_MASK: InstructionTypeCompressed =
+    0b11111111 << COMPRESSED_CJ_IMM_19_12_OFFSET;
+pub const COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL: usize = 12;
+
+pub const COMPRESSED_CJ_IMM_11_OFFSET: usize = 11;
+pub const COMPRESSED_CJ_IMM_11_MASK: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CJ_IMM_11_OFFSET;
+pub const COMPRESSED_CJ_IMM_11_OFFSET_FINAL: usize = 20;
+
+pub const COMPRESSED_CJ_IMM_10_1_OFFSET: usize = 1;
+pub const COMPRESSED_CJ_IMM_10_1_MASK: InstructionTypeCompressed =
+    0b1111111111 << COMPRESSED_CJ_IMM_10_1_OFFSET;
+pub const COMPRESSED_CJ_IMM_10_1_OFFSET_FINAL: usize = 12;
+
+pub const COMPRESSED_CJ_IMM_20_OFFSET: usize = 20;
+pub const COMPRESSED_CJ_IMM_20_MASK: InstructionType =
+    0b1 << COMPRESSED_CJ_IMM_20_OFFSET;
+pub const COMPRESSED_CJ_IMM_20_OFFSET_FINAL: usize = 31;
 
 pub const COMPRESSED_CA_FUNCT_2_OFFSET: usize = 5;
 pub const COMPRESSED_CA_FUNCT_2_MASK: InstructionTypeCompressed =
