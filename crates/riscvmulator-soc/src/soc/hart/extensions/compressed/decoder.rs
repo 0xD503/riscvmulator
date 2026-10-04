@@ -385,6 +385,11 @@ impl Decoder {
                     }
                     OpcodeQuadrant::Quadrant10 => {
                         // C.FLDSP expands into `fld rd, offset(x2)`
+                        // if RV64IFC {
+                        // FLDSP64
+                        // } else if RV32IFC {
+                        // FLDSP32
+                        // }
                         todo!()
                     }
 
@@ -540,10 +545,22 @@ impl Decoder {
             self.extract_cr_css_source_register_2_offset(instruction);
 
         match self.compressedISA.funct3 {
+            extensions::compressed::constants::OP_Funct3::F011 => {
+                self.compressedISA.css_imm =
+                    self.extract_css_uimm_7_2(instruction);
+                // C.FLWSP expands into `flw rd, offset(x2)`
+
+                todo!("TODO: unimplemented");
+            }
             extensions::compressed::constants::OP_Funct3::F101 => {
                 self.compressedISA.css_imm =
                     self.extract_css_uimm_8_3(instruction);
                 // C.FSDSP expands into `fsd rs2, offset(x2)`
+                // if RV64IFC {
+                // FSDSP64
+                // } else if RV32IFC {
+                // FSDSP32
+                // }
 
                 todo!("TODO: unimplemented");
             }
@@ -904,7 +921,7 @@ impl Decoder {
                     todo!("unimplemented yet");
                 }
                 extensions::compressed::constants::OP_Funct3::F111 => {
-                    // C.BNEZ expands to `bne rs1', x0, offset`
+                    // C.BNEZ expands into `bne rs1', x0, offset`
                     todo!("unimplemented yet");
                 }
 
@@ -1448,83 +1465,13 @@ impl Decoder {
         expanded_instruction
     }
 
-    fn expand_to_fldsp(&self) -> InstructionType {
-        // C.FLDSP expands into `fld rd, offset(x2)`
-        // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
+    // fn expand_to_flwsp(&self) -> InstructionType {
+    //     // // C.FLWSP expands into `flw rd, offset(x2)`
+    //     // // set opcode
+    //     // let mut expanded_instruction: InstructionType =
+    //     //     Opcode:: as InstructionType;
 
-        // expanded_instruction
-        todo!()
-    }
-
-    fn expand_to_flwsp(&self) -> InstructionType {
-        // // C.FLWSP expands into `flw rd, offset(x2)`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
-
-        // expanded_instruction
-        todo!()
-    }
-
-    fn expand_to_fld(&self) -> InstructionType {
-        // // C.FLD expands into `fld rd', offset(rs1')`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
-
-        // expanded_instruction
-        todo!()
-    }
-
-    fn expand_to_flw(&self) -> InstructionType {
-        // // C.FLW expands into `flw rd', offset(rs1')`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
-
-        // expanded_instruction
-        todo!()
-    }
-
-    fn expand_to_fsd(&self) -> InstructionType {
-        // // C.FSD expands into `fsd rs2', offset(rs1')`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
-
-        // expanded_instruction
-        todo!()
-    }
-
-    fn expand_to_sw(&self) -> InstructionType {
-        // // C.SW expands into `sw rs2', offset(rs1')`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
-
-        // expanded_instruction
-        todo!()
-    }
-
-    fn expand_to_sd(&self) -> InstructionType {
-        // // C.SD expands into `sd rs2', offset(rs1')`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
-
-        // expanded_instruction
-        todo!()
-    }
-
-    fn expand_to_fsw(&self) -> InstructionType {
-        // // C.FSW expands into `fsw rs2', offset(rs1')`
-        // // set opcode
-        // let mut expanded_instruction: InstructionType =
-        //     Opcode:: as InstructionType;
-
-        // expanded_instruction
-        todo!()
-    }
+    //     // expanded_instruction
+    //     todo!()
+    // }
 }
