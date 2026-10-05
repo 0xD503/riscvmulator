@@ -1,7 +1,7 @@
 // use std::error::Error;
 
 #[allow(non_camel_case_types)]
-// #[derive(Debug)]
+#[derive(Debug)]
 pub enum GPRegisterName {
     x0_zero,  // always zero
     x1_ra,    // return address

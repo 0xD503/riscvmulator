@@ -12,6 +12,7 @@ use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, SignedImmediate, SignedXLen,
     SignedXLen32, UnsignedImmediate, UnsignedXLen, Word, XLen, XLen32,
 };
+use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
 use crate::soc::hart::privileged::constants::{
@@ -347,6 +348,8 @@ impl Executor {
     }
 
     fn instruction_addi(&mut self, decoder: &Decoder) {
+        debug!("Executing ADDI...");
+
         dbg!("GREPME Before sign extension: {}", decoder.immediate);
         let sign_extended_imm = decoder.immediate.sign_extend();
 
@@ -360,7 +363,7 @@ impl Executor {
             sign_extended_imm
         )
         .to_lowercase();
-        debug!("{debug_str}");
+        dbg!("{debug_str:?}");
 
         // use wrapping operation in order to allow overruns
         self.result =
@@ -567,6 +570,15 @@ impl Executor {
                 XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
+        dbg!(
+            "GREPME99 BEQ {:#?} {:#?} {:#X?} {:#X?} {:#X?} {:#X?}",
+            decoder.source_register_1,
+            decoder.source_register_2,
+            pc.read(),
+            decoder.immediate,
+            decoder.immediate.sign_extend(),
+            self.branch_target_address
+        );
     }
 
     fn instruction_bne(&mut self, decoder: &Decoder, pc: &Register) {
@@ -655,10 +667,24 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
+        debug!("GREPME7 BEFORE Sing extension: {}", decoder.immediate);
+        let sign_extended_imm = decoder.immediate.sign_extend();
+        self.jump_target_address =
+            XLen::wrapping_add(pc.read(), sign_extended_imm);
+
         debug!("Executing JAL...");
 
-        self.jump_target_address =
-            XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+        let debug_str = format!(
+            "Executing {:#?} {:#?} {:#?} {:#X?} {:#X?}",
+            ExecutableCommand::JAL,
+            GPRegisterName::x0_zero,
+            sign_extended_imm,
+            self.jump_target_address,
+            pc.read()
+        )
+        .to_lowercase();
+        debug!("{debug_str}");
+
         self.result = pc.read() + fetch_unit.instruction_size as XLen;
     }
 

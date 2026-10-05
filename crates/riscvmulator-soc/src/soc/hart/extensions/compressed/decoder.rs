@@ -62,7 +62,7 @@ use crate::constants::arch::{
     UnsignedImmediate,
 };
 use crate::soc::hart::core::decoder::constants::{
-    JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
+    BRANCH_Funct3, JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
     OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant, STORE_Funct3, SYSTEM_Funct3,
     SYSTEM_Imm_transfer_control_return_from,
 };
@@ -70,24 +70,31 @@ use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::core::{decoder::Decoder, fetch_unit::FetchUnit};
 use crate::soc::hart::extensions;
 use crate::soc::hart::extensions::compressed::constants::{
-    COMPRESSED_CB_IMM_4_1_MASK, COMPRESSED_CB_IMM_4_1_OFFSET,
-    COMPRESSED_CB_IMM_4_1_OFFSET_FINAL, COMPRESSED_CB_IMM_10_5_MASK,
-    COMPRESSED_CB_IMM_10_5_OFFSET, COMPRESSED_CB_IMM_10_5_OFFSET_FINAL,
-    COMPRESSED_CB_IMM_11_MASK, COMPRESSED_CB_IMM_11_OFFSET,
-    COMPRESSED_CB_IMM_11_OFFSET_FINAL, COMPRESSED_CB_IMM_12_MASK,
-    COMPRESSED_CB_IMM_12_OFFSET, COMPRESSED_CB_IMM_12_OFFSET_FINAL,
-    COMPRESSED_CI_IMM_5_MASK_FINAL, COMPRESSED_CI_IMM_5_OFFSET_FINAL,
-    COMPRESSED_CI_NZIMM_5_MASK_FINAL, COMPRESSED_CI_NZIMM_5_OFFSET_FINAL,
-    COMPRESSED_CI_NZIMM_9_MASK_FINAL, COMPRESSED_CI_NZIMM_9_OFFSET_FINAL,
-    COMPRESSED_CI_NZIMM_17_MASK_FINAL, COMPRESSED_CI_NZIMM_17_OFFSET_FINAL,
+    COMPRESSED_CB_FUNCT_3_11X_IMM_5_OFFSET, COMPRESSED_CB_IMM_4_0_MASK,
+    COMPRESSED_CB_IMM_4_0_OFFSET, COMPRESSED_CB_IMM_4_1_MASK,
+    COMPRESSED_CB_IMM_4_1_OFFSET, COMPRESSED_CB_IMM_4_1_OFFSET_FINAL,
+    COMPRESSED_CB_IMM_5_MASK_FINAL, COMPRESSED_CB_IMM_5_OFFSET_FINAL,
+    COMPRESSED_CB_IMM_8_MASK_FINAL, COMPRESSED_CB_IMM_8_OFFSET_FINAL,
+    COMPRESSED_CB_IMM_10_5_MASK, COMPRESSED_CB_IMM_10_5_OFFSET,
+    COMPRESSED_CB_IMM_10_5_OFFSET_FINAL, COMPRESSED_CB_IMM_11_MASK,
+    COMPRESSED_CB_IMM_11_OFFSET, COMPRESSED_CB_IMM_11_OFFSET_FINAL,
+    COMPRESSED_CB_IMM_12_MASK, COMPRESSED_CB_IMM_12_OFFSET,
+    COMPRESSED_CB_IMM_12_OFFSET_FINAL, COMPRESSED_CI_IMM_5_MASK_FINAL,
+    COMPRESSED_CI_IMM_5_OFFSET_FINAL, COMPRESSED_CI_NZIMM_5_MASK_FINAL,
+    COMPRESSED_CI_NZIMM_5_OFFSET_FINAL, COMPRESSED_CI_NZIMM_9_MASK_FINAL,
+    COMPRESSED_CI_NZIMM_9_OFFSET_FINAL, COMPRESSED_CI_NZIMM_17_MASK_FINAL,
+    COMPRESSED_CI_NZIMM_17_OFFSET_FINAL, COMPRESSED_CJ_IMM_10_1_MASK,
+    COMPRESSED_CJ_IMM_10_1_OFFSET, COMPRESSED_CJ_IMM_10_1_OFFSET_FINAL,
     COMPRESSED_CJ_IMM_11_MASK, COMPRESSED_CJ_IMM_11_OFFSET,
     COMPRESSED_CJ_IMM_11_OFFSET_FINAL, COMPRESSED_CJ_IMM_19_12_MASK,
     COMPRESSED_CJ_IMM_19_12_OFFSET, COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL,
     COMPRESSED_CJ_IMM_20_MASK, COMPRESSED_CJ_IMM_20_OFFSET,
-    COMPRESSED_CJ_IMM_20_OFFSET_FINAL, COMPRESSED_CS_IMM_4_0_MASK,
+    COMPRESSED_CJ_IMM_20_OFFSET_FINAL, COMPRESSED_CJ_JTA_IMM_11_MASK_FINAL,
+    COMPRESSED_CJ_JTA_IMM_11_OFFSET_FINAL, COMPRESSED_CS_IMM_4_0_MASK,
     COMPRESSED_CS_IMM_4_0_OFFSET, COMPRESSED_CS_IMM_4_0_OFFSET_FINAL,
     COMPRESSED_CS_IMM_11_5_MASK, COMPRESSED_CS_IMM_11_5_OFFSET,
-    COMPRESSED_CS_IMM_11_5_OFFSET_FINAL, SignedInstructionTypeCompressed,
+    COMPRESSED_CS_IMM_11_5_OFFSET_FINAL, COMPRESSED_FUNCT3_OFFSET,
+    SignedInstructionTypeCompressed,
 };
 use crate::soc::hart::extensions::integer::constants::OP_IMM_32_Funct3;
 
@@ -203,6 +210,18 @@ impl Decoder {
                 }
                 extensions::compressed::constants::OP_Funct3::F110
                 | extensions::compressed::constants::OP_Funct3::F111 => {
+                    self.compressedISA.ca_cb_bit_12 = self
+                        .extract_ca_cb_bit_12(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                    self.compressedISA.ca_cb_bits_11_10_quad_01_funct3_100 =
+                        self.extract_bits_11_10_quadrant_01_funct3_100(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                    self.compressedISA.ca_cb_rd_or_rs1_offset = self
+                        .extract_ca_cb_rd_or_rs1_offset(
+                            fetch_unit.current_instruction_compressed,
+                        );
                     self.expand_cb(fetch_unit.current_instruction_compressed)
                 }
             },
@@ -796,7 +815,7 @@ impl Decoder {
         self.compressedISA.cs_ca_rs2_offset =
             self.extract_cs_ca_rs2_offset(instruction);
 
-        if self.compressedISA.ca_cb_bit_12 != 0b0 {
+        if self.compressedISA.ca_cb_bit_12 == 0b0 {
             match self.compressedISA.ca_funct2 {
                 CA_Funct_2::F00 => {
                     // C.SUB expands into `sub rd', rd', rs2'`
@@ -850,9 +869,9 @@ impl Decoder {
         } else {
             match self.compressedISA.ca_funct2 {
                 CA_Funct_2::F00 => {
-                    // C.SUBW expands into subw `rd', rd', rs2'`
-                    todo!("add check");
+                    error!("add check");
                     //if RV64IC
+                    // C.SUBW expands into subw `rd', rd', rs2'`
                     self.expand_to_r_format(
                         Opcode::OP_32,
                         self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
@@ -869,9 +888,9 @@ impl Decoder {
                     // }
                 }
                 CA_Funct_2::F01 => {
-                    // C.ADDW expands into addw `rd', rd', rs2'`
-                    todo!("add check");
+                    error!("add check");
                     //if RV64IC
+                    // C.ADDW expands into addw `rd', rd', rs2'`
                     self.expand_to_r_format(
                         Opcode::OP_32,
                         self.compressedISA.ca_cb_rd_or_rs1_offset as usize,
@@ -963,6 +982,7 @@ impl Decoder {
             }
         } else {
             self.compressedISA.c_imm = self.extract_cb_imm_8_1(instruction);
+            dbg!("GREPME11 IMM81: {:#X?", self.compressedISA.c_imm);
             match self.compressedISA.funct3 {
                 extensions::compressed::constants::OP_Funct3::F110 => {
                     // C.BEQZ expands into `beq rs1', x0, offset`
@@ -971,8 +991,7 @@ impl Decoder {
                         self.compressedISA.ca_cb_rd_or_rs1_offset,
                         GPRegisterName::x0_zero as usize,
                         self.compressedISA.c_imm,
-                        extensions::compressed::constants::OP_Funct3::F110
-                            as InstructionType,
+                        BRANCH_Funct3::BEQ as InstructionType,
                     )
                 }
                 extensions::compressed::constants::OP_Funct3::F111 => {
@@ -982,8 +1001,7 @@ impl Decoder {
                         self.compressedISA.ca_cb_rd_or_rs1_offset,
                         GPRegisterName::x0_zero as usize,
                         self.compressedISA.c_imm,
-                        extensions::compressed::constants::OP_Funct3::F111
-                            as InstructionType,
+                        BRANCH_Funct3::BNE as InstructionType,
                     )
                 }
 
@@ -1337,30 +1355,42 @@ impl Decoder {
         &self,
         instruction: InstructionTypeCompressed,
     ) -> SignedImmediate {
-        let mut uimm = instruction & COMPRESSED_CB_UIMM_4_0_MASK;
-        uimm >>= COMPRESSED_CB_UIMM_4_0_OFFSET;
         // bit 12 is (u|)imm[5] in case of CB instruction, so shift left by 5 bits
-        uimm |= self.compressedISA.ca_cb_bit_12 << 5;
+        let mut imm =
+            self.compressedISA.ca_cb_bit_12 << COMPRESSED_CB_IMM_5_OFFSET_FINAL;
+        if imm != 0 {
+            // if 5th bit of `imm[5:0]` is non-zero, `imm[5:0]` represents
+            // negative number, so sign extend it
+            imm = !(COMPRESSED_CB_IMM_5_MASK_FINAL - 1);
+        }
+        imm |= (instruction & COMPRESSED_CB_IMM_4_0_MASK)
+            >> COMPRESSED_CB_IMM_4_0_OFFSET;
 
-        uimm as SignedImmediate
+        imm as SignedInstructionTypeCompressed as SignedImmediate
     }
 
     fn extract_cb_imm_8_1(
         &self,
         instruction: InstructionTypeCompressed,
     ) -> SignedImmediate {
-        let mut uimm = (instruction & COMPRESSED_CB_FUNCT_3_11X_IMM_5_MASK)
-            << (5 - COMPRESSED_CB_FUNCT_3_11X_IMM_5_MASK);
-        uimm |= (instruction & COMPRESSED_CB_FUNCT_3_11X_IMM_2_1_MASK)
+        let mut imm =
+            self.compressedISA.ca_cb_bit_12 << COMPRESSED_CB_IMM_8_OFFSET_FINAL; // imm[8]
+        if imm != 0 {
+            // if 8th bit of `imm[8:1]` is non-zero, `imm[8:1]` represents
+            // negative number, so sign extend it
+            imm = !(COMPRESSED_CB_IMM_8_MASK_FINAL - 1);
+        }
+        imm |= (instruction & COMPRESSED_CB_FUNCT_3_11X_IMM_5_MASK)
+            << (5 - COMPRESSED_CB_FUNCT_3_11X_IMM_5_OFFSET);
+        imm |= (instruction & COMPRESSED_CB_FUNCT_3_11X_IMM_2_1_MASK)
             >> (COMPRESSED_CB_FUNCT_3_11X_IMM_2_1_OFFSET - 1);
-        uimm |= (instruction & COMPRESSED_CB_FUNCT_3_11X_IMM_7_6_MASK)
+        imm |= (instruction & COMPRESSED_CB_FUNCT_3_11X_IMM_7_6_MASK)
             << (6 - COMPRESSED_CB_FUNCT_3_11X_IMM_7_6_OFFSET);
-        uimm |= self.compressedISA.ca_cb_bit_12 << 8; // imm[8]
-        uimm |= (self.compressedISA.ca_cb_bits_11_10_quad_01_funct3_100
+        imm |= (self.compressedISA.ca_cb_bits_11_10_quad_01_funct3_100
             as InstructionTypeCompressed)
             << 3; // imm[4:3]
 
-        uimm as SignedImmediate
+        imm as SignedInstructionTypeCompressed as SignedImmediate
     }
 
     fn extract_cj_jta_imm(
@@ -1368,7 +1398,14 @@ impl Decoder {
         instruction: InstructionTypeCompressed,
     ) -> SignedImmediate {
         let mut jta_imm = (instruction & COMPRESSED_CJ_JTA_IMM_11_MASK)
-            >> (COMPRESSED_CJ_JTA_IMM_11_OFFSET - 11);
+            >> (COMPRESSED_CJ_JTA_IMM_11_OFFSET
+                - COMPRESSED_CJ_JTA_IMM_11_OFFSET_FINAL);
+        trace!("GREPME9 before sign extension: {}", jta_imm);
+        if jta_imm != 0 {
+            // if 11th bit of `imm[11:1]` is non-zero, `imm[11:1]` represents
+            // negative number, so sign extend it
+            jta_imm = !(COMPRESSED_CJ_JTA_IMM_11_MASK_FINAL - 1);
+        }
         jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_10_MASK)
             << (10 - COMPRESSED_CJ_JTA_IMM_10_OFFSET);
         jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_9_8_MASK)
@@ -1384,6 +1421,8 @@ impl Decoder {
         jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_3_1_MASK)
             >> (COMPRESSED_CJ_JTA_IMM_3_1_OFFSET - 1);
 
+        trace!("GREPME8 Result unsigned: {}", jta_imm);
+        trace!("GREPME8 Result signed: {}", jta_imm as SignedImmediate);
         jta_imm as SignedImmediate
     }
 
@@ -1486,6 +1525,7 @@ impl Decoder {
         imm_12_1: SignedImmediate,
         funct3: InstructionType,
     ) -> InstructionType {
+        dbg!("GREPME222 IN IMM121: {}", imm_12_1);
         // set opcode
         let mut expanded_instruction: InstructionType =
             opcode as InstructionType;
@@ -1494,29 +1534,55 @@ impl Decoder {
             & COMPRESSED_CB_IMM_11_MASK as InstructionType)
             >> (COMPRESSED_CB_IMM_11_OFFSET
                 - COMPRESSED_CB_IMM_11_OFFSET_FINAL);
+        dbg!(
+            "GREPME2221 INT expanded_instruction: {}",
+            expanded_instruction
+        );
         // set imm[4:1]
         expanded_instruction |= ((imm_12_1 as InstructionType)
             & COMPRESSED_CB_IMM_4_1_MASK as InstructionType)
             << (COMPRESSED_CB_IMM_4_1_OFFSET_FINAL
                 - COMPRESSED_CB_IMM_4_1_OFFSET);
+        dbg!(
+            "GREPME2222 INT expanded_instruction: {}",
+            expanded_instruction
+        );
         // set funct3
-        expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
+        expanded_instruction |=
+            (funct3 >> COMPRESSED_FUNCT3_OFFSET) << BIT_OFFSET_FUNCT3;
+        dbg!(
+            "GREPME2223 INT expanded_instruction: {}",
+            expanded_instruction
+        );
         // set rs1
         expanded_instruction |= (source_register_1_offset as InstructionType)
             << BIT_OFFSET_SOURCE_REGISTER_1;
+        dbg!(
+            "GREPME2224 INT expanded_instruction: {}",
+            expanded_instruction
+        );
         // set rs2
         expanded_instruction |= (source_register_2_offset as InstructionType)
             << BIT_OFFSET_SOURCE_REGISTER_2;
+        dbg!(
+            "GREPME2225 INT expanded_instruction: {}",
+            expanded_instruction
+        );
         // set imm[10:5]
         expanded_instruction |= ((imm_12_1 as InstructionType)
             & COMPRESSED_CB_IMM_10_5_MASK as InstructionType)
             << (COMPRESSED_CB_IMM_10_5_OFFSET_FINAL
                 - COMPRESSED_CB_IMM_10_5_OFFSET);
+        dbg!(
+            "GREPME2226 INT expanded_instruction: {}",
+            expanded_instruction
+        );
         // set imm[12]
         expanded_instruction |= ((imm_12_1 as InstructionType)
             & COMPRESSED_CB_IMM_12_MASK as InstructionType)
             << (COMPRESSED_CB_IMM_12_OFFSET_FINAL
                 - COMPRESSED_CB_IMM_12_OFFSET);
+        dbg!("GREPME333 OUT EXP INSTR: {:#X?}", expanded_instruction);
 
         expanded_instruction
     }
@@ -1546,6 +1612,7 @@ impl Decoder {
         destination_register_offset: usize,
         imm_20_1: SignedImmediate,
     ) -> InstructionType {
+        trace!("GREPME77 INPUT: {}", imm_20_1);
         // set opcode
         let mut expanded_instruction: InstructionType =
             opcode as InstructionType;
@@ -1556,23 +1623,24 @@ impl Decoder {
         // set imm[19:12]
         expanded_instruction |= ((imm_20_1 as InstructionType)
             & COMPRESSED_CJ_IMM_19_12_MASK as InstructionType)
-            >> (COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL
+            << (COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL
                 - COMPRESSED_CJ_IMM_19_12_OFFSET);
         // set imm[11]
         expanded_instruction |= ((imm_20_1 as InstructionType)
             & COMPRESSED_CJ_IMM_11_MASK as InstructionType)
-            >> (COMPRESSED_CJ_IMM_11_OFFSET_FINAL
+            << (COMPRESSED_CJ_IMM_11_OFFSET_FINAL
                 - COMPRESSED_CJ_IMM_11_OFFSET);
         // set imm[10:1]
         expanded_instruction |= ((imm_20_1 as InstructionType)
-            & COMPRESSED_CJ_IMM_19_12_MASK as InstructionType)
-            >> (COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL
-                - COMPRESSED_CJ_IMM_19_12_OFFSET);
+            & COMPRESSED_CJ_IMM_10_1_MASK as InstructionType)
+            << (COMPRESSED_CJ_IMM_10_1_OFFSET_FINAL
+                - COMPRESSED_CJ_IMM_10_1_OFFSET);
         // set imm[20]
         expanded_instruction |= ((imm_20_1 as InstructionType)
             & COMPRESSED_CJ_IMM_20_MASK)
-            >> (COMPRESSED_CJ_IMM_20_OFFSET_FINAL
+            << (COMPRESSED_CJ_IMM_20_OFFSET_FINAL
                 - COMPRESSED_CJ_IMM_20_OFFSET);
+        trace!("GREPME77 OUTPUT: {:#X}", expanded_instruction);
 
         expanded_instruction
     }

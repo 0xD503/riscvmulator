@@ -157,15 +157,15 @@ pub const COMPRESSED_CB_IMM_11_MASK: InstructionTypeCompressed =
     0b1 << COMPRESSED_CB_IMM_11_OFFSET;
 pub const COMPRESSED_CB_IMM_11_OFFSET_FINAL: usize = 7;
 
-pub const COMPRESSED_CB_IMM_4_1_OFFSET: usize = 0;
+pub const COMPRESSED_CB_IMM_4_1_OFFSET: usize = 1;
 pub const COMPRESSED_CB_IMM_4_1_MASK: InstructionTypeCompressed =
-    0b11111 << COMPRESSED_CB_IMM_4_1_OFFSET;
-pub const COMPRESSED_CB_IMM_4_1_OFFSET_FINAL: usize = 7;
+    0b1111 << COMPRESSED_CB_IMM_4_1_OFFSET;
+pub const COMPRESSED_CB_IMM_4_1_OFFSET_FINAL: usize = 8;
 
 pub const COMPRESSED_CB_IMM_10_5_OFFSET: usize = 5;
 pub const COMPRESSED_CB_IMM_10_5_MASK: InstructionTypeCompressed =
-    0b111111 << COMPRESSED_CB_IMM_10_5_OFFSET;
-pub const COMPRESSED_CB_IMM_10_5_OFFSET_FINAL: usize = 7;
+    0b11_1111 << COMPRESSED_CB_IMM_10_5_OFFSET;
+pub const COMPRESSED_CB_IMM_10_5_OFFSET_FINAL: usize = 25;
 
 pub const COMPRESSED_CB_IMM_12_OFFSET: usize = 12;
 pub const COMPRESSED_CB_IMM_12_MASK: InstructionTypeCompressed =
@@ -174,7 +174,7 @@ pub const COMPRESSED_CB_IMM_12_OFFSET_FINAL: usize = 31;
 
 pub const COMPRESSED_CJ_IMM_19_12_OFFSET: usize = 12;
 pub const COMPRESSED_CJ_IMM_19_12_MASK: InstructionTypeCompressed =
-    0b11111111 << COMPRESSED_CJ_IMM_19_12_OFFSET;
+    0b1111_1111 << COMPRESSED_CJ_IMM_19_12_OFFSET;
 pub const COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL: usize = 12;
 
 pub const COMPRESSED_CJ_IMM_11_OFFSET: usize = 11;
@@ -184,8 +184,8 @@ pub const COMPRESSED_CJ_IMM_11_OFFSET_FINAL: usize = 20;
 
 pub const COMPRESSED_CJ_IMM_10_1_OFFSET: usize = 1;
 pub const COMPRESSED_CJ_IMM_10_1_MASK: InstructionTypeCompressed =
-    0b1111111111 << COMPRESSED_CJ_IMM_10_1_OFFSET;
-pub const COMPRESSED_CJ_IMM_10_1_OFFSET_FINAL: usize = 12;
+    0b11_1111_1111 << COMPRESSED_CJ_IMM_10_1_OFFSET;
+pub const COMPRESSED_CJ_IMM_10_1_OFFSET_FINAL: usize = 21;
 
 pub const COMPRESSED_CJ_IMM_20_OFFSET: usize = 20;
 pub const COMPRESSED_CJ_IMM_20_MASK: InstructionType =
@@ -202,8 +202,18 @@ pub const COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK: InstructionTypeCompressed =
 
 pub const COMPRESSED_CB_UIMM_4_0_OFFSET: usize = 2;
 pub const COMPRESSED_CB_UIMM_4_0_MASK: InstructionTypeCompressed =
-    0b11111 << COMPRESSED_CB_UIMM_4_0_OFFSET;
+    0b1_1111 << COMPRESSED_CB_UIMM_4_0_OFFSET;
 
+pub const COMPRESSED_CB_IMM_5_OFFSET_FINAL: usize = 5;
+pub const COMPRESSED_CB_IMM_5_MASK_FINAL: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CB_IMM_5_OFFSET_FINAL;
+pub const COMPRESSED_CB_IMM_4_0_OFFSET: usize = 2;
+pub const COMPRESSED_CB_IMM_4_0_MASK: InstructionTypeCompressed =
+    0b1_1111 << COMPRESSED_CB_IMM_4_0_OFFSET;
+
+pub const COMPRESSED_CB_IMM_8_OFFSET_FINAL: usize = 8;
+pub const COMPRESSED_CB_IMM_8_MASK_FINAL: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CB_IMM_8_OFFSET_FINAL;
 pub const COMPRESSED_CB_FUNCT_3_11X_IMM_5_OFFSET: usize = 2;
 pub const COMPRESSED_CB_FUNCT_3_11X_IMM_5_MASK: InstructionTypeCompressed =
     0b1 << COMPRESSED_CB_FUNCT_3_11X_IMM_5_OFFSET;
@@ -215,8 +225,11 @@ pub const COMPRESSED_CB_FUNCT_3_11X_IMM_7_6_MASK: InstructionTypeCompressed =
     0b11 << COMPRESSED_CB_FUNCT_3_11X_IMM_7_6_OFFSET;
 
 pub const COMPRESSED_CJ_JTA_IMM_11_OFFSET: usize = 12;
+pub const COMPRESSED_CJ_JTA_IMM_11_OFFSET_FINAL: usize = 11;
 pub const COMPRESSED_CJ_JTA_IMM_11_MASK: InstructionTypeCompressed =
     0b1 << COMPRESSED_CJ_JTA_IMM_11_OFFSET;
+pub const COMPRESSED_CJ_JTA_IMM_11_MASK_FINAL: InstructionTypeCompressed =
+    0b1 << COMPRESSED_CJ_JTA_IMM_11_OFFSET_FINAL;
 pub const COMPRESSED_CJ_JTA_IMM_10_OFFSET: usize = 8;
 pub const COMPRESSED_CJ_JTA_IMM_10_MASK: InstructionTypeCompressed =
     0b1 << COMPRESSED_CJ_JTA_IMM_10_OFFSET;
