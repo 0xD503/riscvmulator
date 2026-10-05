@@ -321,6 +321,12 @@ impl Executor {
 
     fn instruction_load_word(&mut self, decoder: &Decoder) {
         debug!("Executing LW...");
+        println!(
+            "GREPME LW {:#?} {:#?}({:#X?})",
+            decoder.destination_register_offset,
+            decoder.immediate.sign_extend(),
+            decoder.source_register_1
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::WORD;
@@ -341,13 +347,24 @@ impl Executor {
     }
 
     fn instruction_addi(&mut self, decoder: &Decoder) {
-        debug!("Executing ADDI...");
+        dbg!("GREPME Before sign extension: {}", decoder.immediate);
+        let sign_extended_imm = decoder.immediate.sign_extend();
+
+        // let rs1_offset: Result<GPRegisterName, _> =
+        //     decoder.source_register_1_offset.try_into();
+        let debug_str = format!(
+            "Executing {:#?} {:#?} {:#?} {:#X?}",
+            ExecutableCommand::ADDI,
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            sign_extended_imm
+        )
+        .to_lowercase();
+        debug!("{debug_str}");
 
         // use wrapping operation in order to allow overruns
-        self.result = XLen::wrapping_add(
-            decoder.source_register_1,
-            decoder.immediate.sign_extend(),
-        );
+        self.result =
+            XLen::wrapping_add(decoder.source_register_1, sign_extended_imm);
     }
 
     fn instruction_slli(&mut self, decoder: &Decoder) {
@@ -439,6 +456,12 @@ impl Executor {
 
     fn instruction_store_word(&mut self, decoder: &Decoder) {
         debug!("Executing SW...");
+        println!(
+            "GREPME SW {:#?} {:#?}({:#X?})",
+            decoder.source_register_2,
+            decoder.immediate.sign_extend(),
+            decoder.source_register_1
+        );
 
         self.update_memory_address(decoder);
         self.value_to_store_u32 = decoder.source_register_2 as Word;

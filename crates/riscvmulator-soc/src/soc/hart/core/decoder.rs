@@ -32,6 +32,8 @@ pub struct Decoder {
     pub(crate) opcode: Opcode,
     pub(crate) source_register_1: XLen,
     pub(crate) source_register_2: XLen,
+    pub(crate) source_register_1_offset: usize,
+    pub(crate) source_register_2_offset: usize,
     pub(crate) destination_register_offset: usize,
 
     pub(crate) funct3: InstructionType,
@@ -70,6 +72,8 @@ impl Decoder {
         Self {
             source_register_1: RISCV_X0_ZERO_REGISTER_VALUE,
             source_register_2: RISCV_X0_ZERO_REGISTER_VALUE,
+            source_register_1_offset: GPRegisterName::x0_zero as usize,
+            source_register_2_offset: GPRegisterName::x0_zero as usize,
             destination_register_offset: GPRegisterName::x0_zero as usize,
             ..Default::default()
         }
@@ -834,15 +838,18 @@ impl Decoder {
     }
 
     fn extract_source_register_1_offset(
-        &self,
+        &mut self,
         instruction: InstructionType,
     ) -> usize {
-        ((instruction >> BIT_OFFSET_SOURCE_REGISTER_1) & MASK_SOURCE_REGISTER_1)
-            as usize
+        self.source_register_1_offset =
+            ((instruction >> BIT_OFFSET_SOURCE_REGISTER_1)
+                & MASK_SOURCE_REGISTER_1) as usize;
+
+        self.source_register_1_offset
     }
 
     fn extract_source_register_1(
-        &self,
+        &mut self,
         instruction: InstructionType,
         register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) -> XLen {
@@ -850,15 +857,18 @@ impl Decoder {
     }
 
     fn extract_source_register_2_offset(
-        &self,
+        &mut self,
         instruction: InstructionType,
     ) -> usize {
-        ((instruction >> BIT_OFFSET_SOURCE_REGISTER_2) & MASK_SOURCE_REGISTER_2)
-            as usize
+        self.source_register_2_offset =
+            ((instruction >> BIT_OFFSET_SOURCE_REGISTER_2)
+                & MASK_SOURCE_REGISTER_2) as usize;
+
+        self.source_register_2_offset
     }
 
     fn extract_source_register_2(
-        &self,
+        &mut self,
         instruction: InstructionType,
         register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) -> XLen {

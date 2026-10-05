@@ -64,7 +64,8 @@ pub const MASK_DESTINATION_REGISTER: InstructionType = 0x1F;
 
 pub const BIT_OFFSET_FUNCT3: usize = 12;
 pub const MASK_FUNCT3: InstructionType = 0x07;
-pub const BIT_OFFSET_I_FUNCT7: usize = 25;
+pub const BIT_OFFSET_I_FUNCT7: usize =
+    if XLen::BITS == u64::BITS { 26 } else { 25 };
 // pub const MASK_I_FUNCT7: InstructionType = 0x7F;
 // pub const BIT_OFFSET_SHTYPE: usize = 25;
 // pub const MASK_SHTYPE: InstructionType = 0x7F;
