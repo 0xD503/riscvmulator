@@ -5,7 +5,7 @@ use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
 use crate::soc::memory_bus::SystemBus;
 use crate::soc::peripherals::common::device::{Addressable, IODeviceError};
 
-use log::{debug, error, trace};
+use log::{error, trace};
 
 impl Executor {
     // we cannot make `read()`/`write()` methods to be generic because of the
