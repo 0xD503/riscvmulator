@@ -612,8 +612,7 @@ impl Decoder {
                     GPRegisterName::x2_sp as usize,
                     self.compressedISA.cr_css_rs2_offset,
                     self.compressedISA.c_imm,
-                    extensions::compressed::constants::OP_Funct3::F110
-                        as InstructionType,
+                    STORE_Funct3::SW as InstructionType,
                 )
             }
             extensions::compressed::constants::OP_Funct3::F111 => {
@@ -628,8 +627,7 @@ impl Decoder {
                     GPRegisterName::x2_sp as usize,
                     self.compressedISA.cr_css_rs2_offset,
                     self.compressedISA.c_imm,
-                    extensions::compressed::constants::OP_Funct3::F111
-                        as InstructionType,
+                    STORE_Funct3::SD as InstructionType,
                 );
                 // else if RV32IFC
                 self.compressedISA.c_imm =
@@ -1548,8 +1546,7 @@ impl Decoder {
             expanded_instruction
         );
         // set funct3
-        expanded_instruction |=
-            (funct3 >> COMPRESSED_FUNCT3_OFFSET) << BIT_OFFSET_FUNCT3;
+        expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
         dbg!(
             "GREPME2223 INT expanded_instruction: {}",
             expanded_instruction
