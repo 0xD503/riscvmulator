@@ -19,6 +19,7 @@ COMPOSE_SUBCMD := if CONTAINER_ENGINE == "podman" { "-compose" } else { " compos
 COMPOSE_CMD := CONTAINER_ENGINE + COMPOSE_SUBCMD
 COMPOSE := COMPOSE_CMD + " run --rm"
 ENSURE_DEV_IMAGE_EXISTS := just_executable() + " --justfile " + quote(justfile()) + " " + "ensure-dev-image-exists" + " && "
+COMMON_ENV := "JUST_TIME=true"
 RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " " + DEV_SERVICE_NAME + " " }
 DEBUG_ENV := "RVMULATOR_EMULATOR__LOGGING__LEVEL=debug RUST_BACKTRACE=full"
 TRACE_ENV := "RVMULATOR_EMULATOR__LOGGING__LEVEL=trace RUST_BACKTRACE=full"

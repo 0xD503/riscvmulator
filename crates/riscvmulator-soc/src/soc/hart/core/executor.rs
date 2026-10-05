@@ -547,7 +547,7 @@ impl Executor {
     }
 
     fn instruction_bne(&mut self, decoder: &Decoder, pc: &Register) {
-        trace!(
+        debug!(
             "Executing BNE: {:#018X}, {:#018X}...",
             decoder.source_register_1, decoder.source_register_2
         );
@@ -690,7 +690,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        trace!(
+        debug!(
             "Executing SRAIW: {:#018X} >> {}...",
             decoder.source_register_1 as SignedXLen32, decoder.immediate
         );
@@ -745,7 +745,7 @@ impl Executor {
     }
 
     fn instruction_shift_right_arith_word(&mut self, decoder: &Decoder) {
-        trace!(
+        debug!(
             "Executing SRAW: {:#018} >> {:?}...",
             decoder.source_register_1 as SignedXLen32, decoder.shamt
         );
