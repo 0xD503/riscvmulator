@@ -45,9 +45,6 @@ pub fn run_test(file_name: impl AsRef<Path>, cfg_file_name: impl AsRef<Path>) {
     path_to_cfg.push("tests/cfg");
     path_to_cfg.push(cfg_file_name);
 
-    // dbg!(format!("GREPME Current test path: {:?}", path_to_test));
-    // dbg!(format!("GREPME Current cfg path: {:?}", path_to_cfg));
-
     let custom_config = false;
     let initialize_logger = false;
     let mut emulator = emulator_create(

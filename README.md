@@ -31,7 +31,7 @@ Currently project implements base RV64IM functionality. Project passes
 
 - [x] rv64ui-p-\*
 - [x] rv64um-p-\*
-- [ ] rv64uc-p\*
+- [x] rv64uc-p\*
 - [ ] rv64ua-p-\*
 - [ ] rv64uf-p-\*
 - [ ] rv64ud-p-\*

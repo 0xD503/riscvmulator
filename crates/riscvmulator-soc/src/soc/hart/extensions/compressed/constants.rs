@@ -26,13 +26,17 @@ pub const COMPRESSED_BITS_11_10_MASK: InstructionTypeCompressed =
     0b11 << COMPRESSED_BITS_11_10_OFFSET;
 
 pub const COMPRESSED_CSS_UIMM_8_6_OFFSET: usize = 7;
-pub const COMPRESSED_CSS_UIMM_8_6_MASK: InstructionTypeCompressed = 0b111;
+pub const COMPRESSED_CSS_UIMM_8_6_MASK: InstructionTypeCompressed =
+    0b111 << COMPRESSED_CSS_UIMM_8_6_OFFSET;
 pub const COMPRESSED_CSS_UIMM_5_3_OFFSET: usize = 10;
-pub const COMPRESSED_CSS_UIMM_5_3_MASK: InstructionTypeCompressed = 0b111;
+pub const COMPRESSED_CSS_UIMM_5_3_MASK: InstructionTypeCompressed =
+    0b111 << COMPRESSED_CSS_UIMM_5_3_OFFSET;
 pub const COMPRESSED_CSS_UIMM_7_6_OFFSET: usize = 7;
-pub const COMPRESSED_CSS_UIMM_7_6_MASK: InstructionTypeCompressed = 0b11;
+pub const COMPRESSED_CSS_UIMM_7_6_MASK: InstructionTypeCompressed =
+    0b11 << COMPRESSED_CSS_UIMM_7_6_OFFSET;
 pub const COMPRESSED_CSS_UIMM_5_2_OFFSET: usize = 9;
-pub const COMPRESSED_CSS_UIMM_5_2_MASK: InstructionTypeCompressed = 0b1111;
+pub const COMPRESSED_CSS_UIMM_5_2_MASK: InstructionTypeCompressed =
+    0b1111 << COMPRESSED_CSS_UIMM_5_2_OFFSET;
 
 pub const COMPRESSED_CIW_NZUIMM_OFFSET: usize = 5;
 pub const COMPRESSED_CIW_NZUIMM_MASK: InstructionTypeCompressed =

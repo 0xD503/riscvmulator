@@ -348,22 +348,9 @@ impl Executor {
     }
 
     fn instruction_addi(&mut self, decoder: &Decoder) {
-        debug!("Executing ADDI...");
-
-        dbg!("GREPME Before sign extension: {}", decoder.immediate);
         let sign_extended_imm = decoder.immediate.sign_extend();
 
-        // let rs1_offset: Result<GPRegisterName, _> =
-        //     decoder.source_register_1_offset.try_into();
-        let debug_str = format!(
-            "Executing {:#?} {:#?} {:#?} {:#X?}",
-            ExecutableCommand::ADDI,
-            decoder.destination_register_offset,
-            decoder.source_register_1_offset,
-            sign_extended_imm
-        )
-        .to_lowercase();
-        dbg!("{debug_str:?}");
+        debug!("Executing ADDI...");
 
         // use wrapping operation in order to allow overruns
         self.result =
@@ -570,15 +557,6 @@ impl Executor {
                 XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
             self.need_to_branch = true;
         }
-        dbg!(
-            "GREPME99 BEQ {:#?} {:#?} {:#X?} {:#X?} {:#X?} {:#X?}",
-            decoder.source_register_1,
-            decoder.source_register_2,
-            pc.read(),
-            decoder.immediate,
-            decoder.immediate.sign_extend(),
-            self.branch_target_address
-        );
     }
 
     fn instruction_bne(&mut self, decoder: &Decoder, pc: &Register) {

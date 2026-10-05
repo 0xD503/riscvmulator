@@ -446,7 +446,7 @@ impl Decoder {
                         )
                     }
                     OpcodeQuadrant::Quadrant10 => {
-                        self.compressedISA.c_imm = self
+                        self.compressedISA.c_uimm = self
                             .extract_ci_load_word_sp_offset(
                                 fetch_unit.current_instruction_compressed,
                             );
@@ -456,7 +456,7 @@ impl Decoder {
                             self.compressedISA.cr_ci_rd_or_rs1_offset,
                             OPCODE_LOAD_Funct3::LW as InstructionType,
                             GPRegisterName::x2_sp as usize,
-                            self.compressedISA.c_imm,
+                            self.compressedISA.c_uimm as SignedImmediate,
                         )
                     }
 
@@ -504,10 +504,6 @@ impl Decoder {
                                     trace!("HINT");
                                 }
                                 // C.ADDI16SP expands into `addi x2, x2, nzimm[9:4]`
-                                dbg!(
-                                    "GREPME Extracted ADDI16SP imm: {}",
-                                    self.compressedISA.c_imm
-                                );
                                 self.expand_to_i_format(
                                     Opcode::OP_IMM,
                                     self.compressedISA.cr_ci_rd_or_rs1_offset,
@@ -524,10 +520,10 @@ impl Decoder {
                         }
                     }
                     OpcodeQuadrant::Quadrant10 => {
-                        todo!("check unimplemented");
+                        error!("check unimplemented");
                         // if if RV64C
                         if self.compressedISA.cr_ci_rd_or_rs1_offset != 0 {
-                            self.compressedISA.c_imm = self
+                            self.compressedISA.c_uimm = self
                                 .extract_ci_load_double_word_sp_offset(
                                     fetch_unit.current_instruction_compressed,
                                 );
@@ -537,7 +533,7 @@ impl Decoder {
                                 self.compressedISA.cr_ci_rd_or_rs1_offset,
                                 OPCODE_LOAD_Funct3::LD as InstructionType,
                                 GPRegisterName::x2_sp as usize,
-                                self.compressedISA.c_imm,
+                                self.compressedISA.c_uimm as SignedImmediate,
                             )
                         } else {
                             // the code points with rd = x0 are reserved
@@ -581,10 +577,11 @@ impl Decoder {
 
         match self.compressedISA.funct3 {
             extensions::compressed::constants::OP_Funct3::F011 => {
-                self.compressedISA.c_imm =
+                self.compressedISA.c_uimm =
                     self.extract_css_uimm_7_2(instruction);
                 // if RV32IFC {
                 // C.FLWSP expands into `flw rd, offset(x2)`
+                //
                 // } else if RV64IFC {
                 //
                 // }
@@ -592,7 +589,7 @@ impl Decoder {
                 todo!("TODO: unimplemented");
             }
             extensions::compressed::constants::OP_Funct3::F101 => {
-                self.compressedISA.c_imm =
+                self.compressedISA.c_uimm =
                     self.extract_css_uimm_8_3(instruction);
                 // C.FSDSP expands into `fsd rs2, offset(x2)`
                 // if RV64IFC {
@@ -604,33 +601,33 @@ impl Decoder {
                 todo!("TODO: unimplemented");
             }
             extensions::compressed::constants::OP_Funct3::F110 => {
-                self.compressedISA.c_imm =
+                self.compressedISA.c_uimm =
                     self.extract_css_uimm_7_2(instruction);
                 // C.SWSP expands into `sw rs2, offset(x2)`
                 self.expand_to_s_format(
                     Opcode::STORE,
                     GPRegisterName::x2_sp as usize,
                     self.compressedISA.cr_css_rs2_offset,
-                    self.compressedISA.c_imm,
+                    self.compressedISA.c_uimm as SignedImmediate,
                     STORE_Funct3::SW as InstructionType,
                 )
             }
             extensions::compressed::constants::OP_Funct3::F111 => {
-                todo!("TODO: check unimplemented");
+                error!("TODO: check unimplemented");
 
                 // if RV64IC
-                self.compressedISA.c_imm =
+                self.compressedISA.c_uimm =
                     self.extract_css_uimm_8_3(instruction);
                 // C.SDSP expands into `sd rs2, offset(x2)`
                 return self.expand_to_s_format(
                     Opcode::STORE,
                     GPRegisterName::x2_sp as usize,
                     self.compressedISA.cr_css_rs2_offset,
-                    self.compressedISA.c_imm,
+                    self.compressedISA.c_uimm as SignedImmediate,
                     STORE_Funct3::SD as InstructionType,
                 );
                 // else if RV32IFC
-                self.compressedISA.c_imm =
+                self.compressedISA.c_uimm =
                     self.extract_css_uimm_7_2(instruction);
                 // C.FSWSP expands into `fsw rs2, offset(x2)`
                 //
@@ -980,7 +977,6 @@ impl Decoder {
             }
         } else {
             self.compressedISA.c_imm = self.extract_cb_imm_8_1(instruction);
-            dbg!("GREPME11 IMM81: {:#X?", self.compressedISA.c_imm);
             match self.compressedISA.funct3 {
                 extensions::compressed::constants::OP_Funct3::F110 => {
                     // C.BEQZ expands into `beq rs1', x0, offset`
@@ -1176,55 +1172,53 @@ impl Decoder {
     fn extract_ci_load_word_sp_offset(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> SignedImmediate {
-        let mut imm = (instruction & COMPRESSED_CI_OFFSET_5_MASK)
+    ) -> UnsignedImmediate {
+        let mut uimm = (instruction & COMPRESSED_CI_OFFSET_5_MASK)
             >> (COMPRESSED_CI_OFFSET_5_OFFSET - 5);
-        imm |= (instruction & COMPRESSED_CI_OFFSET_4_2_MASK)
+        uimm |= (instruction & COMPRESSED_CI_OFFSET_4_2_MASK)
             >> (COMPRESSED_CI_OFFSET_4_2_OFFSET - 2);
-        imm |= (instruction & COMPRESSED_CI_OFFSET_7_6_MASK)
+        uimm |= (instruction & COMPRESSED_CI_OFFSET_7_6_MASK)
             << (6 - COMPRESSED_CI_OFFSET_7_6_OFFSET);
-        imm >>= 2;
 
-        imm.into()
+        uimm as UnsignedImmediate
     }
 
     fn extract_ci_load_double_word_sp_offset(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> SignedImmediate {
+    ) -> UnsignedImmediate {
         let mut imm = (instruction & COMPRESSED_CI_OFFSET_5_MASK)
             >> (COMPRESSED_CI_OFFSET_5_OFFSET - 5);
         imm |= (instruction & COMPRESSED_CI_OFFSET_4_3_MASK)
             >> (COMPRESSED_CI_OFFSET_4_3_OFFSET - 3);
         imm |= (instruction & COMPRESSED_CI_OFFSET_8_6_MASK)
             << (6 - COMPRESSED_CI_OFFSET_8_6_OFFSET);
-        imm >>= 3;
 
-        imm.into()
+        imm as UnsignedImmediate
     }
 
     fn extract_css_uimm_8_3(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> SignedImmediate {
+    ) -> UnsignedImmediate {
         let mut uimm = (instruction & COMPRESSED_CSS_UIMM_8_6_MASK)
             >> (COMPRESSED_CSS_UIMM_8_6_OFFSET - 6);
         uimm |= (instruction & COMPRESSED_CSS_UIMM_5_3_MASK)
             >> (COMPRESSED_CSS_UIMM_5_3_OFFSET - 3);
 
-        uimm as SignedImmediate
+        uimm as UnsignedImmediate
     }
 
     fn extract_css_uimm_7_2(
         &self,
         instruction: InstructionTypeCompressed,
-    ) -> SignedImmediate {
+    ) -> UnsignedImmediate {
         let mut uimm = (instruction & COMPRESSED_CSS_UIMM_7_6_MASK)
             >> (COMPRESSED_CSS_UIMM_7_6_OFFSET - 6);
         uimm |= (instruction & COMPRESSED_CSS_UIMM_5_2_MASK)
-            >> (COMPRESSED_CSS_UIMM_5_2_OFFSET - 3);
+            >> (COMPRESSED_CSS_UIMM_5_2_OFFSET - 2);
 
-        uimm as SignedImmediate
+        uimm as UnsignedImmediate
     }
 
     fn extract_ciw_nzuimm_9_2(
@@ -1523,7 +1517,6 @@ impl Decoder {
         imm_12_1: SignedImmediate,
         funct3: InstructionType,
     ) -> InstructionType {
-        dbg!("GREPME222 IN IMM121: {}", imm_12_1);
         // set opcode
         let mut expanded_instruction: InstructionType =
             opcode as InstructionType;
@@ -1532,54 +1525,29 @@ impl Decoder {
             & COMPRESSED_CB_IMM_11_MASK as InstructionType)
             >> (COMPRESSED_CB_IMM_11_OFFSET
                 - COMPRESSED_CB_IMM_11_OFFSET_FINAL);
-        dbg!(
-            "GREPME2221 INT expanded_instruction: {}",
-            expanded_instruction
-        );
         // set imm[4:1]
         expanded_instruction |= ((imm_12_1 as InstructionType)
             & COMPRESSED_CB_IMM_4_1_MASK as InstructionType)
             << (COMPRESSED_CB_IMM_4_1_OFFSET_FINAL
                 - COMPRESSED_CB_IMM_4_1_OFFSET);
-        dbg!(
-            "GREPME2222 INT expanded_instruction: {}",
-            expanded_instruction
-        );
         // set funct3
         expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
-        dbg!(
-            "GREPME2223 INT expanded_instruction: {}",
-            expanded_instruction
-        );
         // set rs1
         expanded_instruction |= (source_register_1_offset as InstructionType)
             << BIT_OFFSET_SOURCE_REGISTER_1;
-        dbg!(
-            "GREPME2224 INT expanded_instruction: {}",
-            expanded_instruction
-        );
         // set rs2
         expanded_instruction |= (source_register_2_offset as InstructionType)
             << BIT_OFFSET_SOURCE_REGISTER_2;
-        dbg!(
-            "GREPME2225 INT expanded_instruction: {}",
-            expanded_instruction
-        );
         // set imm[10:5]
         expanded_instruction |= ((imm_12_1 as InstructionType)
             & COMPRESSED_CB_IMM_10_5_MASK as InstructionType)
             << (COMPRESSED_CB_IMM_10_5_OFFSET_FINAL
                 - COMPRESSED_CB_IMM_10_5_OFFSET);
-        dbg!(
-            "GREPME2226 INT expanded_instruction: {}",
-            expanded_instruction
-        );
         // set imm[12]
         expanded_instruction |= ((imm_12_1 as InstructionType)
             & COMPRESSED_CB_IMM_12_MASK as InstructionType)
             << (COMPRESSED_CB_IMM_12_OFFSET_FINAL
                 - COMPRESSED_CB_IMM_12_OFFSET);
-        dbg!("GREPME333 OUT EXP INSTR: {:#X?}", expanded_instruction);
 
         expanded_instruction
     }
