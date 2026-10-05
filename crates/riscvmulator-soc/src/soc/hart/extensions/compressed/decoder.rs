@@ -778,6 +778,8 @@ impl Decoder {
             extensions::compressed::constants::OP_Funct3::F111 => {
                 error!("condition unimplemented yet");
                 // if { // RV64IC only
+                self.compressedISA.c_uimm =
+                    self.extract_cl_cs_offset_7_3(instruction);
                 // C.SD expands into `sd rs2', offset(rs1')`
                 self.expand_to_s_format(
                     Opcode::STORE,
@@ -1390,7 +1392,6 @@ impl Decoder {
         let mut jta_imm = (instruction & COMPRESSED_CJ_JTA_IMM_11_MASK)
             >> (COMPRESSED_CJ_JTA_IMM_11_OFFSET
                 - COMPRESSED_CJ_JTA_IMM_11_OFFSET_FINAL);
-        trace!("GREPME9 before sign extension: {}", jta_imm);
         if jta_imm != 0 {
             // if 11th bit of `imm[11:1]` is non-zero, `imm[11:1]` represents
             // negative number, so sign extend it
@@ -1411,9 +1412,7 @@ impl Decoder {
         jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_3_1_MASK)
             >> (COMPRESSED_CJ_JTA_IMM_3_1_OFFSET - 1);
 
-        trace!("GREPME8 Result unsigned: {}", jta_imm);
-        trace!("GREPME8 Result signed: {}", jta_imm as SignedImmediate);
-        jta_imm as SignedImmediate
+        jta_imm as SignedInstructionTypeCompressed as SignedImmediate
     }
 
     // instruction expanders/decompressors
@@ -1575,7 +1574,6 @@ impl Decoder {
         destination_register_offset: usize,
         imm_20_1: SignedImmediate,
     ) -> InstructionType {
-        trace!("GREPME77 INPUT: {}", imm_20_1);
         // set opcode
         let mut expanded_instruction: InstructionType =
             opcode as InstructionType;
@@ -1603,7 +1601,6 @@ impl Decoder {
             & COMPRESSED_CJ_IMM_20_MASK)
             << (COMPRESSED_CJ_IMM_20_OFFSET_FINAL
                 - COMPRESSED_CJ_IMM_20_OFFSET);
-        trace!("GREPME77 OUTPUT: {:#X}", expanded_instruction);
 
         expanded_instruction
     }

@@ -322,12 +322,6 @@ impl Executor {
 
     fn instruction_load_word(&mut self, decoder: &Decoder) {
         debug!("Executing LW...");
-        println!(
-            "GREPME LW {:#?} {:#?}({:#X?})",
-            decoder.destination_register_offset,
-            decoder.immediate.sign_extend(),
-            decoder.source_register_1
-        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::WORD;
@@ -446,12 +440,6 @@ impl Executor {
 
     fn instruction_store_word(&mut self, decoder: &Decoder) {
         debug!("Executing SW...");
-        println!(
-            "GREPME SW {:#?} {:#?}({:#X?})",
-            decoder.source_register_2,
-            decoder.immediate.sign_extend(),
-            decoder.source_register_1
-        );
 
         self.update_memory_address(decoder);
         self.value_to_store_u32 = decoder.source_register_2 as Word;
@@ -645,23 +633,11 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
-        debug!("GREPME7 BEFORE Sing extension: {}", decoder.immediate);
         let sign_extended_imm = decoder.immediate.sign_extend();
         self.jump_target_address =
             XLen::wrapping_add(pc.read(), sign_extended_imm);
 
         debug!("Executing JAL...");
-
-        let debug_str = format!(
-            "Executing {:#?} {:#?} {:#?} {:#X?} {:#X?}",
-            ExecutableCommand::JAL,
-            GPRegisterName::x0_zero,
-            sign_extended_imm,
-            self.jump_target_address,
-            pc.read()
-        )
-        .to_lowercase();
-        debug!("{debug_str}");
 
         self.result = pc.read() + fetch_unit.instruction_size as XLen;
     }

@@ -9,6 +9,7 @@
 
 ## Fixes/Features
 
+- [ ] revamp instruction logs so they show instruction mnenmonics/listing
 - [ ] add UTs
 - [ ] add benchmarks (compare with Spike)
 - [ ] add docs

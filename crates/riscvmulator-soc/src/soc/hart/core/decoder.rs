@@ -194,7 +194,7 @@ impl Decoder {
                     }
                     OP_32_Funct3::SRXW => {
                         self.shamt = self.extract_r_shamt_rv64w();
-                        debug!("New shamt: {}", self.shamt);
+                        trace!("New shamt: {}", self.shamt);
                         self.command_to_execute = ExecutableCommand::SRLW;
                     }
                 },
@@ -209,7 +209,7 @@ impl Decoder {
                     // }
                     OP_32_Funct3::SRXW => {
                         self.shamt = self.extract_r_shamt_rv64w();
-                        debug!("New shamt: {}", self.shamt);
+                        trace!("New shamt: {}", self.shamt);
                         self.command_to_execute = ExecutableCommand::SRAW;
                     }
 
@@ -331,21 +331,26 @@ impl Decoder {
                     MISC_MEM_Funct3::FENCE_I => {
                         self.need_to_write_back = false;
 
-                        let check_if_fence_i = || -> bool {
-                            self.source_register_1 == 0
-                                && self.extract_destination_register(
-                                    instruction,
-                                    register_file,
-                                ) == 0
-                                && self.i_funct12 == I_Funct12::F0
-                        };
+                        // The unused fields in the FENCE.I instruction,
+                        // funct12, rs1, and rd, are reserved for finer-grain
+                        // fences in future extensions. For forward
+                        // compatibility, base implementations shall ignore
+                        // these fields, and standard software shall zero these
+                        // fields.
+                        // let check_if_fence_i = || -> bool {
+                        //     self.source_register_1_offset
+                        //         == GPRegisterName::x0_zero as usize
+                        //         && self.extract_destination_register_index(
+                        //             instruction,
+                        //         ) == GPRegisterName::x0_zero as usize
+                        //         && self.i_funct12 == I_Funct12::F0
+                        // };
 
-                        if check_if_fence_i() {
-                            self.command_to_execute =
-                                ExecutableCommand::FENCE_I;
-                        } else {
-                            unreachable!();
-                        }
+                        // if check_if_fence_i() {
+                        self.command_to_execute = ExecutableCommand::FENCE_I;
+                        // } else {
+                        //     unreachable!();
+                        // }
                     }
                 }
             }

@@ -153,7 +153,7 @@ pub const COMPRESSED_CS_IMM_4_0_MASK: InstructionTypeCompressed =
 pub const COMPRESSED_CS_IMM_4_0_OFFSET_FINAL: usize = 7;
 pub const COMPRESSED_CS_IMM_11_5_OFFSET: usize = 5;
 pub const COMPRESSED_CS_IMM_11_5_MASK: InstructionTypeCompressed =
-    0b11111 << COMPRESSED_CS_IMM_11_5_OFFSET;
+    0b111_1111 << COMPRESSED_CS_IMM_11_5_OFFSET;
 pub const COMPRESSED_CS_IMM_11_5_OFFSET_FINAL: usize = 25;
 
 pub const COMPRESSED_CB_IMM_11_OFFSET: usize = 11;
@@ -177,7 +177,7 @@ pub const COMPRESSED_CB_IMM_12_MASK: InstructionTypeCompressed =
 pub const COMPRESSED_CB_IMM_12_OFFSET_FINAL: usize = 31;
 
 pub const COMPRESSED_CJ_IMM_19_12_OFFSET: usize = 12;
-pub const COMPRESSED_CJ_IMM_19_12_MASK: InstructionTypeCompressed =
+pub const COMPRESSED_CJ_IMM_19_12_MASK: InstructionType =
     0b1111_1111 << COMPRESSED_CJ_IMM_19_12_OFFSET;
 pub const COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL: usize = 12;
 
