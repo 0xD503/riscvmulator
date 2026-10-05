@@ -1098,7 +1098,6 @@ impl Decoder {
             << (7 - COMPRESSED_CI_NZIMM_8_7_OFFSET);
         imm |= (instruction & COMPRESSED_CI_NZIMM_5_9_4_MASK)
             << (5 - COMPRESSED_CI_NZIMM_5_9_4_OFFSET);
-        imm >>= 4;
 
         imm.into()
     }
