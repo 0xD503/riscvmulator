@@ -7,11 +7,13 @@ use crate::{
     soc::hart::extensions::compressed::constants::InstructionTypeCompressed,
 };
 
-pub const OPCODE_QUADRANT_MASK: InstructionType = 0b11;
+pub const OPCODE_QUADRANT_OFFSET: usize = 0;
+pub const OPCODE_QUADRANT_MASK: InstructionType =
+    0b11 << OPCODE_QUADRANT_OFFSET;
 
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Default, Clone)]
+#[derive(Default, Copy, Clone)]
 pub enum Opcode {
     LOAD = OPCODE_LOAD as isize,
     STORE = OPCODE_STORE as isize,
@@ -244,19 +246,19 @@ impl From<InstructionType> for OP_IMM_ShiftType {
 
 #[allow(non_camel_case_types)]
 #[derive(Default, Clone)]
-pub enum Funct7 {
+pub enum OP_Funct7 {
     #[default]
     F0 = 0b0000000,
     F1 = 0b0100000,
     F_MULDIV = 0b0000001,
 }
 
-impl From<InstructionType> for Funct7 {
+impl From<InstructionType> for OP_Funct7 {
     fn from(value: InstructionType) -> Self {
         match value {
-            0b0000000 => Funct7::F0,
-            0b0100000 => Funct7::F1,
-            0b0000001 => Funct7::F_MULDIV,
+            0b0000000 => OP_Funct7::F0,
+            0b0100000 => OP_Funct7::F1,
+            0b0000001 => OP_Funct7::F_MULDIV,
 
             _ => {
                 error!("Unknown funct7: {value:#09b}");
@@ -460,7 +462,11 @@ pub enum OpcodeToInstructionFormat {
     I_103_JALR = 0b1100111,
     J_111_JAL = 0b1101111,
 
-    I_115_SYSTEM = 0b1110011, // (Zicsr_extension)
+    // // compressed instruction formats
+    // CR_ = 0b0,
+
+    // Zicsr_extension
+    I_115_SYSTEM = 0b1110011,
 }
 
 impl From<Opcode> for OpcodeToInstructionFormat {
@@ -555,7 +561,28 @@ impl From<InstructionType> for OpcodeQuadrant {
     }
 }
 
-#[derive(Clone, Copy)]
+impl From<InstructionTypeCompressed> for OpcodeQuadrant {
+    fn from(quadrant: InstructionTypeCompressed) -> Self {
+        match quadrant {
+            // >= 32-bit instruction size
+            0b11 => OpcodeQuadrant::Quadrant11,
+            // 16-bit instruction size
+            0b10 => OpcodeQuadrant::Quadrant10,
+            0b01 => OpcodeQuadrant::Quadrant01,
+            0b00 => OpcodeQuadrant::Quadrant00,
+
+            _ => {
+                error!("Opcode quadrant is unreachable: {:#04b}", quadrant);
+                unreachable!(
+                    "Opcode quadrant is unreachable: {:#04b}",
+                    quadrant
+                );
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum InstructionSize {
     I16 = size_of::<InstructionTypeCompressed>() as isize,
     I32 = size_of::<InstructionType>() as isize,

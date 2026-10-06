@@ -5,7 +5,7 @@ use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
 use crate::soc::memory_bus::SystemBus;
 use crate::soc::peripherals::common::device::{Addressable, IODeviceError};
 
-use log::{debug, error};
+use log::{error, trace};
 
 impl Executor {
     // we cannot make `read()`/`write()` methods to be generic because of the
@@ -98,7 +98,7 @@ impl Executor {
         decoder: &Decoder,
     ) {
         if decoder.need_to_read_memory {
-            debug!("Executing memory read...");
+            trace!("Memory read...");
 
             match self.memory_value_type {
                 MemoryValueTypeEnum::DOUBLE_WORD => {
@@ -124,7 +124,7 @@ impl Executor {
                 }
             }
         } else if decoder.need_to_write_memory {
-            debug!("Executing memory write...");
+            trace!("Memory write...");
 
             let result;
             match self.memory_value_type {

@@ -82,7 +82,7 @@ impl<const REGS_NUM: usize> RegisterFileInterface for RegisterFile<REGS_NUM> {
             self.registers[offset].write(value);
         } else {
             trace!(
-                "An attempt to write value {value} to register `x0_zero` was silently discarded"
+                "An attempt to write value {value:#X} to register `x0_zero` was silently discarded"
             );
         }
     }

@@ -16,6 +16,7 @@ use crate::soc::hart::core::decoder::Decoder;
 use crate::soc::hart::core::executor::Executor;
 use crate::soc::hart::core::fetch_unit::FetchUnit;
 use crate::soc::hart::core::gp_registers::{Register, RegisterFile};
+use crate::soc::hart::extensions::compressed::expander::Expander;
 use crate::soc::hart::extensions::zicsr::CSRFile;
 use crate::soc::memory_bus::SystemBus;
 
@@ -47,6 +48,7 @@ impl Hart {
                     INITIAL_INSTRUCTION,
                     InstructionSize::I32,
                 ),
+                expander: Expander::new(),
                 decoder: Decoder::new(),
                 executor: Executor::new(cfg.hart.pc_reset_value),
             },
@@ -63,12 +65,16 @@ impl Hart {
             .fetch(bus, &self.context.arch_state.PC);
     }
 
+    fn expand(&mut self) {
+        self.context
+            .expander
+            .expand(&self.context.arch_state, &self.context.fetch_unit);
+    }
+
     fn decode(&mut self) {
-        self.context.decoder.decode(
-            &self.context.arch_state,
-            &self.context.fetch_unit,
-            &self.context.arch_state.gp_register_file,
-        );
+        self.context
+            .decoder
+            .decode(&self.context.arch_state, &self.context.fetch_unit);
     }
 
     fn execute(&mut self) {
@@ -97,6 +103,7 @@ impl Hart {
         trace!("Current PC: {:#018X}", self.context.arch_state.PC.read());
 
         self.fetch(bus);
+        self.expand();
         self.decode();
         self.execute();
         self.memory_operation(bus);

@@ -12,6 +12,7 @@ use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, SignedImmediate, SignedXLen,
     SignedXLen32, UnsignedImmediate, UnsignedXLen, Word, XLen, XLen32,
 };
+use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
 use crate::soc::hart::privileged::constants::{
@@ -236,7 +237,7 @@ impl Executor {
                 );
             }
 
-            // M extension instructoins
+            // `M` extension instructoins
             ExecutableCommand::MUL => {
                 self.instruction_multiply_low(decoder);
             }
@@ -341,13 +342,13 @@ impl Executor {
     }
 
     fn instruction_addi(&mut self, decoder: &Decoder) {
+        let sign_extended_imm = decoder.immediate.sign_extend();
+
         debug!("Executing ADDI...");
 
         // use wrapping operation in order to allow overruns
-        self.result = XLen::wrapping_add(
-            decoder.source_register_1,
-            decoder.immediate.sign_extend(),
-        );
+        self.result =
+            XLen::wrapping_add(decoder.source_register_1, sign_extended_imm);
     }
 
     fn instruction_slli(&mut self, decoder: &Decoder) {
@@ -547,7 +548,7 @@ impl Executor {
     }
 
     fn instruction_bne(&mut self, decoder: &Decoder, pc: &Register) {
-        trace!(
+        debug!(
             "Executing BNE: {:#018X}, {:#018X}...",
             decoder.source_register_1, decoder.source_register_2
         );
@@ -632,10 +633,12 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
+        let sign_extended_imm = decoder.immediate.sign_extend();
+        self.jump_target_address =
+            XLen::wrapping_add(pc.read(), sign_extended_imm);
+
         debug!("Executing JAL...");
 
-        self.jump_target_address =
-            XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
         self.result = pc.read() + fetch_unit.instruction_size as XLen;
     }
 
@@ -690,7 +693,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        trace!(
+        debug!(
             "Executing SRAIW: {:#018X} >> {}...",
             decoder.source_register_1 as SignedXLen32, decoder.immediate
         );
@@ -745,7 +748,7 @@ impl Executor {
     }
 
     fn instruction_shift_right_arith_word(&mut self, decoder: &Decoder) {
-        trace!(
+        debug!(
             "Executing SRAW: {:#018} >> {:?}...",
             decoder.source_register_1 as SignedXLen32, decoder.shamt
         );
