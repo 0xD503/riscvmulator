@@ -19,6 +19,7 @@ use crate::soc::hart::core::fetch_unit::FetchUnit;
 use crate::soc::hart::core::registers::{
     RegisterFileInterface, RegisterInterface,
 };
+use crate::soc::hart::extensions::compressed::expander::Expander;
 
 #[allow(non_snake_case)]
 #[derive(Clone)]
@@ -41,6 +42,7 @@ impl ArchState {
 pub struct Context {
     pub(crate) arch_state: ArchState,
     pub(crate) fetch_unit: FetchUnit,
+    pub(crate) expander: Expander,
     pub(crate) decoder: Decoder,
     pub(crate) executor: Executor,
 }

@@ -582,7 +582,7 @@ impl From<InstructionTypeCompressed> for OpcodeQuadrant {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum InstructionSize {
     I16 = size_of::<InstructionTypeCompressed>() as isize,
     I32 = size_of::<InstructionType>() as isize,

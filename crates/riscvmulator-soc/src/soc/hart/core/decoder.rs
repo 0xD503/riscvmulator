@@ -783,14 +783,14 @@ impl Decoder {
     ) {
         match fetch_unit.instruction_size {
             InstructionSize::I32 => {
-                self.decode_32(arch_state, fetch_unit.current_instruction);
+                self.decode_i_32(arch_state, fetch_unit.current_instruction);
             }
             InstructionSize::I16 => {
                 // compressed ISA
                 if misa::is_c_enabled(&arch_state.control_status_registers) {
                     let decompressed_instruction =
                         self.expand_compressed(fetch_unit);
-                    self.decode_32(arch_state, decompressed_instruction);
+                    self.decode_i_32(arch_state, decompressed_instruction);
                 } else {
                     todo!("Illegal instruction trap");
                 }
@@ -803,7 +803,9 @@ impl Decoder {
         }
     }
 
-    fn decode_32(
+    /// decode 32-bit instructions
+    #[allow(non_snake_case)]
+    fn decode_i_32(
         &mut self,
         arch_state: &ArchState,
         instruction: InstructionType,
