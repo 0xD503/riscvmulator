@@ -306,6 +306,7 @@ impl Executor {
     }
 
     fn instruction_load_byte(&mut self, decoder: &Decoder) {
+        // print_instr
         debug!("Executing LB...");
 
         self.update_memory_address(decoder);
