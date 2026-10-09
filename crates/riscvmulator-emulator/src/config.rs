@@ -226,7 +226,7 @@ impl Config {
     /// autoresolves some values from existing ones
     fn resolve(&mut self) {
         if self.emulator.throttle_frequency == 0 {
-            self.emulator.throttle_frequency = self.soc.xtal_frequency_hz;
+            // self.emulator.throttle_frequency = self.soc.xtal_frequency_hz;
         }
 
         // TODO: autoresolves
