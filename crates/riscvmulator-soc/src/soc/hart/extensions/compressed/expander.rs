@@ -461,6 +461,9 @@ impl Expander {
                         self.c_imm = self.extract_ci_imm_5_0(
                             fetch_unit.current_instruction_compressed,
                         );
+                        if self.cr_ci_rd_or_rs1_offset == 0 {
+                            trace!("HINT was met");
+                        }
                         // C.LI expands into `addi rd, x0, imm`
                         self.expand_to_i_format(
                             Opcode::OP_IMM,
@@ -471,17 +474,24 @@ impl Expander {
                         )
                     }
                     OpcodeQuadrant::Quadrant10 => {
-                        self.c_uimm = self.extract_ci_load_word_sp_offset(
-                            fetch_unit.current_instruction_compressed,
-                        );
-                        // C.LWSP expands into `lw rd, offset(x2)`
-                        self.expand_to_i_format(
-                            Opcode::LOAD,
-                            self.cr_ci_rd_or_rs1_offset,
-                            OPCODE_LOAD_Funct3::LW as InstructionType,
-                            GPRegisterName::x2_sp as usize,
-                            self.c_uimm as SignedImmediate,
-                        )
+                        if self.cr_ci_rd_or_rs1_offset != 0 {
+                            self.c_uimm = self.extract_ci_load_word_sp_offset(
+                                fetch_unit.current_instruction_compressed,
+                            );
+                            // C.LWSP expands into `lw rd, offset(x2)`
+                            self.expand_to_i_format(
+                                Opcode::LOAD,
+                                self.cr_ci_rd_or_rs1_offset,
+                                OPCODE_LOAD_Funct3::LW as InstructionType,
+                                GPRegisterName::x2_sp as usize,
+                                self.c_uimm as SignedImmediate,
+                            )
+                        } else {
+                            // the code points with `rd` = 0 are reserved
+                            todo!(
+                                "illegal instruction trap, reserved by specification"
+                            );
+                        }
                     }
 
                     _ => {
@@ -499,7 +509,7 @@ impl Expander {
                             );
                             if self.c_imm != 0 {
                                 if self.cr_ci_rd_or_rs1_offset == 0 {
-                                    trace!("HINT");
+                                    trace!("HINT was met");
                                 }
                                 // C.LUI expands into `lui rd, imm`
                                 self.expand_to_u_format(
