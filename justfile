@@ -20,11 +20,12 @@ COMPOSE_CMD := CONTAINER_ENGINE + COMPOSE_SUBCMD
 COMPOSE := COMPOSE_CMD + " run --rm"
 ENSURE_DEV_IMAGE_EXISTS := just_executable() + " --justfile " + quote(justfile()) + " " + "ensure-dev-image-exists" + " && "
 COMMON_ENV := "JUST_TIME=true"
-RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " " + DEV_SERVICE_NAME + " " }
+RUN_UNDER_NICE := "nice"
+RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" + RUN_UNDER_NICE + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " " + DEV_SERVICE_NAME + " " + RUN_UNDER_NICE + " " }
 DEBUG_ENV := "RVMULATOR_EMULATOR__LOGGING__LEVEL=debug RUST_BACKTRACE=full"
 TRACE_ENV := "RVMULATOR_EMULATOR__LOGGING__LEVEL=trace RUST_BACKTRACE=full"
-RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { DEBUG_ENV + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e " + replace(DEBUG_ENV, " ", " -e ") + " " + DEV_SERVICE_NAME + " " }
-RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { TRACE_ENV + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e " + replace(TRACE_ENV, " ", " -e ") + " " + DEV_SERVICE_NAME + " " }
+RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { DEBUG_ENV + " " + RUN_UNDER_NICE + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e " + replace(DEBUG_ENV, " ", " -e ") + " " + DEV_SERVICE_NAME + " " + RUN_UNDER_NICE + " " }
+RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { TRACE_ENV + " " + RUN_UNDER_NICE + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e " + replace(TRACE_ENV, " ", " -e ") + " " + DEV_SERVICE_NAME + " " + RUN_UNDER_NICE + " " }
 DEV_IMAGE := env_var("DEV_SERVICE_STARTING_IMAGE_NAME") + ":local"
 
 

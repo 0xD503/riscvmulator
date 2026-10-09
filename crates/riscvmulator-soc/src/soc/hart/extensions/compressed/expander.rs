@@ -1,30 +1,1621 @@
-use crate::soc::hart::{
-    core::{
-        ArchState, decoder::constants::InstructionSize, fetch_unit::FetchUnit,
+use crate::{
+    constants::arch::{SignedImmediate, UnsignedImmediate},
+    soc::hart::{
+        core::{
+            ArchState, decoder::constants::InstructionSize,
+            fetch_unit::FetchUnit, gp_registers::constants::GPRegisterName,
+        },
+        extensions::{
+            self,
+            compressed::constants::{
+                Bits11_10_quadrant_01, CA_Funct_2, InstructionTypeCompressed,
+            },
+        },
+        privileged::machine::misa,
     },
-    privileged::machine::misa,
 };
+
+use log::{error, trace};
+
+use super::constants::{
+    COMPRESSED_BITS_11_10_MASK, COMPRESSED_BITS_11_10_OFFSET,
+    COMPRESSED_BITS_12_MASK, COMPRESSED_BITS_12_OFFSET,
+    COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK,
+    COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET, COMPRESSED_CA_FUNCT_2_MASK,
+    COMPRESSED_CA_FUNCT_2_OFFSET, COMPRESSED_CB_FUNCT_3_11X_IMM_2_1_MASK,
+    COMPRESSED_CB_FUNCT_3_11X_IMM_2_1_OFFSET,
+    COMPRESSED_CB_FUNCT_3_11X_IMM_5_MASK,
+    COMPRESSED_CB_FUNCT_3_11X_IMM_7_6_MASK,
+    COMPRESSED_CB_FUNCT_3_11X_IMM_7_6_OFFSET, COMPRESSED_CI_CB_IMM_4_0_MASK,
+    COMPRESSED_CI_CB_IMM_4_0_OFFSET, COMPRESSED_CI_IMM_5_MASK,
+    COMPRESSED_CI_IMM_5_OFFSET, COMPRESSED_CI_NZIMM_4_0_MASK,
+    COMPRESSED_CI_NZIMM_4_0_OFFSET, COMPRESSED_CI_NZIMM_4_MASK,
+    COMPRESSED_CI_NZIMM_4_OFFSET, COMPRESSED_CI_NZIMM_5_9_4_MASK,
+    COMPRESSED_CI_NZIMM_5_9_4_OFFSET, COMPRESSED_CI_NZIMM_5_MASK,
+    COMPRESSED_CI_NZIMM_5_OFFSET, COMPRESSED_CI_NZIMM_6_MASK,
+    COMPRESSED_CI_NZIMM_6_OFFSET, COMPRESSED_CI_NZIMM_8_7_MASK,
+    COMPRESSED_CI_NZIMM_8_7_OFFSET, COMPRESSED_CI_NZIMM_9_MASK,
+    COMPRESSED_CI_NZIMM_9_OFFSET, COMPRESSED_CI_NZIMM_16_12_MASK,
+    COMPRESSED_CI_NZIMM_16_12_OFFSET, COMPRESSED_CI_NZIMM_17_MASK,
+    COMPRESSED_CI_NZIMM_17_OFFSET, COMPRESSED_CI_OFFSET_4_2_MASK,
+    COMPRESSED_CI_OFFSET_4_2_OFFSET, COMPRESSED_CI_OFFSET_4_3_MASK,
+    COMPRESSED_CI_OFFSET_4_3_OFFSET, COMPRESSED_CI_OFFSET_5_MASK,
+    COMPRESSED_CI_OFFSET_5_OFFSET, COMPRESSED_CI_OFFSET_7_6_MASK,
+    COMPRESSED_CI_OFFSET_7_6_OFFSET, COMPRESSED_CI_OFFSET_8_6_MASK,
+    COMPRESSED_CI_OFFSET_8_6_OFFSET, COMPRESSED_CI_SHAMT_4_0_MASK,
+    COMPRESSED_CI_SHAMT_4_0_OFFSET, COMPRESSED_CI_SHAMT_5_MASK,
+    COMPRESSED_CI_SHAMT_5_OFFSET, COMPRESSED_CIW_CL_RD_OFFSET_MASK,
+    COMPRESSED_CIW_CL_RD_OFFSET_OFFSET, COMPRESSED_CIW_NZUIMM_MASK,
+    COMPRESSED_CIW_NZUIMM_OFFSET, COMPRESSED_CJ_JTA_IMM_3_1_MASK,
+    COMPRESSED_CJ_JTA_IMM_3_1_OFFSET, COMPRESSED_CJ_JTA_IMM_4_MASK,
+    COMPRESSED_CJ_JTA_IMM_4_OFFSET, COMPRESSED_CJ_JTA_IMM_5_MASK,
+    COMPRESSED_CJ_JTA_IMM_5_OFFSET, COMPRESSED_CJ_JTA_IMM_6_MASK,
+    COMPRESSED_CJ_JTA_IMM_6_OFFSET, COMPRESSED_CJ_JTA_IMM_7_MASK,
+    COMPRESSED_CJ_JTA_IMM_7_OFFSET, COMPRESSED_CJ_JTA_IMM_9_8_MASK,
+    COMPRESSED_CJ_JTA_IMM_9_8_OFFSET, COMPRESSED_CJ_JTA_IMM_10_MASK,
+    COMPRESSED_CJ_JTA_IMM_10_OFFSET, COMPRESSED_CJ_JTA_IMM_11_MASK,
+    COMPRESSED_CJ_JTA_IMM_11_OFFSET, COMPRESSED_CL_CS_RS1_OFFSET_MASK,
+    COMPRESSED_CL_CS_RS1_OFFSET_OFFSET, COMPRESSED_CL_OFFSET_2_MASK,
+    COMPRESSED_CL_OFFSET_2_OFFSET, COMPRESSED_CL_OFFSET_5_3_MASK,
+    COMPRESSED_CL_OFFSET_5_3_OFFSET, COMPRESSED_CL_OFFSET_6_MASK,
+    COMPRESSED_CL_OFFSET_6_OFFSET, COMPRESSED_CL_OFFSET_7_MASK,
+    COMPRESSED_CL_OFFSET_7_OFFSET, COMPRESSED_CR_CI_RD_RS1_MASK,
+    COMPRESSED_CR_CI_RD_RS1_OFFSET, COMPRESSED_CR_CSS_RS2_MASK,
+    COMPRESSED_CR_CSS_RS2_OFFSET, COMPRESSED_CS_CA_RS2_OFFSET_MASK,
+    COMPRESSED_CS_CA_RS2_OFFSET_OFFSET, COMPRESSED_CSS_UIMM_5_2_MASK,
+    COMPRESSED_CSS_UIMM_5_2_OFFSET, COMPRESSED_CSS_UIMM_5_3_MASK,
+    COMPRESSED_CSS_UIMM_5_3_OFFSET, COMPRESSED_CSS_UIMM_7_6_MASK,
+    COMPRESSED_CSS_UIMM_7_6_OFFSET, COMPRESSED_CSS_UIMM_8_6_MASK,
+    COMPRESSED_CSS_UIMM_8_6_OFFSET, COMPRESSED_FUNCT3_MASK,
+    COMPRESSED_FUNCT4_MASK, COMPRESSED_FUNCT4_OFFSET,
+};
+use crate::constants::arch::{
+    BIT_OFFSET_DESTINATION_REGISTER, BIT_OFFSET_FUNCT3, BIT_OFFSET_I_FUNCT7,
+    BIT_OFFSET_IMM_11_0, BIT_OFFSET_R_FUNCT7, BIT_OFFSET_SHAMT,
+    BIT_OFFSET_SHTYPE, BIT_OFFSET_SOURCE_REGISTER_1,
+    BIT_OFFSET_SOURCE_REGISTER_2, InstructionType,
+};
+use crate::soc::hart::core::decoder::constants::{
+    BRANCH_Funct3, JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
+    OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant, STORE_Funct3, SYSTEM_Funct3,
+    SYSTEM_Imm_transfer_control_return_from,
+};
+use crate::soc::hart::extensions::compressed::constants::{
+    COMPRESSED_CB_FUNCT_3_11X_IMM_5_OFFSET, COMPRESSED_CB_IMM_4_0_MASK,
+    COMPRESSED_CB_IMM_4_0_OFFSET, COMPRESSED_CB_IMM_4_1_MASK,
+    COMPRESSED_CB_IMM_4_1_OFFSET, COMPRESSED_CB_IMM_4_1_OFFSET_FINAL,
+    COMPRESSED_CB_IMM_5_MASK_FINAL, COMPRESSED_CB_IMM_5_OFFSET_FINAL,
+    COMPRESSED_CB_IMM_8_MASK_FINAL, COMPRESSED_CB_IMM_8_OFFSET_FINAL,
+    COMPRESSED_CB_IMM_10_5_MASK, COMPRESSED_CB_IMM_10_5_OFFSET,
+    COMPRESSED_CB_IMM_10_5_OFFSET_FINAL, COMPRESSED_CB_IMM_11_MASK,
+    COMPRESSED_CB_IMM_11_OFFSET, COMPRESSED_CB_IMM_11_OFFSET_FINAL,
+    COMPRESSED_CB_IMM_12_MASK, COMPRESSED_CB_IMM_12_OFFSET,
+    COMPRESSED_CB_IMM_12_OFFSET_FINAL, COMPRESSED_CI_IMM_5_MASK_FINAL,
+    COMPRESSED_CI_IMM_5_OFFSET_FINAL, COMPRESSED_CI_NZIMM_5_MASK_FINAL,
+    COMPRESSED_CI_NZIMM_5_OFFSET_FINAL, COMPRESSED_CI_NZIMM_9_MASK_FINAL,
+    COMPRESSED_CI_NZIMM_9_OFFSET_FINAL, COMPRESSED_CI_NZIMM_17_MASK_FINAL,
+    COMPRESSED_CI_NZIMM_17_OFFSET_FINAL, COMPRESSED_CJ_IMM_10_1_MASK,
+    COMPRESSED_CJ_IMM_10_1_OFFSET, COMPRESSED_CJ_IMM_10_1_OFFSET_FINAL,
+    COMPRESSED_CJ_IMM_11_MASK, COMPRESSED_CJ_IMM_11_OFFSET,
+    COMPRESSED_CJ_IMM_11_OFFSET_FINAL, COMPRESSED_CJ_IMM_19_12_MASK,
+    COMPRESSED_CJ_IMM_19_12_OFFSET, COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL,
+    COMPRESSED_CJ_IMM_20_MASK, COMPRESSED_CJ_IMM_20_OFFSET,
+    COMPRESSED_CJ_IMM_20_OFFSET_FINAL, COMPRESSED_CJ_JTA_IMM_11_MASK_FINAL,
+    COMPRESSED_CJ_JTA_IMM_11_OFFSET_FINAL, COMPRESSED_CS_IMM_4_0_MASK,
+    COMPRESSED_CS_IMM_4_0_OFFSET, COMPRESSED_CS_IMM_4_0_OFFSET_FINAL,
+    COMPRESSED_CS_IMM_11_5_MASK, COMPRESSED_CS_IMM_11_5_OFFSET,
+    COMPRESSED_CS_IMM_11_5_OFFSET_FINAL, SignedInstructionTypeCompressed,
+};
+use crate::soc::hart::extensions::integer::constants::OP_IMM_32_Funct3;
 
 #[derive(Clone)]
 pub struct Expander {
-    //
+    funct3: extensions::compressed::constants::OP_Funct3,
+    cr_funct4_lsb_compressed: bool,
+    cr_ci_rd_or_rs1_offset: usize,
+    cr_css_rs2_offset: usize,
+    c_imm: SignedImmediate,
+    c_uimm: UnsignedImmediate,
+    ci_shamt: InstructionTypeCompressed,
+    ciw_cl_rd_offset: usize,
+    cl_cs_rs1_offset: usize,
+    cs_ca_rs2_offset: usize,
+    ca_funct2: CA_Funct_2,
+    ca_cb_rd_or_rs1_offset: usize,
+    ca_cb_bit_12: InstructionTypeCompressed,
+    ca_cb_bits_11_10_quad_01_funct3_100: Bits11_10_quadrant_01,
+    // pub(crate) instruction_was_expanded: bool,
 }
 
 impl Expander {
     pub fn new() -> Self {
-        Expander {}
+        Expander {
+            funct3: extensions::compressed::constants::OP_Funct3::F000,
+            cr_funct4_lsb_compressed: false,
+            cr_ci_rd_or_rs1_offset: GPRegisterName::x0_zero as usize,
+            cr_css_rs2_offset: GPRegisterName::x0_zero as usize,
+            c_imm: 0,
+            c_uimm: 0,
+            ci_shamt: 0,
+            ciw_cl_rd_offset: 0,
+            cl_cs_rs1_offset: 0,
+            cs_ca_rs2_offset: 0,
+            ca_funct2: CA_Funct_2::F00,
+            ca_cb_rd_or_rs1_offset: 0,
+            ca_cb_bit_12: 0b0,
+            ca_cb_bits_11_10_quad_01_funct3_100: Bits11_10_quadrant_01::CA_11,
+            // instruction_was_expanded: false,
+        }
     }
 
-    pub fn expand(&mut self, arch_state: &ArchState, fetch_unit: &FetchUnit) {
+    pub fn expand(
+        &mut self,
+        arch_state: &ArchState,
+        fetch_unit: &mut FetchUnit,
+    ) {
         if fetch_unit.instruction_size == InstructionSize::I16 {
             // compressed ISA
             if misa::is_c_enabled(&arch_state.control_status_registers) {
-                // let decompressed_instruction =
-                //     self.expand_compressed(fetch_unit);
-                // self.decode_i_32(arch_state, decompressed_instruction);
+                fetch_unit.current_instruction =
+                    self.expand_compressed(fetch_unit);
+
+                // self.instruction_was_expanded = true;
             } else {
                 todo!("Illegal instruction trap");
             }
+        } else {
+            // self.instruction_was_expanded = false;
         }
     }
+
+    pub(crate) fn expand_compressed(
+        &mut self,
+        fetch_unit: &FetchUnit,
+    ) -> InstructionType {
+        self.funct3 = self.extract_funct3_compressed(
+            fetch_unit.current_instruction_compressed,
+        );
+
+        match fetch_unit.current_quadrant {
+            OpcodeQuadrant::Quadrant00 => match self.funct3 {
+                extensions::compressed::constants::OP_Funct3::F000 => {
+                    self.expand_ciw(fetch_unit.current_instruction_compressed)
+                }
+                extensions::compressed::constants::OP_Funct3::F001
+                | extensions::compressed::constants::OP_Funct3::F010
+                | extensions::compressed::constants::OP_Funct3::F011 => {
+                    self.expand_cl(fetch_unit.current_instruction_compressed)
+                }
+                extensions::compressed::constants::OP_Funct3::F101
+                | extensions::compressed::constants::OP_Funct3::F110
+                | extensions::compressed::constants::OP_Funct3::F111 => {
+                    self.expand_cs(fetch_unit.current_instruction_compressed)
+                }
+
+                extensions::compressed::constants::OP_Funct3::F100 => {
+                    todo!("illegal instruction, reserved by specification");
+                }
+            },
+            OpcodeQuadrant::Quadrant01 => match self.funct3 {
+                extensions::compressed::constants::OP_Funct3::F000
+                | extensions::compressed::constants::OP_Funct3::F010
+                | extensions::compressed::constants::OP_Funct3::F011 => {
+                    self.expand_ci(fetch_unit)
+                }
+                extensions::compressed::constants::OP_Funct3::F001 => {
+                    error!("distiguish between RV32/RV64");
+                    // if RV64IC {
+                    self.expand_ci(fetch_unit)
+                    // } else if RV32IC {
+                    // self.expand_cj(fetch_unit.current_instruction_compressed)
+                    // }
+                }
+                extensions::compressed::constants::OP_Funct3::F100 => {
+                    self.ca_cb_bit_12 = self.extract_ca_cb_bit_12(
+                        fetch_unit.current_instruction_compressed,
+                    );
+                    self.ca_cb_bits_11_10_quad_01_funct3_100 = self
+                        .extract_bits_11_10_quadrant_01_funct3_100(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                    self.ca_cb_rd_or_rs1_offset = self
+                        .extract_ca_cb_rd_or_rs1_offset(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                    match self.ca_cb_bits_11_10_quad_01_funct3_100 {
+                        Bits11_10_quadrant_01::CA_11 => self.expand_ca(
+                            fetch_unit.current_instruction_compressed,
+                        ),
+                        Bits11_10_quadrant_01::CB_00
+                        | Bits11_10_quadrant_01::CB_01
+                        | Bits11_10_quadrant_01::CB_10 => self.expand_cb(
+                            fetch_unit.current_instruction_compressed,
+                        ),
+                    }
+                }
+                extensions::compressed::constants::OP_Funct3::F101 => {
+                    self.expand_cj(fetch_unit.current_instruction_compressed)
+                }
+                extensions::compressed::constants::OP_Funct3::F110
+                | extensions::compressed::constants::OP_Funct3::F111 => {
+                    self.ca_cb_bit_12 = self.extract_ca_cb_bit_12(
+                        fetch_unit.current_instruction_compressed,
+                    );
+                    self.ca_cb_bits_11_10_quad_01_funct3_100 = self
+                        .extract_bits_11_10_quadrant_01_funct3_100(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                    self.ca_cb_rd_or_rs1_offset = self
+                        .extract_ca_cb_rd_or_rs1_offset(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                    self.expand_cb(fetch_unit.current_instruction_compressed)
+                }
+            },
+            OpcodeQuadrant::Quadrant10 => match self.funct3 {
+                extensions::compressed::constants::OP_Funct3::F000
+                | extensions::compressed::constants::OP_Funct3::F001
+                | extensions::compressed::constants::OP_Funct3::F010
+                | extensions::compressed::constants::OP_Funct3::F011 => {
+                    self.expand_ci(fetch_unit)
+                }
+                extensions::compressed::constants::OP_Funct3::F100 => {
+                    self.expand_cr(fetch_unit.current_instruction_compressed)
+                }
+                extensions::compressed::constants::OP_Funct3::F101
+                | extensions::compressed::constants::OP_Funct3::F110
+                | extensions::compressed::constants::OP_Funct3::F111 => {
+                    self.expand_css(fetch_unit.current_instruction_compressed)
+                }
+            },
+
+            OpcodeQuadrant::Quadrant11 => {
+                error!(
+                    "code flow reached compressed decoder but decodes non-compressed instruction"
+                );
+                unreachable!(
+                    "code flow reached compressed decoder but decodes non-compressed instruction"
+                );
+            }
+        }
+
+        // match From::from(self.opcode) {
+        //     OpcodeToInstructionFormat::
+        // }
+
+        // todo!("TODO: compressed ISA decoder");
+    }
+
+    fn expand_cr(
+        &mut self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionType {
+        trace!("Expanding CR-format instruction..");
+
+        self.cr_funct4_lsb_compressed =
+            self.extract_cr_funct4_lsb_compressed(instruction);
+        self.cr_ci_rd_or_rs1_offset = self
+            .extract_cr_ci_destination_or_source_register_1_offset(instruction);
+        self.cr_css_rs2_offset =
+            self.extract_cr_css_source_register_2_offset(instruction);
+
+        if self.cr_funct4_lsb_compressed {
+            if self.cr_css_rs2_offset == 0 {
+                if self.cr_ci_rd_or_rs1_offset != 0 {
+                    // C.JALR expands into `jalr x1, 0(rs1)`
+                    self.expand_to_i_format(
+                        Opcode::JALR,
+                        GPRegisterName::x1_ra as usize,
+                        JALR_Funct3::JALR as InstructionType,
+                        self.cr_ci_rd_or_rs1_offset,
+                        // 0 immedaite is implied by `C.JALR`
+                        0,
+                    )
+                } else {
+                    // C.EBREAK expands into `ebreak`
+                    self.expand_to_i_format(
+                        Opcode::SYSTEM,
+                        GPRegisterName::x0_zero as usize,
+                        SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM
+                            as InstructionType,
+                        GPRegisterName::x0_zero as usize,
+                        SYSTEM_Imm_transfer_control_return_from::EBREAK
+                            as SignedImmediate,
+                    )
+                }
+            } else {
+                // the code points with rd == x0 are HINTs
+                if self.cr_ci_rd_or_rs1_offset == 0 {
+                    trace!("HINT was met");
+                }
+                // C.ADD expands into `add rd, rd, rs2`
+                self.expand_to_r_format(
+                    Opcode::OP,
+                    self.cr_ci_rd_or_rs1_offset,
+                    extensions::integer::constants::OP_Funct3::ARITH
+                        as InstructionType,
+                    self.cr_ci_rd_or_rs1_offset,
+                    self.cr_css_rs2_offset,
+                    OP_Funct7::F0 as InstructionType,
+                )
+            }
+        } else {
+            if self.cr_css_rs2_offset == 0 {
+                // C.JR is valid only when rs1 != x0; the code point with rs1 = x0 is reserved.
+                if self.cr_ci_rd_or_rs1_offset != 0 {
+                    // C.JR expands into `jalr x0, 0(rs1)`
+                    self.expand_to_i_format(
+                        Opcode::JALR,
+                        GPRegisterName::x0_zero as usize,
+                        JALR_Funct3::JALR as InstructionType,
+                        self.cr_ci_rd_or_rs1_offset as usize,
+                        // 0 immediate is implied by `C.JR`
+                        0,
+                    )
+                } else {
+                    todo!(
+                        "illegal instruction trap, reserved by specification"
+                    );
+                }
+            } else {
+                // C.MV is valid only when rs2 != x0; the code points with rd == x0 are HINTs
+                if self.cr_ci_rd_or_rs1_offset == 0 {
+                    trace!("HINT was met");
+                }
+                // C.MV expands into `add rd, x0, rs2`
+                self.expand_to_r_format(
+                    Opcode::OP,
+                    self.cr_ci_rd_or_rs1_offset,
+                    extensions::integer::constants::OP_Funct3::ARITH
+                        as InstructionType,
+                    GPRegisterName::x0_zero as usize,
+                    self.cr_css_rs2_offset,
+                    OP_Funct7::F0 as InstructionType,
+                )
+            }
+        }
+    }
+
+    fn expand_ci(&mut self, fetch_unit: &FetchUnit) -> InstructionType {
+        trace!("Expanding CI-format instruction..");
+
+        self.cr_ci_rd_or_rs1_offset = self
+            .extract_cr_ci_destination_or_source_register_1_offset(
+                fetch_unit.current_instruction_compressed,
+            );
+
+        match self.funct3 {
+            extensions::compressed::constants::OP_Funct3::F000 => {
+                match fetch_unit.current_quadrant {
+                    OpcodeQuadrant::Quadrant01 => {
+                        self.c_imm = self.extract_ci_nzimm_5_0(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                        // C.ADDI expands into `addi rd, rd, imm`
+                        self.expand_to_i_format(
+                            Opcode::OP_IMM,
+                            self.cr_ci_rd_or_rs1_offset,
+                            OP_IMM_Funct3::ADDI as InstructionType,
+                            self.cr_ci_rd_or_rs1_offset,
+                            self.c_imm,
+                        )
+                    }
+                    OpcodeQuadrant::Quadrant10 => {
+                        self.ci_shamt = self.extract_ci_shamt(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                        // C.SLLI expands into `slli rd, rd, shamt[5:0]`
+                        self.expand_to_i_format(
+                            Opcode::OP_IMM,
+                            self.cr_ci_rd_or_rs1_offset as usize,
+                            OP_IMM_Funct3::SLLI as InstructionType,
+                            self.cr_ci_rd_or_rs1_offset,
+                            ((self.ci_shamt)
+                                | ((OP_IMM_ShiftType::SXLI
+                                    as InstructionTypeCompressed)
+                                    << (BIT_OFFSET_SHTYPE - BIT_OFFSET_SHAMT)))
+                                as SignedImmediate,
+                        )
+                    }
+
+                    _ => {
+                        error!("unreachable opcode for CI instruction");
+                        unreachable!("unreachable opcode for CI instruction");
+                    }
+                }
+            }
+            extensions::compressed::constants::OP_Funct3::F001 => {
+                match fetch_unit.current_quadrant {
+                    OpcodeQuadrant::Quadrant01 => {
+                        self.c_imm = self.extract_ci_imm_5_0(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                        // C.ADDIW expands into `addiw rd, rd, imm`
+                        self.expand_to_i_format(
+                            Opcode::OP_IMM_32,
+                            self.cr_ci_rd_or_rs1_offset,
+                            OP_IMM_32_Funct3::ADDIW as InstructionType,
+                            self.cr_ci_rd_or_rs1_offset,
+                            self.c_imm,
+                        )
+                    }
+                    OpcodeQuadrant::Quadrant10 => {
+                        // C.FLDSP expands into `fld rd, offset(x2)`
+                        // if RV64IFC {
+                        // FLDSP64
+                        // } else if RV32IFC {
+                        // FLDSP32
+                        // }
+                        todo!()
+                    }
+
+                    _ => {
+                        error!("unreachable opcode for CI instruction");
+                        unreachable!("unreachable opcode for CI instruction");
+                    }
+                }
+            }
+            extensions::compressed::constants::OP_Funct3::F010 => {
+                match fetch_unit.current_quadrant {
+                    OpcodeQuadrant::Quadrant01 => {
+                        self.c_imm = self.extract_ci_imm_5_0(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                        // C.LI expands into `addi rd, x0, imm`
+                        self.expand_to_i_format(
+                            Opcode::OP_IMM,
+                            self.cr_ci_rd_or_rs1_offset,
+                            OP_IMM_Funct3::ADDI as InstructionType,
+                            GPRegisterName::x0_zero as usize,
+                            self.c_imm,
+                        )
+                    }
+                    OpcodeQuadrant::Quadrant10 => {
+                        self.c_uimm = self.extract_ci_load_word_sp_offset(
+                            fetch_unit.current_instruction_compressed,
+                        );
+                        // C.LWSP expands into `lw rd, offset(x2)`
+                        self.expand_to_i_format(
+                            Opcode::LOAD,
+                            self.cr_ci_rd_or_rs1_offset,
+                            OPCODE_LOAD_Funct3::LW as InstructionType,
+                            GPRegisterName::x2_sp as usize,
+                            self.c_uimm as SignedImmediate,
+                        )
+                    }
+
+                    _ => {
+                        error!("unreachable opcode for CI instruction");
+                        unreachable!("unreachable opcode for CI instruction");
+                    }
+                }
+            }
+            extensions::compressed::constants::OP_Funct3::F011 => {
+                match fetch_unit.current_quadrant {
+                    OpcodeQuadrant::Quadrant01 => {
+                        if self.cr_ci_rd_or_rs1_offset != 2 {
+                            self.c_imm = self.extract_ci_nzimm_17_12(
+                                fetch_unit.current_instruction_compressed,
+                            );
+                            if self.c_imm != 0 {
+                                if self.cr_ci_rd_or_rs1_offset == 0 {
+                                    trace!("HINT");
+                                }
+                                // C.LUI expands into `lui rd, imm`
+                                self.expand_to_u_format(
+                                    Opcode::LUI,
+                                    self.cr_ci_rd_or_rs1_offset,
+                                    self.c_imm,
+                                )
+                            } else {
+                                // the code points with imm = 0 are reserved
+                                todo!(
+                                    "illegal instruction trap, reserved by specification"
+                                );
+                            }
+                        } else {
+                            self.c_imm = self.extract_ci_nzimm_9_4(
+                                fetch_unit.current_instruction_compressed,
+                            );
+                            if self.c_imm != 0 {
+                                if self.cr_ci_rd_or_rs1_offset == 0 {
+                                    trace!("HINT");
+                                }
+                                // C.ADDI16SP expands into `addi x2, x2, nzimm[9:4]`
+                                self.expand_to_i_format(
+                                    Opcode::OP_IMM,
+                                    self.cr_ci_rd_or_rs1_offset,
+                                    OP_IMM_Funct3::ADDI as InstructionType,
+                                    self.cr_ci_rd_or_rs1_offset,
+                                    self.c_imm,
+                                )
+                            } else {
+                                // the code point with nzimm = 0 is reserved
+                                todo!(
+                                    "illegal instruction trap, reserved by specification"
+                                );
+                            }
+                        }
+                    }
+                    OpcodeQuadrant::Quadrant10 => {
+                        error!("check unimplemented");
+                        // if if RV64C
+                        if self.cr_ci_rd_or_rs1_offset != 0 {
+                            self.c_uimm = self
+                                .extract_ci_load_double_word_sp_offset(
+                                    fetch_unit.current_instruction_compressed,
+                                );
+                            // C.LDSP expands into `ld rd, offset(x2)`
+                            self.expand_to_i_format(
+                                Opcode::LOAD,
+                                self.cr_ci_rd_or_rs1_offset,
+                                OPCODE_LOAD_Funct3::LD as InstructionType,
+                                GPRegisterName::x2_sp as usize,
+                                self.c_uimm as SignedImmediate,
+                            )
+                        } else {
+                            // the code points with rd = x0 are reserved
+                            todo!(
+                                "illegal instruction trap, reserved by specification"
+                            );
+                        }
+                        // else RV32FC
+                        // // C.FLW expands into `flw rd', offset(rs1')`
+                        // todo!();
+                    }
+
+                    _ => {
+                        error!("unreachable opcode for CI instruction");
+                        unreachable!("unreachable opcode for CI instruction");
+                    }
+                }
+            }
+
+            _ => {
+                error!(
+                    "unreachable funct3 ({}) for CI instruction",
+                    self.funct3
+                );
+                unreachable!(
+                    "unreachable funct3 ({}) for CI instruction",
+                    self.funct3
+                );
+            }
+        }
+    }
+
+    fn expand_css(
+        &mut self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionType {
+        trace!("Expanding CSS-format instruction..");
+
+        self.cr_css_rs2_offset =
+            self.extract_cr_css_source_register_2_offset(instruction);
+
+        match self.funct3 {
+            extensions::compressed::constants::OP_Funct3::F011 => {
+                self.c_uimm = self.extract_css_uimm_7_2(instruction);
+                // if RV32IFC {
+                // C.FLWSP expands into `flw rd, offset(x2)`
+                //
+                // } else if RV64IFC {
+                //
+                // }
+
+                todo!("TODO: unimplemented");
+            }
+            extensions::compressed::constants::OP_Funct3::F101 => {
+                self.c_uimm = self.extract_css_uimm_8_3(instruction);
+                // C.FSDSP expands into `fsd rs2, offset(x2)`
+                // if RV64IFC {
+                // FSDSP64
+                // } else if RV32IFC {
+                // FSDSP32
+                // }
+
+                todo!("TODO: unimplemented");
+            }
+            extensions::compressed::constants::OP_Funct3::F110 => {
+                self.c_uimm = self.extract_css_uimm_7_2(instruction);
+                // C.SWSP expands into `sw rs2, offset(x2)`
+                self.expand_to_s_format(
+                    Opcode::STORE,
+                    GPRegisterName::x2_sp as usize,
+                    self.cr_css_rs2_offset,
+                    self.c_uimm as SignedImmediate,
+                    STORE_Funct3::SW as InstructionType,
+                )
+            }
+            extensions::compressed::constants::OP_Funct3::F111 => {
+                error!("TODO: check unimplemented");
+
+                // if RV64IC
+                self.c_uimm = self.extract_css_uimm_8_3(instruction);
+                // C.SDSP expands into `sd rs2, offset(x2)`
+                return self.expand_to_s_format(
+                    Opcode::STORE,
+                    GPRegisterName::x2_sp as usize,
+                    self.cr_css_rs2_offset,
+                    self.c_uimm as SignedImmediate,
+                    STORE_Funct3::SD as InstructionType,
+                );
+                // else if RV32IFC
+                self.c_uimm = self.extract_css_uimm_7_2(instruction);
+                // C.FSWSP expands into `fsw rs2, offset(x2)`
+                //
+
+                todo!("TODO: unimplemented");
+            }
+
+            _ => {
+                error!(
+                    "unreachable funct3 ({}) for CI instruction",
+                    self.funct3
+                );
+                unreachable!(
+                    "unreachable funct3 ({}) for CI instruction",
+                    self.funct3
+                );
+            }
+        }
+    }
+
+    fn expand_ciw(
+        &mut self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionType {
+        trace!("Expanding CIW-format instruction..");
+
+        // C.ADDI4SPN (RESERVED when uimm == 0)
+        self.c_uimm = self.extract_ciw_nzuimm_9_2(instruction);
+        self.ciw_cl_rd_offset = self.extract_ciw_cl_rd_offset(instruction);
+
+        if self.c_uimm != 0 {
+            // C.ADDI4SPN expands into `addi rd', x2, nzuimm[9:2]`
+            self.expand_to_i_format(
+                Opcode::OP_IMM,
+                self.ciw_cl_rd_offset,
+                OP_IMM_Funct3::ADDI as InstructionType,
+                GPRegisterName::x2_sp as usize,
+                self.c_uimm as SignedImmediate,
+            )
+        } else {
+            // RESERVED, uimm == 0
+            todo!("illegal instruction trap, reserved by specification");
+        }
+    }
+
+    fn expand_cl(
+        &mut self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionType {
+        trace!("Expanding CL-format instruction..");
+
+        self.ciw_cl_rd_offset = self.extract_ciw_cl_rd_offset(instruction);
+        self.cl_cs_rs1_offset = self.extract_cl_cs_rs1_offset(instruction);
+
+        match self.funct3 {
+            extensions::compressed::constants::OP_Funct3::F001 => {
+                todo!("condition unimplemented yet");
+                self.c_uimm = self.extract_cl_cs_offset_7_3(instruction);
+                // C.FLD expands into `fld rd', offset(rs1')`
+                // if RV64IDC {
+                //
+                // }
+                // else RV32IDC {
+                //
+                // }
+            }
+            extensions::compressed::constants::OP_Funct3::F010 => {
+                self.c_uimm = self.extract_cl_cs_offset_6_2(instruction);
+                // C.LW expands into `lw rd', offset(rs1')`
+                self.expand_to_i_format(
+                    Opcode::LOAD,
+                    self.ciw_cl_rd_offset,
+                    OPCODE_LOAD_Funct3::LW as InstructionType,
+                    self.cl_cs_rs1_offset,
+                    self.c_uimm as SignedImmediate,
+                )
+            }
+            extensions::compressed::constants::OP_Funct3::F011 => {
+                error!("condition unimplemented yet");
+                self.c_uimm = self.extract_cl_cs_offset_7_3(instruction);
+                // if RV64IC {
+                // C.LD expands into `ld rd', offset(rs1')`
+                self.expand_to_i_format(
+                    Opcode::LOAD,
+                    self.ciw_cl_rd_offset,
+                    OPCODE_LOAD_Funct3::LD as InstructionType,
+                    self.cl_cs_rs1_offset,
+                    self.c_uimm as SignedImmediate,
+                )
+                // } else if RV32IFC {
+                // self.c_uimm = self.extract_cl_offset_6_2(instruction);
+                // // C.FLW expands into `flw rd', offset(rs1')`
+                //
+                // todo!();
+                // }
+            }
+
+            _ => {
+                error!(
+                    "unreachable funct3 ({}) for CL instruction",
+                    self.funct3
+                );
+                unreachable!(
+                    "unreachable funct3 ({}) for CL instruction",
+                    self.funct3
+                );
+            }
+        }
+    }
+
+    fn expand_cs(
+        &mut self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionType {
+        trace!("Expanding CS-format instruction..");
+
+        self.cl_cs_rs1_offset = self.extract_cl_cs_rs1_offset(instruction);
+        self.cs_ca_rs2_offset = self.extract_cs_ca_rs2_offset(instruction);
+
+        match self.funct3 {
+            extensions::compressed::constants::OP_Funct3::F101 => {
+                todo!("condition unimplemented yet");
+                // // C.FSD expands into `fsd rs2', offset(rs1')`
+                // if RV64IDC {
+                // todo!();
+                // } else if RV32IDC {
+                // todo!();
+                // }
+            }
+            extensions::compressed::constants::OP_Funct3::F110 => {
+                self.c_uimm = self.extract_cl_cs_offset_6_2(instruction);
+                // C.SW expands into `sw rs2', offset(rs1')`
+                self.expand_to_s_format(
+                    Opcode::STORE,
+                    self.cl_cs_rs1_offset,
+                    self.cs_ca_rs2_offset,
+                    self.c_uimm as SignedImmediate,
+                    STORE_Funct3::SW as InstructionType,
+                )
+            }
+            extensions::compressed::constants::OP_Funct3::F111 => {
+                error!("condition unimplemented yet");
+                // if { // RV64IC only
+                self.c_uimm = self.extract_cl_cs_offset_7_3(instruction);
+                // C.SD expands into `sd rs2', offset(rs1')`
+                self.expand_to_s_format(
+                    Opcode::STORE,
+                    self.cl_cs_rs1_offset,
+                    self.cs_ca_rs2_offset,
+                    self.c_uimm as SignedImmediate,
+                    STORE_Funct3::SD as InstructionType,
+                )
+                // } else if RV32IFC {
+                // // C.FSW expands into `fsw rs2', offset(rs1')`
+                // todo!();
+                // }
+            }
+
+            _ => {
+                todo!("illegal instruction trap, reserved by specification");
+            }
+        }
+    }
+
+    fn expand_ca(
+        &mut self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionType {
+        trace!("Expanding CA-format instruction..");
+
+        self.ca_funct2 = self.extract_ca_funct2(instruction);
+        self.cs_ca_rs2_offset = self.extract_cs_ca_rs2_offset(instruction);
+
+        if self.ca_cb_bit_12 == 0b0 {
+            match self.ca_funct2 {
+                CA_Funct_2::F00 => {
+                    // C.SUB expands into `sub rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_Funct3::ARITH
+                            as InstructionType,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        self.cs_ca_rs2_offset,
+                        OP_Funct7::F1 as InstructionType,
+                    )
+                }
+                CA_Funct_2::F01 => {
+                    // C.XOR expands into `xor rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_Funct3::XOR
+                            as InstructionType,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        self.cs_ca_rs2_offset,
+                        OP_Funct7::F0 as InstructionType,
+                    )
+                }
+                CA_Funct_2::F10 => {
+                    // C.OR expands into or `rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_Funct3::OR
+                            as InstructionType,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        self.cs_ca_rs2_offset,
+                        OP_Funct7::F0 as InstructionType,
+                    )
+                }
+                CA_Funct_2::F11 => {
+                    // C.AND expands into `and rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_Funct3::AND
+                            as InstructionType,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        self.cs_ca_rs2_offset,
+                        OP_Funct7::F0 as InstructionType,
+                    )
+                }
+            }
+        } else {
+            match self.ca_funct2 {
+                CA_Funct_2::F00 => {
+                    error!("add check");
+                    //if RV64IC
+                    // C.SUBW expands into subw `rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP_32,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_32_Funct3::ARITHW
+                            as InstructionType,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        self.cs_ca_rs2_offset,
+                        OP_Funct7::F1 as InstructionType,
+                    )
+                    // else if RV32I {
+                    //     todo!(
+                    //         "illegal instruction trap, reserved by specification"
+                    //     );
+                    // }
+                }
+                CA_Funct_2::F01 => {
+                    error!("add check");
+                    //if RV64IC
+                    // C.ADDW expands into addw `rd', rd', rs2'`
+                    self.expand_to_r_format(
+                        Opcode::OP_32,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        extensions::integer::constants::OP_32_Funct3::ARITHW
+                            as InstructionType,
+                        self.ca_cb_rd_or_rs1_offset as usize,
+                        self.cs_ca_rs2_offset,
+                        OP_Funct7::F0 as InstructionType,
+                    )
+                    // else if RV32I {
+                    //     todo!(
+                    //         "illegal instruction trap, reserved by specification"
+                    //     );
+                    // }
+                }
+
+                _ => {
+                    todo!(
+                        "illegal instruction trap, reserved by specification"
+                    );
+                }
+            }
+        }
+    }
+
+    fn expand_cb(
+        &mut self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionType {
+        trace!("Expanding CB-format instruction..");
+
+        if self.funct3 == extensions::compressed::constants::OP_Funct3::F100 {
+            if self.ca_cb_bits_11_10_quad_01_funct3_100
+                == Bits11_10_quadrant_01::CB_10
+            {
+                self.c_imm = self.extract_cb_imm_5_0(instruction);
+                // C.ANDI expands into `andi rd', rd', imm`
+                self.expand_to_i_format(
+                    Opcode::OP_IMM,
+                    self.ca_cb_rd_or_rs1_offset,
+                    OP_IMM_Funct3::ANDI as InstructionType,
+                    self.ca_cb_rd_or_rs1_offset,
+                    self.c_imm,
+                )
+            } else {
+                self.c_uimm = self.extract_cb_uimm_5_0(instruction);
+
+                match self.ca_cb_bits_11_10_quad_01_funct3_100 {
+                    Bits11_10_quadrant_01::CB_00 => {
+                        // SRLI and SRAI differ in the 6/5th bit of funct7 field
+                        self.c_uimm |= ((OP_IMM_ShiftType::SXLI)
+                            as UnsignedImmediate)
+                            << (BIT_OFFSET_I_FUNCT7 - BIT_OFFSET_IMM_11_0);
+                        if self.c_uimm == 0 {
+                            trace!("HINT was met");
+                        }
+                        // C.SRLI expands into `srli rd', rd', shamt`
+                        self.expand_to_i_format(
+                            Opcode::OP_IMM,
+                            self.ca_cb_rd_or_rs1_offset,
+                            OP_IMM_Funct3::SRXI as InstructionType,
+                            self.ca_cb_rd_or_rs1_offset,
+                            self.c_uimm as SignedImmediate,
+                        )
+                    }
+                    Bits11_10_quadrant_01::CB_01 => {
+                        // SRLI and SRAI differ in the 6/5th bit of funct7 field
+                        self.c_uimm |= ((OP_IMM_ShiftType::SRAI)
+                            as UnsignedImmediate)
+                            << (BIT_OFFSET_I_FUNCT7 - BIT_OFFSET_IMM_11_0);
+                        if self.c_uimm == 0 {
+                            trace!("HINT was met");
+                        }
+                        // C.SRAI expands into `srai rd', rd', shamt`
+                        self.expand_to_i_format(
+                            Opcode::OP_IMM,
+                            self.ca_cb_rd_or_rs1_offset,
+                            OP_IMM_Funct3::SRXI as InstructionType,
+                            self.ca_cb_rd_or_rs1_offset,
+                            self.c_uimm as SignedImmediate,
+                        )
+                    }
+
+                    _ => {
+                        unreachable!(
+                            "unreachable bits 11_10 ({:#?}) for CB instruction",
+                            self.ca_cb_bits_11_10_quad_01_funct3_100
+                        );
+                    }
+                }
+            }
+        } else {
+            self.c_imm = self.extract_cb_imm_8_1(instruction);
+            match self.funct3 {
+                extensions::compressed::constants::OP_Funct3::F110 => {
+                    // C.BEQZ expands into `beq rs1', x0, offset`
+                    self.expand_to_b_format(
+                        Opcode::BRANCH,
+                        self.ca_cb_rd_or_rs1_offset,
+                        GPRegisterName::x0_zero as usize,
+                        self.c_imm,
+                        BRANCH_Funct3::BEQ as InstructionType,
+                    )
+                }
+                extensions::compressed::constants::OP_Funct3::F111 => {
+                    // C.BNEZ expands into `bne rs1', x0, offset`
+                    self.expand_to_b_format(
+                        Opcode::BRANCH,
+                        self.ca_cb_rd_or_rs1_offset,
+                        GPRegisterName::x0_zero as usize,
+                        self.c_imm,
+                        BRANCH_Funct3::BNE as InstructionType,
+                    )
+                }
+
+                _ => {
+                    unreachable!(
+                        "unreachable func3 ({:#?}) for CB instruction",
+                        self.funct3
+                    );
+                }
+            }
+        }
+    }
+
+    fn expand_cj(
+        &mut self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionType {
+        trace!("Expanding CJ-format instruction..");
+
+        self.c_imm = self.extract_cj_jta_imm(instruction);
+
+        match self.funct3 {
+            extensions::compressed::constants::OP_Funct3::F001 => {
+                // C.JAL expands into `jal x1, offset`
+                self.expand_to_j_format(
+                    Opcode::JAL,
+                    GPRegisterName::x1_ra as usize,
+                    self.c_imm,
+                )
+            }
+            extensions::compressed::constants::OP_Funct3::F101 => {
+                // C.J expands into `jal x0, offset`
+                self.expand_to_j_format(
+                    Opcode::JAL,
+                    GPRegisterName::x0_zero as usize,
+                    self.c_imm,
+                )
+            }
+
+            _ => {
+                todo!("illegal instruction trap, reserved by specification");
+            }
+        }
+    }
+
+    // extractors
+    fn extract_funct3_compressed(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> extensions::compressed::constants::OP_Funct3 {
+        extensions::compressed::constants::OP_Funct3::from(
+            instruction & COMPRESSED_FUNCT3_MASK,
+        )
+    }
+
+    fn extract_cr_funct4_lsb_compressed(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> bool {
+        ((instruction & COMPRESSED_FUNCT4_MASK) >> COMPRESSED_FUNCT4_OFFSET)
+            & 0b1
+            == 1
+    }
+
+    fn extract_cr_ci_destination_or_source_register_1_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> usize {
+        ((instruction & COMPRESSED_CR_CI_RD_RS1_MASK)
+            >> COMPRESSED_CR_CI_RD_RS1_OFFSET) as usize
+    }
+
+    fn extract_cr_css_source_register_2_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> usize {
+        ((instruction & COMPRESSED_CR_CSS_RS2_MASK)
+            >> COMPRESSED_CR_CSS_RS2_OFFSET) as usize
+    }
+
+    fn extract_ci_nzimm_5_0(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut nzimm = (instruction & COMPRESSED_CI_NZIMM_5_MASK)
+            >> (COMPRESSED_CI_NZIMM_5_OFFSET
+                - COMPRESSED_CI_NZIMM_5_OFFSET_FINAL);
+        if nzimm != 0 {
+            // if 5th bit of `nzimm[5:0]` is non-zero, `nzimm[5:0]` represents
+            // negative number, so sign extend it
+            nzimm = !(COMPRESSED_CI_NZIMM_5_MASK_FINAL - 1)
+        }
+        nzimm |= (instruction & COMPRESSED_CI_NZIMM_4_0_MASK)
+            >> (COMPRESSED_CI_NZIMM_4_0_OFFSET - 0);
+        nzimm >>= 0;
+
+        nzimm.into()
+    }
+
+    fn extract_ci_imm_5_0(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut imm = (instruction & COMPRESSED_CI_IMM_5_MASK)
+            >> (COMPRESSED_CI_IMM_5_OFFSET - COMPRESSED_CI_IMM_5_OFFSET_FINAL);
+        if imm != 0 {
+            // if 5th bit of `imm[5:0]` is non-zero, `imm[5:0]` represents
+            // negative number, so sign extend it
+            imm = !(COMPRESSED_CI_IMM_5_MASK_FINAL - 1);
+        }
+        imm |= (instruction & COMPRESSED_CI_CB_IMM_4_0_MASK)
+            >> (COMPRESSED_CI_CB_IMM_4_0_OFFSET - 0);
+        imm >>= 0;
+
+        imm.into()
+    }
+
+    fn extract_ci_nzimm_9_4(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut imm = (instruction & COMPRESSED_CI_NZIMM_9_MASK)
+            >> (COMPRESSED_CI_NZIMM_9_OFFSET
+                - COMPRESSED_CI_NZIMM_9_OFFSET_FINAL);
+        if imm != 0 {
+            // if 9th bit of `nzimm[9:4]` is non-zero, `nzimm[9:4]` represents
+            // negative number, so sign extend it
+            imm = !(COMPRESSED_CI_NZIMM_9_MASK_FINAL - 1)
+        }
+        imm |= (instruction & COMPRESSED_CI_NZIMM_4_MASK)
+            >> (COMPRESSED_CI_NZIMM_4_OFFSET - 4);
+        imm |= (instruction & COMPRESSED_CI_NZIMM_6_MASK)
+            << (6 - COMPRESSED_CI_NZIMM_6_OFFSET);
+        imm |= (instruction & COMPRESSED_CI_NZIMM_8_7_MASK)
+            << (7 - COMPRESSED_CI_NZIMM_8_7_OFFSET);
+        imm |= (instruction & COMPRESSED_CI_NZIMM_5_9_4_MASK)
+            << (5 - COMPRESSED_CI_NZIMM_5_9_4_OFFSET);
+
+        imm as SignedInstructionTypeCompressed as SignedImmediate
+    }
+
+    fn extract_ci_nzimm_17_12(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut nzimm = ((instruction & COMPRESSED_CI_NZIMM_17_MASK)
+            as SignedImmediate)
+            << (COMPRESSED_CI_NZIMM_17_OFFSET_FINAL
+                - COMPRESSED_CI_NZIMM_17_OFFSET);
+        if nzimm != 0 {
+            // if 17th bit of `nzimm[17:12]` is non-zero, `nzimm[17:12]` represents
+            // negative number, so sign extend it
+            nzimm = !(COMPRESSED_CI_NZIMM_17_MASK_FINAL - 1) as SignedImmediate;
+        }
+        nzimm |= ((instruction & COMPRESSED_CI_NZIMM_16_12_MASK)
+            as SignedImmediate)
+            << (12 - COMPRESSED_CI_NZIMM_16_12_OFFSET);
+
+        nzimm
+    }
+
+    fn extract_ci_shamt(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionTypeCompressed {
+        let mut shamt = (instruction & COMPRESSED_CI_SHAMT_5_MASK)
+            >> (COMPRESSED_CI_SHAMT_5_OFFSET - 5);
+        shamt |= (instruction & COMPRESSED_CI_SHAMT_4_0_MASK)
+            >> (COMPRESSED_CI_SHAMT_4_0_OFFSET - 0);
+
+        shamt
+    }
+
+    fn extract_ci_load_word_sp_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> UnsignedImmediate {
+        let mut uimm = (instruction & COMPRESSED_CI_OFFSET_5_MASK)
+            >> (COMPRESSED_CI_OFFSET_5_OFFSET - 5);
+        uimm |= (instruction & COMPRESSED_CI_OFFSET_4_2_MASK)
+            >> (COMPRESSED_CI_OFFSET_4_2_OFFSET - 2);
+        uimm |= (instruction & COMPRESSED_CI_OFFSET_7_6_MASK)
+            << (6 - COMPRESSED_CI_OFFSET_7_6_OFFSET);
+
+        uimm as UnsignedImmediate
+    }
+
+    fn extract_ci_load_double_word_sp_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> UnsignedImmediate {
+        let mut imm = (instruction & COMPRESSED_CI_OFFSET_5_MASK)
+            >> (COMPRESSED_CI_OFFSET_5_OFFSET - 5);
+        imm |= (instruction & COMPRESSED_CI_OFFSET_4_3_MASK)
+            >> (COMPRESSED_CI_OFFSET_4_3_OFFSET - 3);
+        imm |= (instruction & COMPRESSED_CI_OFFSET_8_6_MASK)
+            << (6 - COMPRESSED_CI_OFFSET_8_6_OFFSET);
+
+        imm as UnsignedImmediate
+    }
+
+    fn extract_css_uimm_8_3(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> UnsignedImmediate {
+        let mut uimm = (instruction & COMPRESSED_CSS_UIMM_8_6_MASK)
+            >> (COMPRESSED_CSS_UIMM_8_6_OFFSET - 6);
+        uimm |= (instruction & COMPRESSED_CSS_UIMM_5_3_MASK)
+            >> (COMPRESSED_CSS_UIMM_5_3_OFFSET - 3);
+
+        uimm as UnsignedImmediate
+    }
+
+    fn extract_css_uimm_7_2(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> UnsignedImmediate {
+        let mut uimm = (instruction & COMPRESSED_CSS_UIMM_7_6_MASK)
+            >> (COMPRESSED_CSS_UIMM_7_6_OFFSET - 6);
+        uimm |= (instruction & COMPRESSED_CSS_UIMM_5_2_MASK)
+            >> (COMPRESSED_CSS_UIMM_5_2_OFFSET - 2);
+
+        uimm as UnsignedImmediate
+    }
+
+    fn extract_ciw_nzuimm_9_2(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> UnsignedImmediate {
+        let mut nzuimm = (instruction & COMPRESSED_CIW_NZUIMM_MASK)
+            >> COMPRESSED_CIW_NZUIMM_OFFSET;
+        nzuimm = ((nzuimm >> 1) & 0b00000001)  // bit 2
+               | ((nzuimm << 1) & 0b00000010)  // bit 3
+               | ((nzuimm >> 4) & 0b00001100)  // bits 5-4
+               | ((nzuimm << 2) & 0b11110000); // bits 9-6
+        nzuimm <<= 2;
+
+        nzuimm.into()
+    }
+
+    fn extract_ciw_cl_rd_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> usize {
+        ((instruction & COMPRESSED_CIW_CL_RD_OFFSET_MASK)
+            >> COMPRESSED_CIW_CL_RD_OFFSET_OFFSET) as usize
+            + GPRegisterName::x8_s0_fp as usize
+    }
+
+    fn extract_cl_cs_offset_6_2(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> UnsignedImmediate {
+        let mut offset = (instruction & COMPRESSED_CL_OFFSET_6_MASK)
+            << (6 - COMPRESSED_CL_OFFSET_6_OFFSET);
+        offset |= (instruction & COMPRESSED_CL_OFFSET_2_MASK)
+            >> (COMPRESSED_CL_OFFSET_2_OFFSET - 2);
+        offset |= (instruction & COMPRESSED_CL_OFFSET_5_3_MASK)
+            >> (COMPRESSED_CL_OFFSET_5_3_OFFSET - 3);
+
+        offset as UnsignedImmediate
+    }
+
+    fn extract_cl_cs_offset_7_3(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> UnsignedImmediate {
+        let mut offset = (instruction & COMPRESSED_CL_OFFSET_6_MASK)
+            << (6 - COMPRESSED_CL_OFFSET_6_OFFSET);
+        offset |= (instruction & COMPRESSED_CL_OFFSET_7_MASK)
+            << (7 - COMPRESSED_CL_OFFSET_7_OFFSET);
+        offset |= (instruction & COMPRESSED_CL_OFFSET_5_3_MASK)
+            >> (COMPRESSED_CL_OFFSET_5_3_OFFSET - 3);
+
+        offset as UnsignedImmediate
+    }
+
+    fn extract_cl_cs_rs1_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> usize {
+        ((instruction & COMPRESSED_CL_CS_RS1_OFFSET_MASK)
+            >> COMPRESSED_CL_CS_RS1_OFFSET_OFFSET) as usize
+            + GPRegisterName::x8_s0_fp as usize
+    }
+
+    fn extract_cs_ca_rs2_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> usize {
+        ((instruction & COMPRESSED_CS_CA_RS2_OFFSET_MASK)
+            >> COMPRESSED_CS_CA_RS2_OFFSET_OFFSET) as usize
+            + GPRegisterName::x8_s0_fp as usize
+    }
+
+    fn extract_ca_funct2(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> CA_Funct_2 {
+        CA_Funct_2::from(
+            (instruction & COMPRESSED_CA_FUNCT_2_MASK)
+                >> COMPRESSED_CA_FUNCT_2_OFFSET,
+        )
+    }
+
+    fn extract_ca_cb_rd_or_rs1_offset(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> usize {
+        (((instruction & COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_MASK)
+            >> COMPRESSED_CA_CB_RD_OR_RS1_OFFSET_OFFSET)
+            + GPRegisterName::x8_s0_fp as InstructionTypeCompressed)
+            as usize
+    }
+
+    fn extract_ca_cb_bit_12(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> InstructionTypeCompressed {
+        let bit_12 = (instruction & COMPRESSED_BITS_12_MASK)
+            >> COMPRESSED_BITS_12_OFFSET;
+
+        bit_12
+    }
+
+    fn extract_bits_11_10_quadrant_01_funct3_100(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> Bits11_10_quadrant_01 {
+        let bits_11_10 = (instruction & COMPRESSED_BITS_11_10_MASK)
+            >> COMPRESSED_BITS_11_10_OFFSET;
+
+        Bits11_10_quadrant_01::from(bits_11_10)
+    }
+
+    fn extract_cb_uimm_5_0(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> UnsignedImmediate {
+        let mut uimm = instruction & COMPRESSED_CI_CB_IMM_4_0_MASK;
+        uimm >>= COMPRESSED_CI_CB_IMM_4_0_OFFSET;
+        // bit 12 is (u|)imm[5] in case of CB instruction, so shift left by 5 bits
+        uimm |= self.ca_cb_bit_12 << 5;
+
+        uimm as UnsignedImmediate
+    }
+
+    fn extract_cb_imm_5_0(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        // bit 12 is (u|)imm[5] in case of CB instruction, so shift left by 5 bits
+        let mut imm = self.ca_cb_bit_12 << COMPRESSED_CB_IMM_5_OFFSET_FINAL;
+        if imm != 0 {
+            // if 5th bit of `imm[5:0]` is non-zero, `imm[5:0]` represents
+            // negative number, so sign extend it
+            imm = !(COMPRESSED_CB_IMM_5_MASK_FINAL - 1);
+        }
+        imm |= (instruction & COMPRESSED_CB_IMM_4_0_MASK)
+            >> COMPRESSED_CB_IMM_4_0_OFFSET;
+
+        imm as SignedInstructionTypeCompressed as SignedImmediate
+    }
+
+    fn extract_cb_imm_8_1(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut imm = self.ca_cb_bit_12 << COMPRESSED_CB_IMM_8_OFFSET_FINAL; // imm[8]
+        if imm != 0 {
+            // if 8th bit of `imm[8:1]` is non-zero, `imm[8:1]` represents
+            // negative number, so sign extend it
+            imm = !(COMPRESSED_CB_IMM_8_MASK_FINAL - 1);
+        }
+        imm |= (instruction & COMPRESSED_CB_FUNCT_3_11X_IMM_5_MASK)
+            << (5 - COMPRESSED_CB_FUNCT_3_11X_IMM_5_OFFSET);
+        imm |= (instruction & COMPRESSED_CB_FUNCT_3_11X_IMM_2_1_MASK)
+            >> (COMPRESSED_CB_FUNCT_3_11X_IMM_2_1_OFFSET - 1);
+        imm |= (instruction & COMPRESSED_CB_FUNCT_3_11X_IMM_7_6_MASK)
+            << (6 - COMPRESSED_CB_FUNCT_3_11X_IMM_7_6_OFFSET);
+        imm |= (self.ca_cb_bits_11_10_quad_01_funct3_100
+            as InstructionTypeCompressed)
+            << 3; // imm[4:3]
+
+        imm as SignedInstructionTypeCompressed as SignedImmediate
+    }
+
+    fn extract_cj_jta_imm(
+        &self,
+        instruction: InstructionTypeCompressed,
+    ) -> SignedImmediate {
+        let mut jta_imm = (instruction & COMPRESSED_CJ_JTA_IMM_11_MASK)
+            >> (COMPRESSED_CJ_JTA_IMM_11_OFFSET
+                - COMPRESSED_CJ_JTA_IMM_11_OFFSET_FINAL);
+        if jta_imm != 0 {
+            // if 11th bit of `imm[11:1]` is non-zero, `imm[11:1]` represents
+            // negative number, so sign extend it
+            jta_imm = !(COMPRESSED_CJ_JTA_IMM_11_MASK_FINAL - 1);
+        }
+        jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_10_MASK)
+            << (10 - COMPRESSED_CJ_JTA_IMM_10_OFFSET);
+        jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_9_8_MASK)
+            >> (COMPRESSED_CJ_JTA_IMM_9_8_OFFSET - 8);
+        jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_7_MASK)
+            << (7 - COMPRESSED_CJ_JTA_IMM_7_OFFSET);
+        jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_6_MASK)
+            >> (COMPRESSED_CJ_JTA_IMM_6_OFFSET - 6);
+        jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_5_MASK)
+            << (5 - COMPRESSED_CJ_JTA_IMM_5_OFFSET);
+        jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_4_MASK)
+            >> (COMPRESSED_CJ_JTA_IMM_4_OFFSET - 4);
+        jta_imm |= (instruction & COMPRESSED_CJ_JTA_IMM_3_1_MASK)
+            >> (COMPRESSED_CJ_JTA_IMM_3_1_OFFSET - 1);
+
+        jta_imm as SignedInstructionTypeCompressed as SignedImmediate
+    }
+
+    // instruction expanders/decompressors
+    fn expand_to_r_format(
+        &self,
+        opcode: Opcode,
+        destination_register_offset: usize,
+        funct3: InstructionType,
+        source_register_1_offset: usize,
+        source_register_2_offset: usize,
+        funct7: InstructionType,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set rd
+        expanded_instruction |= (destination_register_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (source_register_1_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set rs2
+        expanded_instruction |= (source_register_2_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_2;
+        // set funct7
+        expanded_instruction |= funct7 << BIT_OFFSET_R_FUNCT7;
+
+        expanded_instruction
+    }
+
+    fn expand_to_i_format(
+        &self,
+        opcode: Opcode,
+        destination_register_offset: usize,
+        funct3: InstructionType,
+        source_register_1_offset: usize,
+        imm_11_0: SignedImmediate,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set rd
+        expanded_instruction |= (destination_register_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set funct3
+        expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (source_register_1_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set imm_11_0
+        expanded_instruction |=
+            (imm_11_0 as InstructionType) << BIT_OFFSET_IMM_11_0;
+
+        expanded_instruction
+    }
+
+    fn expand_to_s_format(
+        &self,
+        opcode: Opcode,
+        source_register_1_offset: usize,
+        source_register_2_offset: usize,
+        imm_11_0: SignedImmediate,
+        funct3: InstructionType,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set imm[4:0]
+        expanded_instruction |= ((imm_11_0 as InstructionType)
+            & COMPRESSED_CS_IMM_4_0_MASK as InstructionType)
+            << (COMPRESSED_CS_IMM_4_0_OFFSET_FINAL
+                - COMPRESSED_CS_IMM_4_0_OFFSET);
+        // set funct3
+        expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (source_register_1_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set rs2
+        expanded_instruction |= (source_register_2_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_2;
+        // set imm[11:5]
+        expanded_instruction |= ((imm_11_0 as InstructionType)
+            & COMPRESSED_CS_IMM_11_5_MASK as InstructionType)
+            << (COMPRESSED_CS_IMM_11_5_OFFSET_FINAL
+                - COMPRESSED_CS_IMM_11_5_OFFSET);
+
+        expanded_instruction
+    }
+
+    fn expand_to_b_format(
+        &self,
+        opcode: Opcode,
+        source_register_1_offset: usize,
+        source_register_2_offset: usize,
+        imm_12_1: SignedImmediate,
+        funct3: InstructionType,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set imm[11]
+        expanded_instruction |= ((imm_12_1 as InstructionType)
+            & COMPRESSED_CB_IMM_11_MASK as InstructionType)
+            >> (COMPRESSED_CB_IMM_11_OFFSET
+                - COMPRESSED_CB_IMM_11_OFFSET_FINAL);
+        // set imm[4:1]
+        expanded_instruction |= ((imm_12_1 as InstructionType)
+            & COMPRESSED_CB_IMM_4_1_MASK as InstructionType)
+            << (COMPRESSED_CB_IMM_4_1_OFFSET_FINAL
+                - COMPRESSED_CB_IMM_4_1_OFFSET);
+        // set funct3
+        expanded_instruction |= funct3 << BIT_OFFSET_FUNCT3;
+        // set rs1
+        expanded_instruction |= (source_register_1_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_1;
+        // set rs2
+        expanded_instruction |= (source_register_2_offset as InstructionType)
+            << BIT_OFFSET_SOURCE_REGISTER_2;
+        // set imm[10:5]
+        expanded_instruction |= ((imm_12_1 as InstructionType)
+            & COMPRESSED_CB_IMM_10_5_MASK as InstructionType)
+            << (COMPRESSED_CB_IMM_10_5_OFFSET_FINAL
+                - COMPRESSED_CB_IMM_10_5_OFFSET);
+        // set imm[12]
+        expanded_instruction |= ((imm_12_1 as InstructionType)
+            & COMPRESSED_CB_IMM_12_MASK as InstructionType)
+            << (COMPRESSED_CB_IMM_12_OFFSET_FINAL
+                - COMPRESSED_CB_IMM_12_OFFSET);
+
+        expanded_instruction
+    }
+
+    fn expand_to_u_format(
+        &self,
+        opcode: Opcode,
+        destination_register_offset: usize,
+        imm_31_12: SignedImmediate,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set rd
+        expanded_instruction |= (destination_register_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set imm_31_12
+        expanded_instruction |= imm_31_12 as InstructionType;
+
+        expanded_instruction
+    }
+
+    fn expand_to_j_format(
+        &self,
+        opcode: Opcode,
+        destination_register_offset: usize,
+        imm_20_1: SignedImmediate,
+    ) -> InstructionType {
+        // set opcode
+        let mut expanded_instruction: InstructionType =
+            opcode as InstructionType;
+        // set rd
+        expanded_instruction |= (destination_register_offset
+            as InstructionType)
+            << BIT_OFFSET_DESTINATION_REGISTER;
+        // set imm[19:12]
+        expanded_instruction |= ((imm_20_1 as InstructionType)
+            & COMPRESSED_CJ_IMM_19_12_MASK as InstructionType)
+            << (COMPRESSED_CJ_IMM_19_12_OFFSET_FINAL
+                - COMPRESSED_CJ_IMM_19_12_OFFSET);
+        // set imm[11]
+        expanded_instruction |= ((imm_20_1 as InstructionType)
+            & COMPRESSED_CJ_IMM_11_MASK as InstructionType)
+            << (COMPRESSED_CJ_IMM_11_OFFSET_FINAL
+                - COMPRESSED_CJ_IMM_11_OFFSET);
+        // set imm[10:1]
+        expanded_instruction |= ((imm_20_1 as InstructionType)
+            & COMPRESSED_CJ_IMM_10_1_MASK as InstructionType)
+            << (COMPRESSED_CJ_IMM_10_1_OFFSET_FINAL
+                - COMPRESSED_CJ_IMM_10_1_OFFSET);
+        // set imm[20]
+        expanded_instruction |= ((imm_20_1 as InstructionType)
+            & COMPRESSED_CJ_IMM_20_MASK)
+            << (COMPRESSED_CJ_IMM_20_OFFSET_FINAL
+                - COMPRESSED_CJ_IMM_20_OFFSET);
+
+        expanded_instruction
+    }
+
+    // fn expand_to_flwsp(&self) -> InstructionType {
+    //     // // C.FLWSP expands into `flw rd, offset(x2)`
+    //     // // set opcode
+    //     // let mut expanded_instruction: InstructionType =
+    //     //     Opcode:: as InstructionType;
+
+    //     // expanded_instruction
+    //     todo!()
+    // }
 }

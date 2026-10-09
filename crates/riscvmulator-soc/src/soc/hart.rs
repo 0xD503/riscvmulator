@@ -68,13 +68,15 @@ impl Hart {
     fn expand(&mut self) {
         self.context
             .expander
-            .expand(&self.context.arch_state, &self.context.fetch_unit);
+            .expand(&self.context.arch_state, &mut self.context.fetch_unit);
     }
 
     fn decode(&mut self) {
-        self.context
-            .decoder
-            .decode(&self.context.arch_state, &self.context.fetch_unit);
+        self.context.decoder.decode(
+            &self.context.arch_state,
+            &self.context.fetch_unit,
+            // &self.context.expander,
+        );
     }
 
     fn execute(&mut self) {
