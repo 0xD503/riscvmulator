@@ -75,7 +75,7 @@ impl Hart {
         self.context.decoder.decode(
             &self.context.arch_state,
             &self.context.fetch_unit,
-            &self.context.expander,
+            // &self.context.expander,
         );
     }
 

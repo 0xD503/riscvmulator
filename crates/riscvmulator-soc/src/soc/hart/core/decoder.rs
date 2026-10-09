@@ -8,7 +8,6 @@ use self::constants::{
 };
 use crate::soc::hart::core::ArchState;
 use crate::soc::hart::extensions;
-use crate::soc::hart::extensions::compressed::expander::Expander;
 use crate::soc::hart::extensions::integer::constants::{
     OP_32_Funct3, OP_IMM_32_Funct3,
 };
@@ -25,7 +24,7 @@ use crate::soc::hart::core::gp_registers::{
 use crate::soc::hart::core::registers::RegisterFileInterface;
 use crate::soc::hart::extensions::zicsr::DecoderZicsrContext;
 
-use log::{debug, error, trace};
+use log::{error, trace};
 
 #[derive(Default, Clone)]
 pub struct Decoder {
@@ -98,32 +97,31 @@ impl Decoder {
         &mut self,
         arch_state: &ArchState,
         fetch_unit: &FetchUnit,
-        expander: &Expander,
+        // expander: &Expander,
     ) {
         match fetch_unit.instruction_size {
             InstructionSize::I32 => {
                 self.decode_i_32(arch_state, fetch_unit.current_instruction);
             }
             InstructionSize::I16 => {
-                // compressed ISA
-                if expander.instruction_was_expanded {
-                    self.decode_i_32(
-                        arch_state,
-                        fetch_unit.current_instruction,
-                    );
-                } else {
-                    unreachable!(
-                        "should be expanded before, something gone wrong"
-                    );
-                }
+                // if expander.instruction_was_expanded {
+                // instruction was expanded during `expand()` stage
+                self.decode_i_32(arch_state, fetch_unit.current_instruction);
+                // } else {
+                //     unreachable!(
+                //         "instruction was not expanded, something gone wrong"
+                //     );
+                // }
             }
 
             _ => {
                 error!(
-                    "TODO: decode of given instruction size is unimplemented"
+                    "TODO: decode of given instruction size {:?} is unimplemented",
+                    fetch_unit.instruction_size
                 );
                 todo!(
-                    "TODO: decode of given instruction size is unimplemented"
+                    "TODO: decode of given instruction size {:?} is unimplemented",
+                    fetch_unit.instruction_size
                 );
             }
         }
@@ -399,26 +397,26 @@ impl Decoder {
                     MISC_MEM_Funct3::FENCE_I => {
                         self.need_to_write_back = false;
 
+                        let check_if_fence_i = || -> bool {
+                            self.source_register_1_offset
+                                == GPRegisterName::x0_zero as usize
+                                && self.extract_destination_register_offset(
+                                    instruction,
+                                ) == GPRegisterName::x0_zero as usize
+                                && self.i_funct12 == I_Funct12::F0
+                        };
+
                         // The unused fields in the FENCE.I instruction,
                         // funct12, rs1, and rd, are reserved for finer-grain
                         // fences in future extensions. For forward
                         // compatibility, base implementations shall ignore
                         // these fields, and standard software shall zero these
                         // fields.
-                        // let check_if_fence_i = || -> bool {
-                        //     self.source_register_1_offset
-                        //         == GPRegisterName::x0_zero as usize
-                        //         && self.extract_destination_register_index(
-                        //             instruction,
-                        //         ) == GPRegisterName::x0_zero as usize
-                        //         && self.i_funct12 == I_Funct12::F0
-                        // };
-
-                        // if check_if_fence_i() {
+                        //if check_if_fence_i() {
                         self.command_to_execute = ExecutableCommand::FENCE_I;
-                        // } else {
-                        //     unreachable!();
-                        // }
+                        //} else {
+                        //    unreachable!();
+                        //}
                     }
                 }
             }
@@ -894,14 +892,14 @@ impl Decoder {
             & MASK_DESTINATION_REGISTER) as usize
     }
 
-    fn extract_destination_register(
-        &self,
-        instruction: InstructionType,
-        register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
-    ) -> XLen {
-        register_file
-            .read(self.extract_destination_register_offset(instruction))
-    }
+    // fn extract_destination_register(
+    //     &self,
+    //     instruction: InstructionType,
+    //     register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
+    // ) -> XLen {
+    //     register_file
+    //         .read(self.extract_destination_register_offset(instruction))
+    // }
 
     fn extract_funct3(&self, instruction: InstructionType) -> InstructionType {
         (instruction >> BIT_OFFSET_FUNCT3) & MASK_FUNCT3

@@ -124,8 +124,7 @@ pub struct Expander {
     ca_cb_rd_or_rs1_offset: usize,
     ca_cb_bit_12: InstructionTypeCompressed,
     ca_cb_bits_11_10_quad_01_funct3_100: Bits11_10_quadrant_01,
-
-    pub(crate) instruction_was_expanded: bool,
+    // pub(crate) instruction_was_expanded: bool,
 }
 
 impl Expander {
@@ -145,8 +144,7 @@ impl Expander {
             ca_cb_rd_or_rs1_offset: 0,
             ca_cb_bit_12: 0b0,
             ca_cb_bits_11_10_quad_01_funct3_100: Bits11_10_quadrant_01::CA_11,
-
-            instruction_was_expanded: false,
+            // instruction_was_expanded: false,
         }
     }
 
@@ -161,12 +159,12 @@ impl Expander {
                 fetch_unit.current_instruction =
                     self.expand_compressed(fetch_unit);
 
-                self.instruction_was_expanded = true;
+                // self.instruction_was_expanded = true;
             } else {
                 todo!("Illegal instruction trap");
             }
         } else {
-            self.instruction_was_expanded = false;
+            // self.instruction_was_expanded = false;
         }
     }
 
@@ -945,6 +943,9 @@ impl Expander {
                         self.c_uimm |= ((OP_IMM_ShiftType::SXLI)
                             as UnsignedImmediate)
                             << (BIT_OFFSET_I_FUNCT7 - BIT_OFFSET_IMM_11_0);
+                        if self.c_uimm == 0 {
+                            trace!("HINT was met");
+                        }
                         // C.SRLI expands into `srli rd', rd', shamt`
                         self.expand_to_i_format(
                             Opcode::OP_IMM,
@@ -959,6 +960,9 @@ impl Expander {
                         self.c_uimm |= ((OP_IMM_ShiftType::SRAI)
                             as UnsignedImmediate)
                             << (BIT_OFFSET_I_FUNCT7 - BIT_OFFSET_IMM_11_0);
+                        if self.c_uimm == 0 {
+                            trace!("HINT was met");
+                        }
                         // C.SRAI expands into `srai rd', rd', shamt`
                         self.expand_to_i_format(
                             Opcode::OP_IMM,
