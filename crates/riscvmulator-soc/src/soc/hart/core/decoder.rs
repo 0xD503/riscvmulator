@@ -8,7 +8,7 @@ use self::constants::{
 };
 use crate::soc::hart::core::ArchState;
 use crate::soc::hart::extensions;
-use crate::soc::hart::extensions::compressed::decoder::DecoderCompressedISAContext;
+use crate::soc::hart::extensions::compressed::expander::Expander;
 use crate::soc::hart::extensions::integer::constants::{
     OP_32_Funct3, OP_IMM_32_Funct3,
 };
@@ -54,9 +54,6 @@ pub struct Decoder {
     pub(crate) fence: FENCE_Context,
 
     pub(crate) zicsr: DecoderZicsrContext,
-
-    #[allow(non_snake_case)]
-    pub(crate) compressedISA: DecoderCompressedISAContext,
 }
 
 impl Decoder {
@@ -97,6 +94,77 @@ pub struct FENCE_Context {
 }
 
 impl Decoder {
+    pub(crate) fn decode(
+        &mut self,
+        arch_state: &ArchState,
+        fetch_unit: &FetchUnit,
+        expander: &Expander,
+    ) {
+        match fetch_unit.instruction_size {
+            InstructionSize::I32 => {
+                self.decode_i_32(arch_state, fetch_unit.current_instruction);
+            }
+            InstructionSize::I16 => {
+                // compressed ISA
+                if expander.instruction_was_expanded {
+                    self.decode_i_32(
+                        arch_state,
+                        fetch_unit.current_instruction,
+                    );
+                } else {
+                    unreachable!(
+                        "should be expanded before, something gone wrong"
+                    );
+                }
+            }
+
+            _ => {
+                error!(
+                    "TODO: decode of given instruction size is unimplemented"
+                );
+                todo!(
+                    "TODO: decode of given instruction size is unimplemented"
+                );
+            }
+        }
+    }
+
+    /// decode 32-bit instructions
+    fn decode_i_32(
+        &mut self,
+        arch_state: &ArchState,
+        instruction: InstructionType,
+    ) {
+        self.opcode = self.extract_opcode(instruction);
+
+        match From::from(self.opcode) {
+            OpcodeToInstructionFormat::R_51_OP
+            | OpcodeToInstructionFormat::R_59_OP_32
+            | OpcodeToInstructionFormat::R_83_OP_FP =>
+            self.decode_r_format(arch_state, instruction, &arch_state.gp_register_file),
+            OpcodeToInstructionFormat::I_3_LOAD
+            | OpcodeToInstructionFormat::I_7_LOAD_FP
+            | OpcodeToInstructionFormat::I_19_OP_IMM
+            | OpcodeToInstructionFormat::I_27_OP_IMM_32
+            | OpcodeToInstructionFormat::I_103_JALR
+            | OpcodeToInstructionFormat::I_115_SYSTEM // (Zicsr_extension)
+            | OpcodeToInstructionFormat::I_15_MISC_MEM // FENCE, Zifencei
+            => self.decode_i_format(instruction, &arch_state.gp_register_file),
+            OpcodeToInstructionFormat::S_35_STORE
+            | OpcodeToInstructionFormat::S_39_STORE_FP => {
+                self.decode_s_format(instruction, &arch_state.gp_register_file)
+            }
+            OpcodeToInstructionFormat::B_99_BRANCH => self.decode_b_format(instruction, &arch_state.gp_register_file),
+            OpcodeToInstructionFormat::U_23_AUIPC
+            | OpcodeToInstructionFormat::U_55_LUI => self.decode_u_format(instruction),
+            OpcodeToInstructionFormat::J_111_JAL => self.decode_j_format(instruction),
+            OpcodeToInstructionFormat::R4_67_MADD
+            | OpcodeToInstructionFormat::R4_71_MSUB
+            | OpcodeToInstructionFormat::R4_75_NMSUB
+            | OpcodeToInstructionFormat::R4_79_NMADD => self.decode_r4_format(instruction),
+        }
+    }
+
     fn decode_r_format(
         &mut self,
         arch_state: &ArchState,
@@ -110,7 +178,7 @@ impl Decoder {
         self.source_register_2 =
             self.extract_source_register_2(instruction, register_file);
         self.destination_register_offset =
-            self.extract_destination_register_index(instruction);
+            self.extract_destination_register_offset(instruction);
         self.need_to_read_memory = false;
         self.need_to_write_memory = false;
         self.need_to_write_back = true;
@@ -245,7 +313,7 @@ impl Decoder {
         self.source_register_1 =
             self.extract_source_register_1(instruction, register_file);
         self.destination_register_offset =
-            self.extract_destination_register_index(instruction);
+            self.extract_destination_register_offset(instruction);
 
         self.funct3 = self.extract_funct3(instruction);
 
@@ -701,7 +769,7 @@ impl Decoder {
         trace!("Decoding U-type instruction");
 
         self.destination_register_offset =
-            self.extract_destination_register_index(instruction);
+            self.extract_destination_register_offset(instruction);
         self.immediate =
             self.extract_imm_31_12(instruction) as UnsignedImmediate;
 
@@ -733,7 +801,7 @@ impl Decoder {
         trace!("Decoding J-type instruction");
 
         self.destination_register_offset =
-            self.extract_destination_register_index(instruction);
+            self.extract_destination_register_offset(instruction);
         self.need_to_read_memory = false;
         self.need_to_write_memory = false;
         self.need_to_write_back = true;
@@ -774,70 +842,6 @@ impl Decoder {
                 }
             },
         };
-    }
-
-    pub(crate) fn decode(
-        &mut self,
-        arch_state: &ArchState,
-        fetch_unit: &FetchUnit,
-    ) {
-        match fetch_unit.instruction_size {
-            InstructionSize::I32 => {
-                self.decode_i_32(arch_state, fetch_unit.current_instruction);
-            }
-            InstructionSize::I16 => {
-                // compressed ISA
-                if misa::is_c_enabled(&arch_state.control_status_registers) {
-                    let decompressed_instruction =
-                        self.expand_compressed(fetch_unit);
-                    self.decode_i_32(arch_state, decompressed_instruction);
-                } else {
-                    todo!("Illegal instruction trap");
-                }
-            }
-
-            _ => {
-                error!("TODO: unimplemented");
-                todo!("TODO: unimplemented");
-            }
-        }
-    }
-
-    /// decode 32-bit instructions
-    #[allow(non_snake_case)]
-    fn decode_i_32(
-        &mut self,
-        arch_state: &ArchState,
-        instruction: InstructionType,
-    ) {
-        self.opcode = self.extract_opcode(instruction);
-
-        match From::from(self.opcode) {
-            OpcodeToInstructionFormat::R_51_OP
-            | OpcodeToInstructionFormat::R_59_OP_32
-            | OpcodeToInstructionFormat::R_83_OP_FP =>
-            self.decode_r_format(arch_state, instruction, &arch_state.gp_register_file),
-            OpcodeToInstructionFormat::I_3_LOAD
-            | OpcodeToInstructionFormat::I_7_LOAD_FP
-            | OpcodeToInstructionFormat::I_19_OP_IMM
-            | OpcodeToInstructionFormat::I_27_OP_IMM_32
-            | OpcodeToInstructionFormat::I_103_JALR
-            | OpcodeToInstructionFormat::I_115_SYSTEM // (Zicsr_extension)
-            | OpcodeToInstructionFormat::I_15_MISC_MEM // FENCE, Zifencei
-            => self.decode_i_format(instruction, &arch_state.gp_register_file),
-            OpcodeToInstructionFormat::S_35_STORE
-            | OpcodeToInstructionFormat::S_39_STORE_FP => {
-                self.decode_s_format(instruction, &arch_state.gp_register_file)
-            }
-            OpcodeToInstructionFormat::B_99_BRANCH => self.decode_b_format(instruction, &arch_state.gp_register_file),
-            OpcodeToInstructionFormat::U_23_AUIPC
-            | OpcodeToInstructionFormat::U_55_LUI => self.decode_u_format(instruction),
-            OpcodeToInstructionFormat::J_111_JAL => self.decode_j_format(instruction),
-            OpcodeToInstructionFormat::R4_67_MADD
-            | OpcodeToInstructionFormat::R4_71_MSUB
-            | OpcodeToInstructionFormat::R4_75_NMSUB
-            | OpcodeToInstructionFormat::R4_79_NMADD => self.decode_r4_format(instruction),
-        }
     }
 
     fn extract_opcode(&self, instruction: InstructionType) -> Opcode {
@@ -882,7 +886,7 @@ impl Decoder {
         register_file.read(self.extract_source_register_2_offset(instruction))
     }
 
-    fn extract_destination_register_index(
+    fn extract_destination_register_offset(
         &self,
         instruction: InstructionType,
     ) -> usize {
@@ -895,7 +899,8 @@ impl Decoder {
         instruction: InstructionType,
         register_file: &RegisterFile<RISCV_NUM_OF_REGISTERS>,
     ) -> XLen {
-        register_file.read(self.extract_destination_register_index(instruction))
+        register_file
+            .read(self.extract_destination_register_offset(instruction))
     }
 
     fn extract_funct3(&self, instruction: InstructionType) -> InstructionType {
