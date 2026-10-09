@@ -23,9 +23,10 @@ services:
 
   ## development container: Rust + RISC-V toolchain, source mounted live
   ## Usage:
-  ##   ${CONTAINER_ENGINE} run --rm dev              → interactive shell
-  ##   ${CONTAINER_ENGINE} run --rm dev cargo build  → one-off command
+  ##   ${CONTAINER_ENGINE} run --rm dev              # interactive shell
+  ##   ${CONTAINER_ENGINE} run --rm dev cargo build  # single-shot command
   dev:
+    image: ${DEV_SERVICE_STARTING_IMAGE_NAME}:local
     build:
       context: .
       ## container file name within context
@@ -40,8 +41,6 @@ services:
       - .:${WD}
       ## keep cargo cache between container runs to avoid redownload/recompile
       - cargo-cache:/usr/local/cargo/registry
-      ## keep installed cargo binaries between container runs
-      - cargo-bin:/usr/local/cargo/bin
     environment:
       - RVMULATOR_EMULATOR__LOGGING__LEVEL=${DEBUG_LOG_LEVEL}
     ## keep container for interactive use (i.e. add `-it` to args automatically)
@@ -52,7 +51,7 @@ services:
     ## command to run on container run: interactive shell
     command: ${USER_SHELL}
     ## map host identity to container user so bind-mount files stay user's
-    userns_mode: "${DEV_USERNS_MODE:-keep-id}"
+    userns_mode: "${DEV_USERNS_MODE:-keep-id:uid=1000,gid=1000}"
     ## facilitate debuggers usage
     security_opt:
       - seccomp=unconfined
@@ -62,4 +61,4 @@ services:
 ## declare named volumes to keep them between container runs
 volumes:
   cargo-cache:
-  cargo-bin:
+    name: riscvmulator_cargo-cache

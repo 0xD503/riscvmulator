@@ -17,12 +17,12 @@ Currently project implements base RV64IM functionality. Project passes
 - [ ] `A` extension (atomics)
 - [ ] `F` extension (floating point)
 - [ ] `D` extension
-- [ ] `Zifencei` extension (`FENCE_I` instruction)
-- [ ] `Zicsr` extension (control and status registers (CSRs))
-- [ ] basic privileged ISA
-- [ ] `G` extensions (general purpose `IMAFD` + privileged extensions)
-- [ ] Linux-able
 - [ ] `C` extension (compressed instructions)
+- [ ] `Zicsr` extension (control and status registers (CSRs))
+- [ ] `Zifencei` extension (`FENCE.I`)
+- [ ] `G` extensions (general purpose `IMAFD_Zicsr_Zifencei`)
+- [ ] basic privileged ISA
+- [ ] Linux-able
 - [ ] `RV64/32E` (embedded)
 - [x] little-endian
 - [ ] big-endian
@@ -30,14 +30,13 @@ Currently project implements base RV64IM functionality. Project passes
 ### Compliance tests
 
 - [x] rv64ui-p-\*
-- [ ] rv64mi-p-\*
-- [ ] rv64si-p-\*
 - [x] rv64um-p-\*
+- [x] rv64uc-p\*
 - [ ] rv64ua-p-\*
 - [ ] rv64uf-p-\*
 - [ ] rv64ud-p-\*
-- [ ] rv64uq-\*
-- [ ] rv64uc-\*
+- [ ] rv64mi-p-\*
+- [ ] rv64si-p-\*
 
 ## Building and running
 
@@ -64,6 +63,9 @@ If you use Docker instead of Podman, set `CONTAINER_ENGINE` variable:
 ```Shell
 export CONTAINER_ENGINE=docker
 ```
+
+But, as I told above, Docker users may have some issues, because I didn't test
+it with Docker.
 
 #### Build release version
 

@@ -1,4 +1,4 @@
-use log::trace;
+use log::debug;
 
 use crate::{
     constants::arch::{SignedXLen, SignedXLen32, XLen, XLen32},
@@ -10,7 +10,7 @@ use crate::{
 
 impl Executor {
     pub(crate) fn instruction_multiply_low(&mut self, decoder: &Decoder) {
-        trace!("Executing MUL...");
+        debug!("Executing MUL...");
 
         self.result = decoder
             .source_register_1
@@ -18,7 +18,7 @@ impl Executor {
     }
 
     pub(crate) fn instruction_multiply_high(&mut self, decoder: &Decoder) {
-        trace!("Executing MULH...");
+        debug!("Executing MULH...");
 
         let extended_rs1: i128 =
             decoder.source_register_1 as SignedXLen as i128;
@@ -31,7 +31,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        trace!("Executing MULHSU...");
+        debug!("Executing MULHSU...");
 
         let extended_rs1: i128 =
             decoder.source_register_1 as SignedXLen as i128;
@@ -44,7 +44,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        trace!("Executing MULHU...");
+        debug!("Executing MULHU...");
 
         let extended_rs1: u128 = decoder.source_register_1 as u128;
         let extended_rs2: u128 = decoder.source_register_2 as u128;
@@ -71,7 +71,7 @@ impl Executor {
     }
 
     pub(crate) fn instruction_divide(&mut self, decoder: &Decoder) {
-        trace!("Executing DIV...");
+        debug!("Executing DIV...");
 
         if self.is_div_by_zero(decoder) {
             self.result = XLen::MAX;
@@ -85,7 +85,7 @@ impl Executor {
     }
 
     pub(crate) fn instruction_divide_unsigned(&mut self, decoder: &Decoder) {
-        trace!("Executing DIVU...");
+        debug!("Executing DIVU...");
 
         if self.is_div_by_zero(decoder) {
             self.result = XLen::MAX;
@@ -95,7 +95,7 @@ impl Executor {
     }
 
     pub(crate) fn instruction_remainder(&mut self, decoder: &Decoder) {
-        trace!("Executing REM...");
+        debug!("Executing REM...");
 
         if self.is_div_by_zero(decoder) {
             self.result = decoder.source_register_1;
@@ -109,7 +109,7 @@ impl Executor {
     }
 
     pub(crate) fn instruction_remainder_unsigned(&mut self, decoder: &Decoder) {
-        trace!("Executing REMU...");
+        debug!("Executing REMU...");
 
         if self.is_div_by_zero(decoder) {
             self.result = decoder.source_register_1;
@@ -122,7 +122,7 @@ impl Executor {
     /// source registers, placing the sign extension of the lower 32 bits of the
     /// result into the destination register
     pub(crate) fn instruction_multiply_low_word(&mut self, decoder: &Decoder) {
-        trace!("Executing MULW...");
+        debug!("Executing MULW...");
 
         // self.result = (((decoder.source_register_1 & XLen32::MAX as XLen)
         //     * (decoder.source_register_2 & XLen32::MAX as XLen))
@@ -133,7 +133,7 @@ impl Executor {
             .sign_extend();
     }
     pub(crate) fn instruction_divide_word(&mut self, decoder: &Decoder) {
-        trace!("Executing DIVW...");
+        debug!("Executing DIVW...");
 
         if self.is_div_by_zero_32(decoder) {
             self.result = -1 as SignedXLen32 as SignedXLen as XLen;
@@ -149,7 +149,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        trace!("Executing DIVUW...");
+        debug!("Executing DIVUW...");
 
         if self.is_div_by_zero_32(decoder) {
             self.result = XLen::MAX;
@@ -160,7 +160,7 @@ impl Executor {
         }
     }
     pub(crate) fn instruction_remainder_word(&mut self, decoder: &Decoder) {
-        trace!("Executing REMW...");
+        debug!("Executing REMW...");
 
         if self.is_div_by_zero_32(decoder) {
             self.result = (decoder.source_register_1 as XLen32).sign_extend();
@@ -176,7 +176,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        trace!("Executing REMUW...");
+        debug!("Executing REMUW...");
 
         if self.is_div_by_zero_32(decoder) {
             self.result = (decoder.source_register_1 as XLen32).sign_extend();

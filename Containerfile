@@ -1,15 +1,12 @@
-## 1. BUILD stage   ------------------------------------------------------------
+## 1. DEV stage   --------------------------------------------------------------
 
 ARG DISTRO_RELEASE_VER=trixie
-ARG DEV_CONTAINER_NAME=builder
-ARG RELEASE_CONTAINER_NAME=runner
 
 ## use fixed `major`/`minor`, but latest `patch` version
-FROM rust:1.97-slim-${DISTRO_RELEASE_VER} AS ${DEV_CONTAINER_NAME}
+FROM docker.io/library/rust:1.98-slim-${DISTRO_RELEASE_VER} AS builder
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
-ARG BUILD_TYPE=release
 ARG DEV_UID=1000
 ARG DEV_GID=1000
 ARG DEV_USERNAME=appdev
@@ -32,6 +29,8 @@ RUN apt-get update && apt-get install --assume-yes \
     ## convenience tools \
     tmux emacs-nox ripgrep fd-find fzf htop lldb \
     vim gdb \
+    curl openssh-server \
+    unzip \
     ## clean apt cache and install some crates \
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt rust-src rust-analyzer \
@@ -39,12 +38,20 @@ RUN apt-get update && apt-get install --assume-yes \
     && cargo install --locked just \
     && cargo install --locked wild-linker \
     && cargo install --locked flamegraph \
+    && cargo install --locked tokei \
     && cargo install --locked cargo-bloat \
     && cargo install --locked cargo-show-asm \
     && cargo install --locked cargo-deny \
     && cargo install --locked --features cli cargo-about \
     && cargo install --locked cargo-audit \
     && cargo install --locked cargo-fuzz
+
+ARG CODE_LLDB_VERSION=1.12.3
+RUN curl -fsSL -o /tmp/codelldb.vsix \
+    https://github.com/vadimcn/codelldb/releases/download/v${CODE_LLDB_VERSION}/codelldb-linux-x64.vsix \
+    && unzip -q /tmp/codelldb.vsix 'extension/*' -d /tmp/codelldb \
+    && mv /tmp/codelldb/extension /opt/codelldb \
+    && rm -rf /tmp/codelldb /tmp/codelldb.vsix
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
     && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME} \
@@ -60,18 +67,38 @@ RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
 ## set WORKDIR
 WORKDIR ${WD}
 
+## mark "inside dev container" for the justfile's RUN_IN_CONTAINER detection
+ENV IN_DEV_CONTAINER=1
+
+RUN echo 'export PATH="$CARGO_HOME/bin:$PATH"' > /etc/profile.d/cargo.sh
+
+## make cargo registry to be owned by user
+RUN chown -R ${DEV_UID}:${DEV_GID} /usr/local/cargo
+## switch to dev user
+USER ${DEV_USERNAME}
+
+
+## 2. BUILD stage   ------------------------------------------------------------
+
+FROM builder AS release-build
+
+ARG BUILD_TYPE=release
+
+## build as root user
+USER root
+
 ## copy dependencies to WORKDIR (to cache them)
 ## putting this before copying all source lets Podman cache dependency
 ## resolution so rebuilds are faster when only source changes
 ## create a fake src/ directory and a minimal main.rs; this lets
 ## `cargo build --${BUILD_TYPE}` succeed even though the full source is not yet in the
 ## context
-## this is a trick to pre‑build dependencies without the full app code
 COPY Cargo.toml Cargo.lock .
 COPY crates/riscvmulator-soc/Cargo.toml crates/riscvmulator-soc/
 COPY crates/riscvmulator-emulator/Cargo.toml crates/riscvmulator-emulator/
 COPY crates_guest/riscvmulator-simple_firmware/Cargo.toml \
      crates_guest/riscvmulator-simple_firmware/
+COPY .cargo .cargo
 RUN mkdir -p src \
              crates/riscvmulator-soc/src \
              crates/riscvmulator-emulator/src \
@@ -92,18 +119,10 @@ COPY . .
 RUN find src crates crates_guest -name "*.rs" -exec touch {} + \
     && cargo build --${BUILD_TYPE}
 
-## mark "inside dev container" for the justfile's RUN_IN_CONTAINER detection
-ENV IN_DEV_CONTAINER=1
-
-## make cargo registry to be owned by user
-RUN chown -R ${DEV_UID}:${DEV_GID} /usr/local/cargo
-## switch to dev user
-USER ${DEV_USERNAME}
-
 
 ## 2. RUN stage     ------------------------------------------------------------
 
-FROM debian:${DISTRO_RELEASE_VER}-slim AS ${RELEASE_CONTAINER_NAME}
+FROM docker.io/library/debian:${DISTRO_RELEASE_VER}-slim AS runner
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app
@@ -130,7 +149,7 @@ ENV IN_APP_CONTAINER=1
 
 USER ${USERNAME}
 
-COPY --from=${DEV_CONTAINER_NAME} ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
+COPY --from=release-build ${WD}/target/${BUILD_TYPE}/${APP_NAME} .
 
 ## set runtime environment variables
 ENV RVMULATOR_EMULATOR__LOGGING__LEVEL=${RELEASE_LOG_LEVEL}
@@ -141,6 +160,6 @@ EXPOSE ${LISTEN_PORT}
 
 ### run application and pass default arguments that can be overriden fro CLI
 #ENTRYPOINT ["./${APP_NAME_ENV}"]
-## fixed ENTRYPOINT — ENV vars don't expand in JSON array form
+## fixed ENTRYPOINT - ENV vars don't expand in JSON array form
 ENTRYPOINT ["sh", "-c", "./$APP_NAME \"$@\"", "--"]
 CMD [""]

@@ -17,5 +17,8 @@ pub fn init_logger(config: &Result<Config, ConfigError>) {
     env_logger::Builder::new()
         .parse_filters(log_level)
         .parse_write_style(log_style)
+        .format_module_path(true)
+        .format_source_path(true)
+        .format_target(false)
         .init();
 }

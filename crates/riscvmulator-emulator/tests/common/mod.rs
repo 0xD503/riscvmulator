@@ -8,6 +8,22 @@ use riscvmulator_emulator::{
 
 use crate::peripherals::htif::HTIF_SUCCESS;
 
+#[macro_export]
+macro_rules! riscv_test {
+    ($isa:expr, $name:ident) => {
+        #[test]
+        fn $name() {
+            let path = concat!(
+                "3rd_party/riscv-tests/isa/",
+                $isa,
+                "-",
+                stringify!($name)
+            );
+            run_test(path, TEST_CONFIG_PATH);
+        }
+    };
+}
+
 fn test_setup() {
     //
 }
@@ -28,9 +44,6 @@ pub fn run_test(file_name: impl AsRef<Path>, cfg_file_name: impl AsRef<Path>) {
     let mut path_to_cfg = PathBuf::from(CRATE_ROOT);
     path_to_cfg.push("tests/cfg");
     path_to_cfg.push(cfg_file_name);
-
-    // dbg!(format!("GREPME Current test path: {:?}", path_to_test));
-    // dbg!(format!("GREPME Current cfg path: {:?}", path_to_cfg));
 
     let custom_config = false;
     let initialize_logger = false;

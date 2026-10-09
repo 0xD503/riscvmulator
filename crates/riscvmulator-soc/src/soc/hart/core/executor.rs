@@ -19,7 +19,7 @@ use crate::soc::hart::privileged::constants::{
 };
 use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
 
-use log::{error, trace};
+use log::{debug, error, trace};
 
 #[derive(Default, Clone)]
 pub struct Executor {
@@ -236,7 +236,7 @@ impl Executor {
                 );
             }
 
-            // M extension instructoins
+            // `M` extension instructoins
             ExecutableCommand::MUL => {
                 self.instruction_multiply_low(decoder);
             }
@@ -306,58 +306,58 @@ impl Executor {
     }
 
     fn instruction_load_byte(&mut self, decoder: &Decoder) {
-        trace!("Executing LB...");
+        debug!("Executing LB...");
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::BYTE;
     }
 
     fn instruction_load_half(&mut self, decoder: &Decoder) {
-        trace!("Executing LH...");
+        debug!("Executing LH...");
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::HALF_WORD;
     }
 
     fn instruction_load_word(&mut self, decoder: &Decoder) {
-        trace!("Executing LW...");
+        debug!("Executing LW...");
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::WORD;
     }
 
     fn instruction_load_byte_unsigned(&mut self, decoder: &Decoder) {
-        trace!("Executing LBU...");
+        debug!("Executing LBU...");
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_BYTE;
     }
 
     fn instruction_load_half_unsigned(&mut self, decoder: &Decoder) {
-        trace!("Executing LHU...");
+        debug!("Executing LHU...");
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_HALF_WORD;
     }
 
     fn instruction_addi(&mut self, decoder: &Decoder) {
-        trace!("Executing ADDI...");
+        let sign_extended_imm = decoder.immediate.sign_extend();
+
+        debug!("Executing ADDI...");
 
         // use wrapping operation in order to allow overruns
-        self.result = XLen::wrapping_add(
-            decoder.source_register_1,
-            decoder.immediate.sign_extend(),
-        );
+        self.result =
+            XLen::wrapping_add(decoder.source_register_1, sign_extended_imm);
     }
 
     fn instruction_slli(&mut self, decoder: &Decoder) {
-        trace!("Executing SLLI...");
+        debug!("Executing SLLI...");
 
         self.result = decoder.source_register_1 << decoder.shamt;
     }
 
     fn instruction_slti(&mut self, decoder: &Decoder) {
-        trace!("Executing SLTI...");
+        debug!("Executing SLTI...");
 
         self.result = if (decoder.source_register_1 as SignedXLen)
             < (decoder.immediate as SignedImmediate as SignedXLen)
@@ -369,7 +369,7 @@ impl Executor {
     }
 
     fn instruction_sltiu(&mut self, decoder: &Decoder) {
-        trace!("Executing SLTIU...");
+        debug!("Executing SLTIU...");
 
         self.result = if (decoder.source_register_1 as UnsignedXLen)
             < decoder.immediate.sign_extend()
@@ -381,48 +381,48 @@ impl Executor {
     }
 
     fn instruction_xori(&mut self, decoder: &Decoder) {
-        trace!("Executing XORI...");
+        debug!("Executing XORI...");
 
         self.result =
             decoder.source_register_1 ^ decoder.immediate.sign_extend();
     }
 
     fn instruction_srli(&mut self, decoder: &Decoder) {
-        trace!("Executing SRLI...");
+        debug!("Executing SRLI...");
 
         self.result = decoder.source_register_1 >> decoder.shamt;
     }
 
     fn instruction_srai(&mut self, decoder: &Decoder) {
-        trace!("Executing SRAI...");
+        debug!("Executing SRAI...");
 
         self.result = ((decoder.source_register_1 as SignedXLen)
             >> decoder.shamt) as XLen;
     }
 
     fn instruction_ori(&mut self, decoder: &Decoder) {
-        trace!("Executing ORI...");
+        debug!("Executing ORI...");
 
         self.result =
             decoder.source_register_1 | decoder.immediate.sign_extend();
     }
 
     fn instruction_andi(&mut self, decoder: &Decoder) {
-        trace!("Executing ANDI...");
+        debug!("Executing ANDI...");
 
         self.result =
             decoder.source_register_1 & decoder.immediate.sign_extend();
     }
 
     fn instruction_auipc(&mut self, decoder: &Decoder, pc: &Register) {
-        trace!("Executing AUIPC...");
+        debug!("Executing AUIPC...");
 
         self.result =
             XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
     }
 
     fn instruction_store_byte(&mut self, decoder: &Decoder) {
-        trace!("Executing SB...");
+        debug!("Executing SB...");
 
         self.update_memory_address(decoder);
         self.value_to_store_u8 = decoder.source_register_2 as Byte;
@@ -430,7 +430,7 @@ impl Executor {
     }
 
     fn instruction_store_half_word(&mut self, decoder: &Decoder) {
-        trace!("Executing SH...");
+        debug!("Executing SH...");
 
         self.update_memory_address(decoder);
         self.value_to_store_u16 = decoder.source_register_2 as HalfWord;
@@ -438,7 +438,7 @@ impl Executor {
     }
 
     fn instruction_store_word(&mut self, decoder: &Decoder) {
-        trace!("Executing SW...");
+        debug!("Executing SW...");
 
         self.update_memory_address(decoder);
         self.value_to_store_u32 = decoder.source_register_2 as Word;
@@ -446,7 +446,7 @@ impl Executor {
     }
 
     fn instruction_add(&mut self, decoder: &Decoder) {
-        trace!("Executing ADD...");
+        debug!("Executing ADD...");
 
         self.result = XLen::wrapping_add(
             decoder.source_register_1,
@@ -455,7 +455,7 @@ impl Executor {
     }
 
     fn instruction_sub(&mut self, decoder: &Decoder) {
-        trace!("Executing SUB...");
+        debug!("Executing SUB...");
 
         self.result = XLen::wrapping_sub(
             decoder.source_register_1,
@@ -464,7 +464,7 @@ impl Executor {
     }
 
     fn instruction_sll(&mut self, decoder: &Decoder) {
-        trace!("Executing SLL...");
+        debug!("Executing SLL...");
 
         self.result = XLen::wrapping_shl(
             decoder.source_register_1,
@@ -473,7 +473,7 @@ impl Executor {
     }
 
     fn instruction_slt(&mut self, decoder: &Decoder) {
-        trace!("Executing SLT...");
+        debug!("Executing SLT...");
 
         self.result = if (decoder.source_register_1 as SignedXLen)
             < (decoder.source_register_2 as SignedXLen)
@@ -485,7 +485,7 @@ impl Executor {
     }
 
     fn instruction_sltu(&mut self, decoder: &Decoder) {
-        trace!("Executing SLTU...");
+        debug!("Executing SLTU...");
 
         self.result = if decoder.source_register_1 < decoder.source_register_2 {
             1
@@ -495,13 +495,13 @@ impl Executor {
     }
 
     fn instruction_xor(&mut self, decoder: &Decoder) {
-        trace!("Executing XOR...");
+        debug!("Executing XOR...");
 
         self.result = decoder.source_register_1 ^ decoder.source_register_2;
     }
 
     fn instruction_srl(&mut self, decoder: &Decoder) {
-        trace!("Executing SRL...");
+        debug!("Executing SRL...");
 
         self.result = XLen::wrapping_shr(
             decoder.source_register_1,
@@ -510,7 +510,7 @@ impl Executor {
     }
 
     fn instruction_sra(&mut self, decoder: &Decoder) {
-        trace!("Executing SRA...");
+        debug!("Executing SRA...");
 
         self.result = SignedXLen::wrapping_shr(
             decoder.source_register_1 as SignedXLen,
@@ -519,25 +519,25 @@ impl Executor {
     }
 
     fn instruction_or(&mut self, decoder: &Decoder) {
-        trace!("Executing OR...");
+        debug!("Executing OR...");
 
         self.result = decoder.source_register_1 | decoder.source_register_2;
     }
 
     fn instruction_and(&mut self, decoder: &Decoder) {
-        trace!("Executing AND...");
+        debug!("Executing AND...");
 
         self.result = decoder.source_register_1 & decoder.source_register_2;
     }
 
     fn instruction_lui(&mut self, decoder: &Decoder) {
-        trace!("Executing LUI...");
+        debug!("Executing LUI...");
 
         self.result = decoder.immediate.sign_extend();
     }
 
     fn instruction_beq(&mut self, decoder: &Decoder, pc: &Register) {
-        trace!("Executing BEQ...");
+        debug!("Executing BEQ...");
 
         if decoder.source_register_1 == decoder.source_register_2 {
             self.branch_target_address =
@@ -547,7 +547,7 @@ impl Executor {
     }
 
     fn instruction_bne(&mut self, decoder: &Decoder, pc: &Register) {
-        trace!(
+        debug!(
             "Executing BNE: {:#018X}, {:#018X}...",
             decoder.source_register_1, decoder.source_register_2
         );
@@ -563,7 +563,7 @@ impl Executor {
     }
 
     fn instruction_blt(&mut self, decoder: &Decoder, pc: &Register) {
-        trace!("Executing BLT...");
+        debug!("Executing BLT...");
 
         if (decoder.source_register_1 as SignedXLen)
             < (decoder.source_register_2 as SignedXLen)
@@ -575,7 +575,7 @@ impl Executor {
     }
 
     fn instruction_bge(&mut self, decoder: &Decoder, pc: &Register) {
-        trace!("Executing BGE...");
+        debug!("Executing BGE...");
 
         if (decoder.source_register_1 as SignedXLen)
             >= (decoder.source_register_2 as SignedXLen)
@@ -587,7 +587,7 @@ impl Executor {
     }
 
     fn instruction_bltu(&mut self, decoder: &Decoder, pc: &Register) {
-        trace!("Executing BLTU...");
+        debug!("Executing BLTU...");
 
         if (decoder.source_register_1 as UnsignedXLen)
             < (decoder.source_register_2 as UnsignedXLen)
@@ -599,7 +599,7 @@ impl Executor {
     }
 
     fn instruction_bgeu(&mut self, decoder: &Decoder, pc: &Register) {
-        trace!("Executing BGEU...");
+        debug!("Executing BGEU...");
 
         if (decoder.source_register_1 as UnsignedXLen)
             >= (decoder.source_register_2 as UnsignedXLen)
@@ -616,7 +616,7 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
-        trace!("Executing JALR...");
+        debug!("Executing JALR...");
 
         self.jump_target_address = (XLen::wrapping_add(
             decoder.source_register_1,
@@ -632,29 +632,31 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
-        trace!("Executing JAL...");
-
+        let sign_extended_imm = decoder.immediate.sign_extend();
         self.jump_target_address =
-            XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            XLen::wrapping_add(pc.read(), sign_extended_imm);
+
+        debug!("Executing JAL...");
+
         self.result = pc.read() + fetch_unit.instruction_size as XLen;
     }
 
     fn instruction_load_double_word(&mut self, decoder: &Decoder) {
-        trace!("Executing LD...");
+        debug!("Executing LD...");
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::DOUBLE_WORD;
     }
 
     fn instruction_load_word_unsigned(&mut self, decoder: &Decoder) {
-        trace!("Executing LWU...");
+        debug!("Executing LWU...");
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_WORD;
     }
 
     fn instruction_add_immediate_word(&mut self, decoder: &Decoder) {
-        trace!("Executing ADDIW...");
+        debug!("Executing ADDIW...");
 
         // use wrapping operation in order to allow overruns
         let result32 = XLen32::wrapping_add(
@@ -668,7 +670,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        trace!("Executing SLLIW...");
+        debug!("Executing SLLIW...");
 
         let result32 =
             (decoder.source_register_1 as XLen32) << decoder.immediate;
@@ -679,7 +681,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        trace!("Executing SRLIW...");
+        debug!("Executing SRLIW...");
 
         let result32 =
             (decoder.source_register_1 as XLen32) >> decoder.immediate;
@@ -690,7 +692,7 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        trace!(
+        debug!(
             "Executing SRAIW: {:#018X} >> {}...",
             decoder.source_register_1 as SignedXLen32, decoder.immediate
         );
@@ -703,7 +705,7 @@ impl Executor {
     }
 
     fn instruction_store_double_word(&mut self, decoder: &Decoder) {
-        trace!("Executing SD...");
+        debug!("Executing SD...");
 
         self.update_memory_address(decoder);
         self.value_to_store_u64 = decoder.source_register_2;
@@ -711,7 +713,7 @@ impl Executor {
     }
 
     fn instruction_add_word(&mut self, decoder: &Decoder) {
-        trace!("Executing ADDW...");
+        debug!("Executing ADDW...");
 
         let result32 = SignedXLen32::wrapping_add(
             decoder.source_register_1 as SignedXLen32,
@@ -721,7 +723,7 @@ impl Executor {
     }
 
     fn instruction_sub_word(&mut self, decoder: &Decoder) {
-        trace!("Executing SUBW...");
+        debug!("Executing SUBW...");
 
         let result32 = SignedXLen32::wrapping_sub(
             decoder.source_register_1 as SignedXLen32,
@@ -731,21 +733,21 @@ impl Executor {
     }
 
     fn instruction_shift_left_logical_word(&mut self, decoder: &Decoder) {
-        trace!("Executing SLLW...");
+        debug!("Executing SLLW...");
 
         let result32 = (decoder.source_register_1 as XLen32) << decoder.shamt;
         self.result = result32.sign_extend();
     }
 
     fn instruction_shift_right_logical_word(&mut self, decoder: &Decoder) {
-        trace!("Executing SRLW...");
+        debug!("Executing SRLW...");
 
         let result32 = (decoder.source_register_1 as XLen32) >> decoder.shamt;
         self.result = result32.sign_extend();
     }
 
     fn instruction_shift_right_arith_word(&mut self, decoder: &Decoder) {
-        trace!(
+        debug!(
             "Executing SRAW: {:#018} >> {:?}...",
             decoder.source_register_1 as SignedXLen32, decoder.shamt
         );
@@ -756,14 +758,14 @@ impl Executor {
     }
 
     fn instruction_fence(&mut self, decoder: &Decoder) {
-        trace!("Executing FENCE...");
+        debug!("Executing FENCE...");
 
         //
         error!("TODO: unimplemented instruction");
     }
 
     fn instruction_fence_i(&mut self, decoder: &Decoder) {
-        trace!("Executing FENCE_I...");
+        debug!("Executing FENCE_I...");
 
         //
         error!("TODO: unimplemented instruction");
@@ -774,7 +776,7 @@ impl Executor {
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
         pc: &Register,
     ) {
-        trace!("Executing ECALL...");
+        debug!("Executing ECALL...");
 
         let current_privilege_mode =
             self.read_mstatus_mpp(control_status_registers);
@@ -806,21 +808,21 @@ impl Executor {
     }
 
     fn instruction_execution_break(&mut self, decoder: &Decoder) {
-        trace!("Executing EBREAK...");
+        debug!("Executing EBREAK...");
 
         //
         todo!();
     }
 
     fn instruction_user_return(&mut self, decoder: &Decoder) {
-        trace!("Executing URET...");
+        debug!("Executing URET...");
 
         //
         todo!();
     }
 
     fn instruction_supervisor_return(&mut self, decoder: &Decoder) {
-        trace!("Executing SRET...");
+        debug!("Executing SRET...");
 
         //
         todo!();
@@ -830,7 +832,7 @@ impl Executor {
         &mut self,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        trace!("Executing MRET...");
+        debug!("Executing MRET...");
 
         self.return_target_address =
             control_status_registers.read(CSRRegisterName::mepc as usize);
@@ -842,7 +844,7 @@ impl Executor {
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        trace!("Executing CSRRC...");
+        debug!("Executing CSRRC...");
 
         self.read_csr_to_result(decoder, control_status_registers);
         if decoder.zicsr.need_to_write_csr {
@@ -855,7 +857,7 @@ impl Executor {
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        trace!("Executing CSRRCI...");
+        debug!("Executing CSRRCI...");
 
         self.read_csr_to_result(decoder, control_status_registers);
         if decoder.zicsr.need_to_write_csr {
@@ -868,7 +870,7 @@ impl Executor {
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        trace!("Executing CSRRWI...");
+        debug!("Executing CSRRWI...");
 
         if decoder.zicsr.need_to_read_csr {
             self.read_csr_to_result(decoder, control_status_registers);
@@ -881,7 +883,7 @@ impl Executor {
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        trace!("Executing CSRRW...");
+        debug!("Executing CSRRW...");
 
         if decoder.zicsr.need_to_read_csr {
             self.read_csr_to_result(decoder, control_status_registers);
@@ -894,7 +896,7 @@ impl Executor {
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        trace!("Executing CSRRS...");
+        debug!("Executing CSRRS...");
 
         self.read_csr_to_result(decoder, control_status_registers);
         if decoder.zicsr.need_to_write_csr {
@@ -907,7 +909,7 @@ impl Executor {
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        trace!("Executing CSRRSI...");
+        debug!("Executing CSRRSI...");
 
         self.read_csr_to_result(decoder, control_status_registers);
         if decoder.zicsr.need_to_write_csr {

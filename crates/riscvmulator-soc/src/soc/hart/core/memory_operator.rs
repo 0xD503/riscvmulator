@@ -98,7 +98,7 @@ impl Executor {
         decoder: &Decoder,
     ) {
         if decoder.need_to_read_memory {
-            trace!("Executing memory read...");
+            trace!("Memory read...");
 
             match self.memory_value_type {
                 MemoryValueTypeEnum::DOUBLE_WORD => {
@@ -124,7 +124,7 @@ impl Executor {
                 }
             }
         } else if decoder.need_to_write_memory {
-            trace!("Executing memory write...");
+            trace!("Memory write...");
 
             let result;
             match self.memory_value_type {

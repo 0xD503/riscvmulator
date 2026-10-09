@@ -185,6 +185,15 @@ impl Config {
             self.soc.validate().err().unwrap_or_default();
         errors_list.append(&mut soc_validation_errors);
 
+        if self.emulator.throttle_frequency != 0 {
+            if self.emulator.throttle_frequency > self.soc.xtal_frequency_hz {
+                errors_list.push(format!(
+                    "throttle frequency ({}) cannot be higher than the XTAL frequency ({})",
+                    &self.emulator.throttle_frequency, self.soc.xtal_frequency_hz
+                ));
+            }
+        }
+
         if self.emulator.logging.level != "off"
             && self.emulator.logging.level != "error"
             && self.emulator.logging.level != "warn"
@@ -216,6 +225,10 @@ impl Config {
 
     /// autoresolves some values from existing ones
     fn resolve(&mut self) {
+        if self.emulator.throttle_frequency == 0 {
+            // self.emulator.throttle_frequency = self.soc.xtal_frequency_hz;
+        }
+
         // TODO: autoresolves
     }
 

@@ -1,4 +1,7 @@
+// use std::error::Error;
+
 #[allow(non_camel_case_types)]
+#[derive(Debug)]
 pub enum GPRegisterName {
     x0_zero,  // always zero
     x1_ra,    // return address
@@ -33,3 +36,13 @@ pub enum GPRegisterName {
     x30_t5,   // temporary register 5
     x31_t6,   // temporary register 6
 }
+
+// impl Error for GPRegisterName {};
+
+// impl TryFrom<usize> for GPRegisterName {
+//     fn try_from(value: usize) -> Result<Self, Self::Error> {
+//         match value {
+//             _ => Err(value),
+//         }
+//     }
+// }

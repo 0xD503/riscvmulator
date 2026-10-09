@@ -64,7 +64,8 @@ pub const MASK_DESTINATION_REGISTER: InstructionType = 0x1F;
 
 pub const BIT_OFFSET_FUNCT3: usize = 12;
 pub const MASK_FUNCT3: InstructionType = 0x07;
-// pub const BIT_OFFSET_I_FUNCT7: usize = 25;
+pub const BIT_OFFSET_I_FUNCT7: usize =
+    if XLen::BITS == u64::BITS { 26 } else { 25 };
 // pub const MASK_I_FUNCT7: InstructionType = 0x7F;
 // pub const BIT_OFFSET_SHTYPE: usize = 25;
 // pub const MASK_SHTYPE: InstructionType = 0x7F;
@@ -98,11 +99,15 @@ pub const MASK_SHAMT_RV64W: InstructionType = XLen32::BITS - 1;
 
 pub const BIT_OFFSET_IMM_11_0: usize = 20;
 pub const BIT_OFFSET_IMM_11_0_FINAL: usize = 0;
+pub const BIT_OFFSET_FUNCT12: usize = 20;
 pub const BITS_NUM_IMM_11_0: usize = 12;
 // const MASK_IMM_11_0: InstructionType =
 //     ((1 << BITS_NUM_IMM_11_0) - 1) << BIT_OFFSET_IMM_11_0_FINAL;
 pub const BIT_OFFSET_IMM_11_5: usize = 25;
 pub const BIT_OFFSET_IMM_11_5_FINAL: usize = 5;
+pub const MASK_IMM_11_5: InstructionType =
+    0b1111111 << BIT_OFFSET_IMM_11_5_FINAL;
+
 pub const BIT_OFFSET_IMM_4_0: usize = 7;
 pub const BIT_OFFSET_IMM_4_0_FINAL: usize = 0;
 pub const MASK_IMM_4_0: InstructionType = 0x1F << BIT_OFFSET_IMM_4_0_FINAL;

@@ -1,0 +1,16 @@
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "cargo": {
+          "targetDir": true
+        }
+      }
+    }
+  },
+  "dap": {
+    "CodeLLDB": {
+      "binary": "/opt/codelldb/adapter/codelldb"
+    }
+  }
+}

@@ -3,7 +3,7 @@
 #throttle_frequency = 0
 
 [emulator.logging]
-level = "info"
+level = "debug"
 style = "auto"
 
 [soc]

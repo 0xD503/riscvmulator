@@ -1,0 +1,24 @@
+{
+  "name": "riscvmulator",
+  "image": "riscvmulator_dev:local",
+
+  "initializeCommand": ["just", "ensure-dev-image-exists"],
+
+  "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
+  "workspaceFolder": "/app",
+
+  "runArgs": ["--userns=keep-id:uid=1000,gid=1000"],
+  "capAdd": ["SYS_PTRACE"],
+  "securityOpt": ["seccomp=unconfined"],
+
+  "mounts": [
+    "source=riscvmulator_cargo-cache,target=/usr/local/cargo/registry,type=volume"
+  ],
+
+  "containerEnv": {
+    "RVMULATOR_EMULATOR__LOGGING__LEVEL": "debug"
+  },
+
+  "remoteUser": "appdev",
+  "updateRemoteUserUID": false
+}

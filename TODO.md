@@ -9,6 +9,7 @@
 
 ## Fixes/Features
 
+- [ ] revamp instruction logs so they show instruction mnenmonics/listing
 - [ ] add UTs
 - [ ] add benchmarks (compare with Spike)
 - [ ] add docs
@@ -33,6 +34,8 @@
     - [x] Linux
     - [ ] MacOS
     - [ ] Windows
+- [ ] add container runner script for IDE
+- [ ] fix atomics load/store model (relaxed probably is not a good choice)
 
 ## Refactor
 
@@ -46,6 +49,7 @@
 - [ ] HALT/stop into interactive mode by `Ctrl+C`/double `Ctrl+C`
 - [ ] implement `EBREAK`, add debug mode
 - [ ] add fuzzer
+- [ ] extend log system: more log levels (critical/error/warning/notice/info/debug/trace/etc, each has 3 to 5 sublevels)
 - [ ] customize log string: add core num, PC value, cycle count
 - [ ] interactive commands: help/usage, license, load-elf, start, peek/poke
 - [ ] HW reset init:
@@ -55,7 +59,7 @@
     - [ ] `misa` register is reset to enable the maximal set of supported extensions
     - [x] `pc` is set to an implementation-defined reset vector
     - [ ] `mcause` register is set to a value indicating the cause of the reset
-    - [ ] writable `PMP` registers’ `A` and `L` fields are set to 0, unless the platform mandates a different reset value for some PMP registers’ A and L fields
+    - [ ] writable `PMP` registers `A` and `L` fields are set to 0, unless the platform mandates a different reset value for some PMP registers A and L fields
     - [ ] `MML`, `MMWP`, and `RLB` fields of the `mseccfg` register are set to 0, unless the platform mandates a different reset value.
     - [ ] `mcause` values after reset have implementation-specific interpretation, but the value 0 should be returned on implementations that do not distinguish different reset conditions. Implementations that distinguish different reset conditions should only use 0 to indicate the most complete reset.
     - [ ] `USEED` and `SSEED` fields of the `mseccfg` CSR must have defined reset values

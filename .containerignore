@@ -1,0 +1,5 @@
+.git
+3rd_party
+target
+crates_guest/*/target
+**/*.log
