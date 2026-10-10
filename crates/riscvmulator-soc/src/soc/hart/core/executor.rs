@@ -18,6 +18,7 @@ use crate::soc::hart::privileged::constants::{
     MCause_Code, MSTATUS_MPP_MASK, MSTATUS_MPP_OFFSET, MStatus_MPP,
 };
 use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
+use crate::utils::print_full_instruction;
 
 use log::{debug, error, trace};
 
@@ -306,7 +307,7 @@ impl Executor {
     }
 
     fn instruction_load_byte(&mut self, decoder: &Decoder) {
-        // print_instr
+        print_full_instruction!(load, "lb", 0, 0, 0);
         debug!("Executing LB...");
 
         self.update_memory_address(decoder);

@@ -1,3 +1,7 @@
 [
-  { "label": "CI (local)", "command": "just", "args": ["ci-dev"] }
+  {
+    "label": "CI-dev (local)",
+    "command": "just",
+    "args": ["ci-dev"]
+  }
 ]
