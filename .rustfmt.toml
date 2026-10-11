@@ -19,3 +19,6 @@ newline_style = "Unix"          ## Line endings: "Unix" (LF) or "Windows" (CRLF)
 
 ## Braces
 # brace_style = "SameLineWhere"
+
+## Numbers formating
+# hex_literal_case = "Upper"

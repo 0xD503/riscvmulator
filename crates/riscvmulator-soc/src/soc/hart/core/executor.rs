@@ -12,6 +12,7 @@ use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, SignedImmediate, SignedXLen,
     SignedXLen32, UnsignedImmediate, UnsignedXLen, Word, XLen, XLen32,
 };
+use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
 use crate::soc::hart::privileged::constants::{

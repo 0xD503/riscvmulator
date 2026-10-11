@@ -25,6 +25,9 @@ unsafe_code = "forbid"
 unnameable_types = "deny"
 private_interfaces = "deny"
 
+[workspace.lints.clippy]
+unreadable_literal = "deny"
+
 [package]
 name = "riscvmulator"
 description = "RISC-V emulator binary"
