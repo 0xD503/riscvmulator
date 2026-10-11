@@ -1,10 +1,10 @@
 pub mod constants;
 
 use self::constants::{
-    BRANCH_Funct3, FenceMode, I_Funct12, JALR_Funct3, MISC_MEM_Funct3,
-    OP_Funct7, OP_IMM_Funct3, OP_IMM_Funct7, OP_IMM_ShiftType,
-    OPCODE_LOAD_Funct3, Opcode, OpcodeToInstructionFormat, STORE_Funct3,
-    SYSTEM_Funct3, SYSTEM_Imm_transfer_control_return_from,
+    BRANCH_Funct3, FenceMode, Funct3_OPCODE_LOAD, I_Funct12, JALR_Funct3,
+    MISC_MEM_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_Funct7, OP_IMM_ShiftType,
+    Opcode, OpcodeToInstructionFormat, STORE_Funct3, SYSTEM_Funct3,
+    SYSTEM_Imm_transfer_control_return_from,
 };
 use crate::soc::hart::core::ArchState;
 use crate::soc::hart::extensions;
@@ -330,26 +330,26 @@ impl Decoder {
                 self.immediate =
                     self.extract_imm_11_0(instruction) as UnsignedImmediate;
                 self.need_to_read_memory = true;
-                match OPCODE_LOAD_Funct3::from(self.funct3) {
-                    OPCODE_LOAD_Funct3::LB => {
+                match Funct3_OPCODE_LOAD::from(self.funct3) {
+                    Funct3_OPCODE_LOAD::LB => {
                         self.command_to_execute = ExecutableCommand::LB
                     }
-                    OPCODE_LOAD_Funct3::LH => {
+                    Funct3_OPCODE_LOAD::LH => {
                         self.command_to_execute = ExecutableCommand::LH
                     }
-                    OPCODE_LOAD_Funct3::LW => {
+                    Funct3_OPCODE_LOAD::LW => {
                         self.command_to_execute = ExecutableCommand::LW
                     }
-                    OPCODE_LOAD_Funct3::LD => {
+                    Funct3_OPCODE_LOAD::LD => {
                         self.command_to_execute = ExecutableCommand::LD
                     }
-                    OPCODE_LOAD_Funct3::LBU => {
+                    Funct3_OPCODE_LOAD::LBU => {
                         self.command_to_execute = ExecutableCommand::LBU
                     }
-                    OPCODE_LOAD_Funct3::LHU => {
+                    Funct3_OPCODE_LOAD::LHU => {
                         self.command_to_execute = ExecutableCommand::LHU
                     }
-                    OPCODE_LOAD_Funct3::LWU => {
+                    Funct3_OPCODE_LOAD::LWU => {
                         self.command_to_execute = ExecutableCommand::LWU
                     }
                 }

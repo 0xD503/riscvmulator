@@ -76,8 +76,8 @@ use crate::constants::arch::{
     BIT_OFFSET_SOURCE_REGISTER_2, InstructionType,
 };
 use crate::soc::hart::core::decoder::constants::{
-    BRANCH_Funct3, JALR_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_ShiftType,
-    OPCODE_LOAD_Funct3, Opcode, OpcodeQuadrant, STORE_Funct3, SYSTEM_Funct3,
+    BRANCH_Funct3, Funct3_OPCODE_LOAD, JALR_Funct3, OP_Funct7, OP_IMM_Funct3,
+    OP_IMM_ShiftType, Opcode, OpcodeQuadrant, STORE_Funct3, SYSTEM_Funct3,
     SYSTEM_Imm_transfer_control_return_from,
 };
 use crate::soc::hart::extensions::compressed::constants::{
@@ -482,7 +482,7 @@ impl Expander {
                             self.expand_to_i_format(
                                 Opcode::LOAD,
                                 self.cr_ci_rd_or_rs1_offset,
-                                OPCODE_LOAD_Funct3::LW as InstructionType,
+                                Funct3_OPCODE_LOAD::LW as InstructionType,
                                 GPRegisterName::x2_sp as usize,
                                 self.c_uimm as SignedImmediate,
                             )
@@ -559,7 +559,7 @@ impl Expander {
                             self.expand_to_i_format(
                                 Opcode::LOAD,
                                 self.cr_ci_rd_or_rs1_offset,
-                                OPCODE_LOAD_Funct3::LD as InstructionType,
+                                Funct3_OPCODE_LOAD::LD as InstructionType,
                                 GPRegisterName::x2_sp as usize,
                                 self.c_uimm as SignedImmediate,
                             )
@@ -723,7 +723,7 @@ impl Expander {
                 self.expand_to_i_format(
                     Opcode::LOAD,
                     self.ciw_cl_rd_offset,
-                    OPCODE_LOAD_Funct3::LW as InstructionType,
+                    Funct3_OPCODE_LOAD::LW as InstructionType,
                     self.cl_cs_rs1_offset,
                     self.c_uimm as SignedImmediate,
                 )
@@ -736,7 +736,7 @@ impl Expander {
                 self.expand_to_i_format(
                     Opcode::LOAD,
                     self.ciw_cl_rd_offset,
-                    OPCODE_LOAD_Funct3::LD as InstructionType,
+                    Funct3_OPCODE_LOAD::LD as InstructionType,
                     self.cl_cs_rs1_offset,
                     self.c_uimm as SignedImmediate,
                 )

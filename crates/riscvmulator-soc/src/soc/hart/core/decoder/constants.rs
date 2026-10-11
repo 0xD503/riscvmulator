@@ -115,7 +115,7 @@ impl From<u8> for Opcode {
 
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
-pub enum OPCODE_LOAD_Funct3 {
+pub enum Funct3_OPCODE_LOAD {
     LB = 0b000,  // load byte
     LH = 0b001,  // load half word
     LW = 0b010,  // load word
@@ -125,16 +125,16 @@ pub enum OPCODE_LOAD_Funct3 {
     LWU = 0b110, // load word unsigned
 }
 
-impl From<InstructionType> for OPCODE_LOAD_Funct3 {
+impl From<InstructionType> for Funct3_OPCODE_LOAD {
     fn from(value: InstructionType) -> Self {
         match value {
-            0b000 => OPCODE_LOAD_Funct3::LB,
-            0b001 => OPCODE_LOAD_Funct3::LH,
-            0b010 => OPCODE_LOAD_Funct3::LW,
-            0b011 => OPCODE_LOAD_Funct3::LD,
-            0b100 => OPCODE_LOAD_Funct3::LBU,
-            0b101 => OPCODE_LOAD_Funct3::LHU,
-            0b110 => OPCODE_LOAD_Funct3::LWU,
+            0b000 => Funct3_OPCODE_LOAD::LB,
+            0b001 => Funct3_OPCODE_LOAD::LH,
+            0b010 => Funct3_OPCODE_LOAD::LW,
+            0b011 => Funct3_OPCODE_LOAD::LD,
+            0b100 => Funct3_OPCODE_LOAD::LBU,
+            0b101 => Funct3_OPCODE_LOAD::LHU,
+            0b110 => Funct3_OPCODE_LOAD::LWU,
 
             _ => {
                 error!("Unknown funct3: {value:#05b}");
