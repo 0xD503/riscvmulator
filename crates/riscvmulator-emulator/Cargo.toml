@@ -21,3 +21,6 @@ figment = { workspace = true }
 
 [lints]
 workspace = true
+
+[features]
+print-instructions = ["riscvmulator-soc/print-instructions"]

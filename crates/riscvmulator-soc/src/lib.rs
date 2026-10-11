@@ -7,6 +7,7 @@ pub mod constants;
 pub mod globals;
 pub mod soc;
 
+mod print_instructions;
 mod utils;
 
 // use globals::exit_codes::ExitCode;

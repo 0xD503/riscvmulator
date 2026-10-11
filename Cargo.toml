@@ -81,3 +81,8 @@ inherits = "release"
 opt-level = "z"
 strip = "symbols"
 panic = "abort"
+
+
+## features
+[features]
+print-instructions = ["riscvmulator-emulator/print-instructions"]

@@ -12,6 +12,9 @@ use crate::constants::arch::{
     Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, SignedImmediate, SignedXLen,
     SignedXLen32, UnsignedImmediate, UnsignedXLen, Word, XLen, XLen32,
 };
+#[cfg(feature = "print-instructions")]
+use crate::print_instructions::print_full_instruction;
+#[cfg(feature = "print-instructions")]
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
@@ -19,7 +22,6 @@ use crate::soc::hart::privileged::constants::{
     MCause_Code, MSTATUS_MPP_MASK, MSTATUS_MPP_OFFSET, MStatus_MPP,
 };
 use crate::soc::memory::{MemoryValueType, MemoryValueTypeEnum};
-use crate::utils::print_full_instruction;
 
 use log::{debug, error, trace};
 
@@ -308,8 +310,15 @@ impl Executor {
     }
 
     fn instruction_load_byte(&mut self, decoder: &Decoder) {
-        print_full_instruction!(load, "lb", 0, 0, 0);
-        debug!("Executing LB...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lb",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::BYTE;
