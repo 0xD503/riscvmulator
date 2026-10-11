@@ -325,28 +325,60 @@ impl Executor {
     }
 
     fn instruction_load_half(&mut self, decoder: &Decoder) {
-        debug!("Executing LH...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lh",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::HALF_WORD;
     }
 
     fn instruction_load_word(&mut self, decoder: &Decoder) {
-        debug!("Executing LW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::WORD;
     }
 
     fn instruction_load_byte_unsigned(&mut self, decoder: &Decoder) {
-        debug!("Executing LBU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lbu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_BYTE;
     }
 
     fn instruction_load_half_unsigned(&mut self, decoder: &Decoder) {
-        debug!("Executing LHU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lhu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_HALF_WORD;
@@ -654,14 +686,30 @@ impl Executor {
     }
 
     fn instruction_load_double_word(&mut self, decoder: &Decoder) {
-        debug!("Executing LD...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "ld",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::DOUBLE_WORD;
     }
 
     fn instruction_load_word_unsigned(&mut self, decoder: &Decoder) {
-        debug!("Executing LWU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lwu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_WORD;
