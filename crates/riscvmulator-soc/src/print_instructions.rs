@@ -11,5 +11,16 @@ macro_rules! print_full_instruction {
             $rs1_value
         );
     };
+    (store, $instruction_name:expr, $rs1:expr, $rs2:expr, $imm:expr, $rs1_value:expr, $rs2_value:expr) => {
+        debug!(
+            "Executing `{} rs2{{{:#}}}, imm{{{:#}}}(rs1{{{:#}}})` # x[rs1] = {:#X}, x[rs2] = {:#X}",
+            $instruction_name,
+            GPRegisterName::try_from($rs2).expect("rd exceeded 5-bit width"),
+            $imm,
+            GPRegisterName::try_from($rs1).expect("rs1 exceeded 5-bit width"),
+            $rs1_value,
+            $rs2_value
+        );
+    };
 }
 pub(crate) use print_full_instruction;

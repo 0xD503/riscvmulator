@@ -466,7 +466,16 @@ impl Executor {
     }
 
     fn instruction_store_byte(&mut self, decoder: &Decoder) {
-        debug!("Executing SB...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            store,
+            "sb",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.update_memory_address(decoder);
         self.value_to_store_u8 = decoder.source_register_2 as Byte;
@@ -474,7 +483,16 @@ impl Executor {
     }
 
     fn instruction_store_half_word(&mut self, decoder: &Decoder) {
-        debug!("Executing SH...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            store,
+            "sh",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.update_memory_address(decoder);
         self.value_to_store_u16 = decoder.source_register_2 as HalfWord;
@@ -482,7 +500,16 @@ impl Executor {
     }
 
     fn instruction_store_word(&mut self, decoder: &Decoder) {
-        debug!("Executing SW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            store,
+            "sw",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.update_memory_address(decoder);
         self.value_to_store_u32 = decoder.source_register_2 as Word;
@@ -765,7 +792,16 @@ impl Executor {
     }
 
     fn instruction_store_double_word(&mut self, decoder: &Decoder) {
-        debug!("Executing SD...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            store,
+            "sd",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.update_memory_address(decoder);
         self.value_to_store_u64 = decoder.source_register_2;
