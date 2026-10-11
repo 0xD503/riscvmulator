@@ -43,7 +43,7 @@ pub struct Decoder {
     pub(crate) shamt: InstructionType,
     pub(crate) shift_type: OP_IMM_ShiftType,
 
-    pub(crate) immediate: UnsignedImmediate,
+    pub(crate) immediate: SignedImmediate,
     pub(crate) command_to_execute: ExecutableCommand,
     pub(crate) need_to_read_memory: bool,
     pub(crate) need_to_write_memory: bool,
@@ -327,8 +327,7 @@ impl Decoder {
         match self.opcode {
             // I_3
             Opcode::LOAD => {
-                self.immediate =
-                    self.extract_imm_11_0(instruction) as UnsignedImmediate;
+                self.immediate = self.extract_imm_11_0(instruction);
                 self.need_to_read_memory = true;
                 match Funct3_OPCODE_LOAD::from(self.funct3) {
                     Funct3_OPCODE_LOAD::LB => {
@@ -422,8 +421,7 @@ impl Decoder {
             }
             // I_19
             Opcode::OP_IMM => {
-                self.immediate =
-                    self.extract_imm_11_0(instruction) as UnsignedImmediate;
+                self.immediate = self.extract_imm_11_0(instruction);
                 match OP_IMM_Funct3::from(self.funct3) {
                     OP_IMM_Funct3::ADDI => {
                         self.command_to_execute = ExecutableCommand::ADDI;
@@ -478,8 +476,7 @@ impl Decoder {
             }
             // I_27
             Opcode::OP_IMM_32 => {
-                self.immediate =
-                    self.extract_imm_11_0(instruction) as UnsignedImmediate;
+                self.immediate = self.extract_imm_11_0(instruction);
                 match OP_IMM_32_Funct3::from(self.funct3) {
                     OP_IMM_32_Funct3::ADDIW => {
                         self.command_to_execute = ExecutableCommand::ADDIW
@@ -520,8 +517,7 @@ impl Decoder {
             }
             // I_103
             Opcode::JALR => {
-                self.immediate =
-                    self.extract_imm_11_0(instruction) as UnsignedImmediate;
+                self.immediate = self.extract_imm_11_0(instruction);
                 match JALR_Funct3::from(self.funct3) {
                     JALR_Funct3::JALR => {
                         self.need_to_jump = true;
@@ -532,7 +528,8 @@ impl Decoder {
 
             // I_115 (Zicsr_extension)
             Opcode::SYSTEM => {
-                self.immediate = self.extract_csr_address(instruction);
+                self.immediate =
+                    self.extract_csr_address(instruction) as SignedImmediate;
                 match SYSTEM_Funct3::from(self.funct3) {
                     SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM => {
                         self.need_to_write_back = false;
@@ -677,8 +674,7 @@ impl Decoder {
 
         // extract immediate
         self.immediate = self.extract_imm_4_0(instruction);
-        self.immediate |=
-            self.extract_imm_11_5(instruction) as UnsignedImmediate;
+        self.immediate |= self.extract_imm_11_5(instruction);
 
         self.funct3 = self.extract_funct3(instruction);
 
@@ -730,7 +726,7 @@ impl Decoder {
         self.immediate = self.extract_imm_4_1(instruction);
         self.immediate |= self.extract_imm_10_5(instruction);
         self.immediate |= self.extract_b_11(instruction);
-        self.immediate |= self.extract_b_12(instruction) as UnsignedImmediate;
+        self.immediate |= self.extract_b_12(instruction);
 
         self.funct3 = self.extract_funct3(instruction);
 
@@ -768,8 +764,7 @@ impl Decoder {
 
         self.destination_register_offset =
             self.extract_destination_register_offset(instruction);
-        self.immediate =
-            self.extract_imm_31_12(instruction) as UnsignedImmediate;
+        self.immediate = self.extract_imm_31_12(instruction);
 
         self.need_to_read_memory = false;
         self.need_to_write_memory = false;
@@ -813,7 +808,7 @@ impl Decoder {
         self.immediate = self.extract_imm_10_1(instruction);
         self.immediate |= self.extract_j_11(instruction);
         self.immediate |= self.extract_imm_19_12(instruction);
-        self.immediate |= self.extract_j_20(instruction) as UnsignedImmediate;
+        self.immediate |= self.extract_j_20(instruction);
 
         match self.opcode {
             Opcode::JAL => {
@@ -941,12 +936,15 @@ impl Decoder {
         (instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT_RV64W
     }
 
-    fn extract_imm_11_0(&self, instruction: InstructionType) -> SignedXLen {
+    fn extract_imm_11_0(
+        &self,
+        instruction: InstructionType,
+    ) -> SignedImmediate {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL))
-            as SignedXLen
+            as SignedImmediate
     }
 
     fn extract_fence_sw(&self, instruction: InstructionType) -> bool {
@@ -994,85 +992,89 @@ impl Decoder {
         instruction >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL)
     }
 
-    fn extract_imm_11_5(&self, instruction: InstructionType) -> SignedXLen {
+    fn extract_imm_11_5(
+        &self,
+        instruction: InstructionType,
+    ) -> SignedImmediate {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_5 - BIT_OFFSET_IMM_11_5_FINAL))
-            as SignedXLen
+            as SignedImmediate
             & !((1 << BIT_OFFSET_IMM_11_5_FINAL) - 1)
     }
 
-    fn extract_imm_4_0(
-        &self,
-        instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_4_0 - BIT_OFFSET_IMM_4_0_FINAL))
-            & MASK_IMM_4_0
+    fn extract_imm_4_0(&self, instruction: InstructionType) -> SignedImmediate {
+        ((instruction >> (BIT_OFFSET_IMM_4_0 - BIT_OFFSET_IMM_4_0_FINAL))
+            & MASK_IMM_4_0) as SignedImmediate
     }
 
-    fn extract_imm_31_12(&self, instruction: InstructionType) -> SignedXLen {
+    fn extract_imm_31_12(
+        &self,
+        instruction: InstructionType,
+    ) -> SignedImmediate {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_31_12 - BIT_OFFSET_IMM_31_12_FINAL))
-            as SignedXLen
+            as SignedImmediate
             & !((1 << BIT_OFFSET_IMM_31_12_FINAL) - 1)
     }
 
     fn extract_imm_10_5(
         &self,
         instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_10_5 - BIT_OFFSET_IMM_10_5_FINAL))
-            & MASK_IMM_10_5
+    ) -> SignedImmediate {
+        ((instruction >> (BIT_OFFSET_IMM_10_5 - BIT_OFFSET_IMM_10_5_FINAL))
+            & MASK_IMM_10_5) as SignedImmediate
     }
 
-    fn extract_imm_4_1(
-        &self,
-        instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_4_1 - BIT_OFFSET_IMM_4_1_FINAL))
-            & MASK_IMM_4_1
+    fn extract_imm_4_1(&self, instruction: InstructionType) -> SignedImmediate {
+        ((instruction >> (BIT_OFFSET_IMM_4_1 - BIT_OFFSET_IMM_4_1_FINAL))
+            & MASK_IMM_4_1) as SignedImmediate
     }
 
     fn extract_imm_10_1(
         &self,
         instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_10_1 - BIT_OFFSET_IMM_10_1_FINAL))
-            & MASK_IMM_10_1
+    ) -> SignedImmediate {
+        ((instruction >> (BIT_OFFSET_IMM_10_1 - BIT_OFFSET_IMM_10_1_FINAL))
+            & MASK_IMM_10_1) as SignedImmediate
     }
 
     fn extract_imm_19_12(
         &self,
         instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_19_12 - BIT_OFFSET_IMM_19_12_FINAL))
-            & MASK_IMM_19_12
+    ) -> SignedImmediate {
+        ((instruction >> (BIT_OFFSET_IMM_19_12 - BIT_OFFSET_IMM_19_12_FINAL))
+            & MASK_IMM_19_12) as SignedImmediate
     }
 
-    fn extract_b_11(&self, instruction: InstructionType) -> UnsignedImmediate {
-        (instruction << (BIT_OFFSET_B_11_FINAL - BIT_OFFSET_B_11)) & MASK_B_11
+    fn extract_b_11(&self, instruction: InstructionType) -> SignedImmediate {
+        ((instruction << (BIT_OFFSET_B_11_FINAL - BIT_OFFSET_B_11)) & MASK_B_11)
+            as SignedImmediate
     }
 
-    fn extract_b_12(&self, instruction: InstructionType) -> SignedXLen {
+    fn extract_b_12(&self, instruction: InstructionType) -> SignedImmediate {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (instruction as SignedInstructionType
-            >> (BIT_OFFSET_B_12 - BIT_OFFSET_B_12_FINAL)) as SignedXLen
+            >> (BIT_OFFSET_B_12 - BIT_OFFSET_B_12_FINAL))
+            as SignedImmediate
             & !((1 << BIT_OFFSET_B_12_FINAL) - 1)
     }
 
-    fn extract_j_11(&self, instruction: InstructionType) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_J_11 - BIT_OFFSET_J_11_FINAL)) & MASK_J_11
+    fn extract_j_11(&self, instruction: InstructionType) -> SignedImmediate {
+        ((instruction >> (BIT_OFFSET_J_11 - BIT_OFFSET_J_11_FINAL)) & MASK_J_11)
+            as SignedImmediate
     }
 
-    fn extract_j_20(&self, instruction: InstructionType) -> SignedXLen {
+    fn extract_j_20(&self, instruction: InstructionType) -> SignedImmediate {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         ((instruction as SignedInstructionType)
-            >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL)) as SignedXLen
+            >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL))
+            as SignedImmediate
             & !((1 << BIT_OFFSET_J_20_FINAL) - 1)
     }
 }

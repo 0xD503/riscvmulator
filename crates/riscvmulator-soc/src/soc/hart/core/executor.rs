@@ -305,7 +305,7 @@ impl Executor {
     fn update_memory_address(&mut self, decoder: &Decoder) {
         self.memory_address = XLen::wrapping_add(
             decoder.source_register_1,
-            decoder.immediate.sign_extend(),
+            decoder.immediate as SignedXLen as UnsignedXLen,
         );
     }
 
@@ -385,13 +385,13 @@ impl Executor {
     }
 
     fn instruction_addi(&mut self, decoder: &Decoder) {
-        let sign_extended_imm = decoder.immediate.sign_extend();
-
         debug!("Executing ADDI...");
 
         // use wrapping operation in order to allow overruns
-        self.result =
-            XLen::wrapping_add(decoder.source_register_1, sign_extended_imm);
+        self.result = XLen::wrapping_add(
+            decoder.source_register_1,
+            decoder.immediate as SignedXLen as UnsignedXLen,
+        );
     }
 
     fn instruction_slli(&mut self, decoder: &Decoder) {
@@ -404,7 +404,7 @@ impl Executor {
         debug!("Executing SLTI...");
 
         self.result = if (decoder.source_register_1 as SignedXLen)
-            < (decoder.immediate as SignedImmediate as SignedXLen)
+            < (decoder.immediate as SignedXLen)
         {
             1
         } else {
@@ -416,7 +416,7 @@ impl Executor {
         debug!("Executing SLTIU...");
 
         self.result = if (decoder.source_register_1 as UnsignedXLen)
-            < decoder.immediate.sign_extend()
+            < decoder.immediate as SignedXLen as UnsignedXLen
         {
             1
         } else {
@@ -427,8 +427,8 @@ impl Executor {
     fn instruction_xori(&mut self, decoder: &Decoder) {
         debug!("Executing XORI...");
 
-        self.result =
-            decoder.source_register_1 ^ decoder.immediate.sign_extend();
+        self.result = decoder.source_register_1
+            ^ decoder.immediate as SignedXLen as UnsignedXLen;
     }
 
     fn instruction_srli(&mut self, decoder: &Decoder) {
@@ -447,22 +447,24 @@ impl Executor {
     fn instruction_ori(&mut self, decoder: &Decoder) {
         debug!("Executing ORI...");
 
-        self.result =
-            decoder.source_register_1 | decoder.immediate.sign_extend();
+        self.result = decoder.source_register_1
+            | decoder.immediate as SignedXLen as UnsignedXLen;
     }
 
     fn instruction_andi(&mut self, decoder: &Decoder) {
         debug!("Executing ANDI...");
 
-        self.result =
-            decoder.source_register_1 & decoder.immediate.sign_extend();
+        self.result = decoder.source_register_1
+            & decoder.immediate as SignedXLen as UnsignedXLen;
     }
 
     fn instruction_auipc(&mut self, decoder: &Decoder, pc: &Register) {
         debug!("Executing AUIPC...");
 
-        self.result =
-            XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+        self.result = XLen::wrapping_add(
+            pc.read(),
+            decoder.immediate as SignedXLen as UnsignedXLen,
+        );
     }
 
     fn instruction_store_byte(&mut self, decoder: &Decoder) {
@@ -604,15 +606,17 @@ impl Executor {
     fn instruction_lui(&mut self, decoder: &Decoder) {
         debug!("Executing LUI...");
 
-        self.result = decoder.immediate.sign_extend();
+        self.result = decoder.immediate as SignedXLen as UnsignedXLen;
     }
 
     fn instruction_beq(&mut self, decoder: &Decoder, pc: &Register) {
         debug!("Executing BEQ...");
 
         if decoder.source_register_1 == decoder.source_register_2 {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as SignedXLen as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
@@ -625,8 +629,10 @@ impl Executor {
 
         if decoder.source_register_1 != decoder.source_register_2 {
             // use wrapping operation in order to allow overruns
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as SignedXLen as UnsignedXLen,
+            );
             self.need_to_branch = true;
         } else {
             trace!("Skip BNE...");
@@ -639,8 +645,10 @@ impl Executor {
         if (decoder.source_register_1 as SignedXLen)
             < (decoder.source_register_2 as SignedXLen)
         {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as SignedXLen as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
@@ -651,8 +659,10 @@ impl Executor {
         if (decoder.source_register_1 as SignedXLen)
             >= (decoder.source_register_2 as SignedXLen)
         {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as SignedXLen as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
@@ -663,8 +673,10 @@ impl Executor {
         if (decoder.source_register_1 as UnsignedXLen)
             < (decoder.source_register_2 as UnsignedXLen)
         {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as SignedXLen as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
@@ -675,8 +687,10 @@ impl Executor {
         if (decoder.source_register_1 as UnsignedXLen)
             >= (decoder.source_register_2 as UnsignedXLen)
         {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as SignedXLen as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
@@ -691,7 +705,7 @@ impl Executor {
 
         self.jump_target_address = (XLen::wrapping_add(
             decoder.source_register_1,
-            decoder.immediate.sign_extend(),
+            decoder.immediate as SignedXLen as UnsignedXLen,
         )) & !(XLen::MAX & 0x01);
         self.result =
             XLen::wrapping_add(pc.read(), fetch_unit.instruction_size as XLen);
@@ -703,11 +717,12 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
-        let sign_extended_imm = decoder.immediate.sign_extend();
-        self.jump_target_address =
-            XLen::wrapping_add(pc.read(), sign_extended_imm);
-
         debug!("Executing JAL...");
+
+        self.jump_target_address = XLen::wrapping_add(
+            pc.read(),
+            decoder.immediate as SignedXLen as UnsignedXLen,
+        );
 
         self.result = pc.read() + fetch_unit.instruction_size as XLen;
     }
@@ -748,7 +763,7 @@ impl Executor {
         // use wrapping operation in order to allow overruns
         let result32 = XLen32::wrapping_add(
             decoder.source_register_1 as XLen32,
-            decoder.immediate,
+            decoder.immediate as UnsignedImmediate,
         );
         self.result = result32.sign_extend();
     }
@@ -786,7 +801,7 @@ impl Executor {
 
         let result32 = SignedXLen32::wrapping_shr(
             decoder.source_register_1 as SignedXLen32,
-            decoder.immediate,
+            decoder.immediate as UnsignedImmediate,
         ) as XLen32;
         self.result = result32.sign_extend();
     }

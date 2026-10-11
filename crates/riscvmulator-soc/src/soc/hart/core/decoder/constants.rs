@@ -335,8 +335,8 @@ pub enum SYSTEM_Imm_transfer_control_return_from {
     MRET = 770,
 }
 
-impl From<InstructionType> for SYSTEM_Imm_transfer_control_return_from {
-    fn from(value: InstructionType) -> Self {
+impl From<SignedImmediate> for SYSTEM_Imm_transfer_control_return_from {
+    fn from(value: SignedImmediate) -> Self {
         match value {
             0x000 => SYSTEM_Imm_transfer_control_return_from::ECALL,
             0x001 => SYSTEM_Imm_transfer_control_return_from::EBREAK,
