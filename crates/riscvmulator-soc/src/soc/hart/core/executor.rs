@@ -16,6 +16,7 @@ use crate::constants::arch::{
 use crate::print_instructions::print_full_instruction;
 #[cfg(feature = "print-instructions")]
 use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
+use crate::soc::hart::core::registers::RawRegisterFileInterface;
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
 use crate::soc::hart::privileged::constants::{
@@ -775,7 +776,16 @@ impl Executor {
     }
 
     fn instruction_beq(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BEQ...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "beq",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         if decoder.source_register_1_value == decoder.source_register_2_value {
             self.branch_target_address = XLen::wrapping_add(
@@ -787,9 +797,15 @@ impl Executor {
     }
 
     fn instruction_bne(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!(
-            "Executing BNE: {:#018X}, {:#018X}...",
-            decoder.source_register_1_value, decoder.source_register_2_value
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "bne",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
         );
 
         if decoder.source_register_1_value != decoder.source_register_2_value {
@@ -805,7 +821,16 @@ impl Executor {
     }
 
     fn instruction_blt(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BLT...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "blt",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         if (decoder.source_register_1_value as SignedXLen)
             < (decoder.source_register_2_value as SignedXLen)
@@ -819,7 +844,16 @@ impl Executor {
     }
 
     fn instruction_bge(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BGE...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "bge",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         if (decoder.source_register_1_value as SignedXLen)
             >= (decoder.source_register_2_value as SignedXLen)
@@ -833,7 +867,16 @@ impl Executor {
     }
 
     fn instruction_bltu(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BLTU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "bltu",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         if (decoder.source_register_1_value as UnsignedXLen)
             < (decoder.source_register_2_value as UnsignedXLen)
@@ -847,7 +890,16 @@ impl Executor {
     }
 
     fn instruction_bgeu(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BGEU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "bgeu",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         if (decoder.source_register_1_value as UnsignedXLen)
             >= (decoder.source_register_2_value as UnsignedXLen)
@@ -1199,51 +1251,21 @@ impl Executor {
     }
 
     // CSR instructions
-    fn instruction_csr_read_clear(
-        &mut self,
-        decoder: &Decoder,
-        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
-    ) {
-        debug!("Executing CSRRC...");
-
-        self.read_csr_to_result(decoder, control_status_registers);
-        if decoder.zicsr.need_to_write_csr {
-            self.prepare_clear_bits_for_csr(decoder.source_register_1_value);
-        }
-    }
-
-    fn instruction_csr_read_clear_immediate(
-        &mut self,
-        decoder: &Decoder,
-        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
-    ) {
-        debug!("Executing CSRRCI...");
-
-        self.read_csr_to_result(decoder, control_status_registers);
-        if decoder.zicsr.need_to_write_csr {
-            self.prepare_clear_bits_for_csr(decoder.zicsr.uimm);
-        }
-    }
-
-    fn instruction_csr_read_write_immediate(
-        &mut self,
-        decoder: &Decoder,
-        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
-    ) {
-        debug!("Executing CSRRWI...");
-
-        if decoder.zicsr.need_to_read_csr {
-            self.read_csr_to_result(decoder, control_status_registers);
-        }
-        self.prepare_value_for_csr(decoder.zicsr.uimm);
-    }
-
     fn instruction_csr_read_write(
         &mut self,
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        debug!("Executing CSRRW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csr,
+            "csrrw",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.source_register_1_offset,
+            control_status_registers.read_raw(decoder.immediate as usize),
+            decoder.source_register_1_value
+        );
 
         if decoder.zicsr.need_to_read_csr {
             self.read_csr_to_result(decoder, control_status_registers);
@@ -1256,7 +1278,16 @@ impl Executor {
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        debug!("Executing CSRRS...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csr,
+            "csrrs",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.source_register_1_offset,
+            control_status_registers.read_raw(decoder.immediate as usize),
+            decoder.source_register_1_value
+        );
 
         self.read_csr_to_result(decoder, control_status_registers);
         if decoder.zicsr.need_to_write_csr {
@@ -1264,16 +1295,88 @@ impl Executor {
         }
     }
 
+    fn instruction_csr_read_clear(
+        &mut self,
+        decoder: &Decoder,
+        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
+    ) {
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csr,
+            "csrrc",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.source_register_1_offset,
+            control_status_registers.read_raw(decoder.immediate as usize),
+            decoder.source_register_1_value
+        );
+
+        self.read_csr_to_result(decoder, control_status_registers);
+        if decoder.zicsr.need_to_write_csr {
+            self.prepare_clear_bits_for_csr(decoder.source_register_1_value);
+        }
+    }
+
+    fn instruction_csr_read_write_immediate(
+        &mut self,
+        decoder: &Decoder,
+        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
+    ) {
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csri,
+            "csrrwi",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.zicsr.uimm,
+            control_status_registers.read_raw(decoder.immediate as usize)
+        );
+
+        if decoder.zicsr.need_to_read_csr {
+            self.read_csr_to_result(decoder, control_status_registers);
+        }
+        self.prepare_value_for_csr(decoder.zicsr.uimm);
+    }
+
     fn instruction_csr_read_set_immediate(
         &mut self,
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        debug!("Executing CSRRSI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csri,
+            "csrrsi",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.zicsr.uimm,
+            control_status_registers.read_raw(decoder.immediate as usize)
+        );
 
         self.read_csr_to_result(decoder, control_status_registers);
         if decoder.zicsr.need_to_write_csr {
             self.prepare_set_bits_for_csr(decoder.zicsr.uimm);
+        }
+    }
+
+    fn instruction_csr_read_clear_immediate(
+        &mut self,
+        decoder: &Decoder,
+        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
+    ) {
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csri,
+            "csrrci",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.zicsr.uimm,
+            control_status_registers.read_raw(decoder.immediate as usize)
+        );
+
+        self.read_csr_to_result(decoder, control_status_registers);
+        if decoder.zicsr.need_to_write_csr {
+            self.prepare_clear_bits_for_csr(decoder.zicsr.uimm);
         }
     }
 

@@ -582,11 +582,14 @@ impl Decoder {
                     // CSR instructions are atomic
                     SYSTEM_Funct3::CSRRW => {
                         self.zicsr.need_to_write_csr = true;
-                        if self.destination_register_offset
-                            != GPRegisterName::x0_zero as usize
-                        {
-                            self.zicsr.need_to_read_csr = true;
-                        }
+                        // if self.destination_register_offset
+                        //     != GPRegisterName::x0_zero as usize
+                        // {
+                        //     self.zicsr.need_to_read_csr = true;
+                        // }
+                        self.zicsr.need_to_read_csr = self
+                            .destination_register_offset
+                            != GPRegisterName::x0_zero as usize;
                         self.command_to_execute = ExecutableCommand::CSRRW;
                     }
                     SYSTEM_Funct3::CSRRS => {
@@ -612,11 +615,14 @@ impl Decoder {
                         self.zicsr.uimm = self
                             .extract_source_register_1_offset(instruction)
                             as XLen;
-                        if self.destination_register_offset
-                            != GPRegisterName::x0_zero as usize
-                        {
-                            self.zicsr.need_to_read_csr = true;
-                        }
+                        // if self.destination_register_offset
+                        //     != GPRegisterName::x0_zero as usize
+                        // {
+                        //     self.zicsr.need_to_read_csr = true;
+                        // }
+                        self.zicsr.need_to_read_csr = self
+                            .destination_register_offset
+                            != GPRegisterName::x0_zero as usize;
                         self.command_to_execute = ExecutableCommand::CSRRWI;
                     }
                     SYSTEM_Funct3::CSRRSI => {
