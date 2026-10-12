@@ -77,7 +77,7 @@ impl TryFrom<usize> for GPRegisterName {
             30 => Ok(GPRegisterName::x30_t5),
             31 => Ok(GPRegisterName::x31_t6),
 
-            _ => Err("unknown register offset"),
+            _ => Err("unknown GP register offset"),
         }
     }
 }

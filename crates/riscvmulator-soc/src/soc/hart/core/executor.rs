@@ -866,7 +866,15 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
-        debug!("Executing JALR...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "jalr",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.jump_target_address = (XLen::wrapping_add(
             decoder.source_register_1_value,
@@ -1123,7 +1131,8 @@ impl Executor {
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
         pc: &Register,
     ) {
-        debug!("Executing ECALL...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(ecall);
 
         let current_privilege_mode =
             self.read_mstatus_mpp(control_status_registers);
@@ -1155,21 +1164,24 @@ impl Executor {
     }
 
     fn instruction_execution_break(&mut self, decoder: &Decoder) {
-        debug!("Executing EBREAK...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(ebreak);
 
         //
         todo!();
     }
 
     fn instruction_user_return(&mut self, decoder: &Decoder) {
-        debug!("Executing URET...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(uret);
 
         //
         todo!();
     }
 
     fn instruction_supervisor_return(&mut self, decoder: &Decoder) {
-        debug!("Executing SRET...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(sret);
 
         //
         todo!();
@@ -1179,7 +1191,8 @@ impl Executor {
         &mut self,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        debug!("Executing MRET...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(mret);
 
         self.return_target_address =
             control_status_registers.read(CSRRegisterName::mepc as usize);

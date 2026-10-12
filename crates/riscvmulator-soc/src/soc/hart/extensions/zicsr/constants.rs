@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[allow(non_camel_case_types)]
 pub enum CSRRegisterName {
     // user lever (unprivilleged) CSRs
@@ -509,4 +511,27 @@ pub enum CSRRegisterName {
     dpc = 0x7B1,       // debug program counter
     dscratch0 = 0x7B2, // debug scratch register 0
     dscratch1 = 0x7B3, // debug scratch register 1
+}
+
+impl TryFrom<usize> for CSRRegisterName {
+    type Error = &'static str;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match value {
+            _ => Err("unknown CSR offset"),
+        }
+    }
+}
+
+impl Display for CSRRegisterName {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let csr_name_string;
+        match self {
+            CSRRegisterName::fflags => csr_name_string = "fflags",
+
+            _ => csr_name_string = "unknown CSR: {self:#}",
+        }
+
+        write!(formatter, "{csr_name_string}")
+    }
 }

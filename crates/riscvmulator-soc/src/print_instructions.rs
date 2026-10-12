@@ -64,5 +64,30 @@ macro_rules! print_full_instruction {
             $rs1_value
         );
     };
+    (ecall) => {
+        debug!(
+            "Executing `ecall`",
+        );
+    };
+    (ebreak) => {
+        debug!(
+            "Executing `ebreak`",
+        );
+    };
+    (mret) => {
+        debug!(
+            "Executing `mret`",
+        );
+    };
+    (sret) => {
+        debug!(
+            "Executing `sret`",
+        );
+    };
+    (uret) => {
+        debug!(
+            "Executing `uret`",
+        );
+    };
 }
 pub(crate) use print_full_instruction;
