@@ -588,7 +588,16 @@ impl Executor {
     }
 
     fn instruction_add(&mut self, decoder: &Decoder) {
-        debug!("Executing ADD...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "add",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = XLen::wrapping_add(
             decoder.source_register_1,
@@ -597,7 +606,16 @@ impl Executor {
     }
 
     fn instruction_sub(&mut self, decoder: &Decoder) {
-        debug!("Executing SUB...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "sub",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = XLen::wrapping_sub(
             decoder.source_register_1,
@@ -606,7 +624,16 @@ impl Executor {
     }
 
     fn instruction_sll(&mut self, decoder: &Decoder) {
-        debug!("Executing SLL...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "sll",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = XLen::wrapping_shl(
             decoder.source_register_1,
@@ -615,7 +642,16 @@ impl Executor {
     }
 
     fn instruction_slt(&mut self, decoder: &Decoder) {
-        debug!("Executing SLT...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "slt",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = if (decoder.source_register_1 as SignedXLen)
             < (decoder.source_register_2 as SignedXLen)
@@ -627,7 +663,16 @@ impl Executor {
     }
 
     fn instruction_sltu(&mut self, decoder: &Decoder) {
-        debug!("Executing SLTU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "sltu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = if decoder.source_register_1 < decoder.source_register_2 {
             1
@@ -637,13 +682,31 @@ impl Executor {
     }
 
     fn instruction_xor(&mut self, decoder: &Decoder) {
-        debug!("Executing XOR...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "xor",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = decoder.source_register_1 ^ decoder.source_register_2;
     }
 
     fn instruction_srl(&mut self, decoder: &Decoder) {
-        debug!("Executing SRL...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "srl",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = XLen::wrapping_shr(
             decoder.source_register_1,
@@ -652,7 +715,16 @@ impl Executor {
     }
 
     fn instruction_sra(&mut self, decoder: &Decoder) {
-        debug!("Executing SRA...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "sra",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = SignedXLen::wrapping_shr(
             decoder.source_register_1 as SignedXLen,
@@ -661,13 +733,31 @@ impl Executor {
     }
 
     fn instruction_or(&mut self, decoder: &Decoder) {
-        debug!("Executing OR...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "or",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = decoder.source_register_1 | decoder.source_register_2;
     }
 
     fn instruction_and(&mut self, decoder: &Decoder) {
-        debug!("Executing AND...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "and",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1,
+            decoder.source_register_2
+        );
 
         self.result = decoder.source_register_1 & decoder.source_register_2;
     }
