@@ -518,6 +518,8 @@ impl TryFrom<usize> for CSRRegisterName {
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
         match value {
+            //
+            //
             _ => Err("unknown CSR offset"),
         }
     }
@@ -525,12 +527,12 @@ impl TryFrom<usize> for CSRRegisterName {
 
 impl Display for CSRRegisterName {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let csr_name_string;
-        match self {
-            CSRRegisterName::fflags => csr_name_string = "fflags",
+        let csr_name_string = "{self:?}";
+        // match self {
+        //     //CSRRegisterName::fflags => csr_name_string = "self:#?",
 
-            _ => csr_name_string = "unknown CSR: {self:#}",
-        }
+        //     // _ => csr_name_string = "unknown CSR: {self:#}",
+        // }
 
         write!(formatter, "{csr_name_string}")
     }
