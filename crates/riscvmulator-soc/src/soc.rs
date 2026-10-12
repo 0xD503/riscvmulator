@@ -1,7 +1,6 @@
 pub mod hart;
 pub mod memory;
 pub mod memory_bus;
-
 pub mod peripherals;
 
 use std::sync::Arc;

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[allow(non_camel_case_types)]
 pub enum CSRRegisterName {
     // user lever (unprivilleged) CSRs
@@ -509,4 +511,1047 @@ pub enum CSRRegisterName {
     dpc = 0x7B1,       // debug program counter
     dscratch0 = 0x7B2, // debug scratch register 0
     dscratch1 = 0x7B3, // debug scratch register 1
+}
+
+impl TryFrom<usize> for CSRRegisterName {
+    type Error = &'static str;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match value {
+            // user lever (unprivilleged) CSRs
+
+            // unprivilleged floating-point CSRs
+            0x001 => Ok(CSRRegisterName::fflags), // floating-point accrued exceptions
+            0x002 => Ok(CSRRegisterName::frm), // floating-point dynamic rounding mode
+            0x003 => Ok(CSRRegisterName::fcsr), // floating-point control and status register (frm + fflags)
+
+            // unprivilleged vector CSRs
+            0x008 => Ok(CSRRegisterName::vstart), // vector start position
+            0x009 => Ok(CSRRegisterName::vxsat), // fixed point accrued saturation flag
+            0x00A => Ok(CSRRegisterName::vxrm),  // fixed point rounding mode
+            0x00F => Ok(CSRRegisterName::vcsr), // vector control and status register
+            0xC20 => Ok(CSRRegisterName::vl),   // vector length
+            0xC21 => Ok(CSRRegisterName::vtype), // vector data type register
+            0xC22 => Ok(CSRRegisterName::vlenb), // vector register length in bytes
+
+            // unprivilleged Zicfiss extension CSR
+            0x011 => Ok(CSRRegisterName::ssp), // shadow stack pointer
+
+            // unprivilleged entropy source extension CSR
+            0x015 => Ok(CSRRegisterName::seed), // seed for cryptographic random bit generators
+
+            // unprivilleged Zcmt extension CSR
+            0x017 => Ok(CSRRegisterName::jvt), // table jump base vector and control register (CR)
+
+            // unprivilleged counter/timers
+            0xC00 => Ok(CSRRegisterName::cycle), // cycle counter for RDCYCLE instruction
+            0xC01 => Ok(CSRRegisterName::time),  // timer for RDTIME instruction
+            0xC02 => Ok(CSRRegisterName::instret), // instructions-retired counter for RDINSTRET instruction
+            0xC03 => Ok(CSRRegisterName::hpmcounter3), // performance-monitoring counter
+            0xC04 => Ok(CSRRegisterName::hpmcounter4), // performance-monitoring counter
+            0xC05 => Ok(CSRRegisterName::hpmcounter5), // performance-monitoring counter
+            0xC06 => Ok(CSRRegisterName::hpmcounter6), // performance-monitoring counter
+            0xC07 => Ok(CSRRegisterName::hpmcounter7), // performance-monitoring counter
+            0xC08 => Ok(CSRRegisterName::hpmcounter8), // performance-monitoring counter
+            0xC09 => Ok(CSRRegisterName::hpmcounter9), // performance-monitoring counter
+            0xC0A => Ok(CSRRegisterName::hpmcounter10), // performance-monitoring counter
+            0xC0B => Ok(CSRRegisterName::hpmcounter11), // performance-monitoring counter
+            0xC0C => Ok(CSRRegisterName::hpmcounter12), // performance-monitoring counter
+            0xC0D => Ok(CSRRegisterName::hpmcounter13), // performance-monitoring counter
+            0xC0E => Ok(CSRRegisterName::hpmcounter14), // performance-monitoring counter
+            0xC0F => Ok(CSRRegisterName::hpmcounter15), // performance-monitoring counter
+            0xC10 => Ok(CSRRegisterName::hpmcounter16), // performance-monitoring counter
+            0xC11 => Ok(CSRRegisterName::hpmcounter17), // performance-monitoring counter
+            0xC12 => Ok(CSRRegisterName::hpmcounter18), // performance-monitoring counter
+            0xC13 => Ok(CSRRegisterName::hpmcounter19), // performance-monitoring counter
+            0xC14 => Ok(CSRRegisterName::hpmcounter20), // performance-monitoring counter
+            0xC15 => Ok(CSRRegisterName::hpmcounter21), // performance-monitoring counter
+            0xC16 => Ok(CSRRegisterName::hpmcounter22), // performance-monitoring counter
+            0xC17 => Ok(CSRRegisterName::hpmcounter23), // performance-monitoring counter
+            0xC18 => Ok(CSRRegisterName::hpmcounter24), // performance-monitoring counter
+            0xC19 => Ok(CSRRegisterName::hpmcounter25), // performance-monitoring counter
+            0xC1A => Ok(CSRRegisterName::hpmcounter26), // performance-monitoring counter
+            0xC1B => Ok(CSRRegisterName::hpmcounter27), // performance-monitoring counter
+            0xC1C => Ok(CSRRegisterName::hpmcounter28), // performance-monitoring counter
+            0xC1D => Ok(CSRRegisterName::hpmcounter29), // performance-monitoring counter
+            0xC1E => Ok(CSRRegisterName::hpmcounter30), // performance-monitoring counter
+            0xC1F => Ok(CSRRegisterName::hpmcounter31), // performance-monitoring counter
+
+            0xC80 => Ok(CSRRegisterName::cycleh), // upper 32 bits of `cycle`, RV32 only
+            0xC81 => Ok(CSRRegisterName::timeh), // upper 32 bits of `time`, RV32 only
+            0xC82 => Ok(CSRRegisterName::instreth), // upper 32 bits of `instret`, RV32 only
+            0xC83 => Ok(CSRRegisterName::hpmcounter3h), // upper 32 bits of `hpmcounter3`, RV32 only
+            0xC84 => Ok(CSRRegisterName::hpmcounter4h), // upper 32 bits of `hpmcounter4`, RV32 only
+            0xC85 => Ok(CSRRegisterName::hpmcounter5h), // upper 32 bits of `hpmcounter5`, RV32 only
+            0xC86 => Ok(CSRRegisterName::hpmcounter6h), // upper 32 bits of `hpmcounter6`, RV32 only
+            0xC87 => Ok(CSRRegisterName::hpmcounter7h), // upper 32 bits of `hpmcounter7`, RV32 only
+            0xC88 => Ok(CSRRegisterName::hpmcounter8h), // upper 32 bits of `hpmcounter8`, RV32 only
+            0xC89 => Ok(CSRRegisterName::hpmcounter9h), // upper 32 bits of `hpmcounter9`, RV32 only
+            0xC8A => Ok(CSRRegisterName::hpmcounter10h), // upper 32 bits of `hpmcounter10`, RV32 only
+            0xC8B => Ok(CSRRegisterName::hpmcounter11h), // upper 32 bits of `hpmcounter11`, RV32 only
+            0xC8C => Ok(CSRRegisterName::hpmcounter12h), // upper 32 bits of `hpmcounter12`, RV32 only
+            0xC8D => Ok(CSRRegisterName::hpmcounter13h), // upper 32 bits of `hpmcounter13`, RV32 only
+            0xC8E => Ok(CSRRegisterName::hpmcounter14h), // upper 32 bits of `hpmcounter14`, RV32 only
+            0xC8F => Ok(CSRRegisterName::hpmcounter15h), // upper 32 bits of `hpmcounter15`, RV32 only
+            0xC90 => Ok(CSRRegisterName::hpmcounter16h), // upper 32 bits of `hpmcounter16`, RV32 only
+            0xC91 => Ok(CSRRegisterName::hpmcounter17h), // upper 32 bits of `hpmcounter17`, RV32 only
+            0xC92 => Ok(CSRRegisterName::hpmcounter18h), // upper 32 bits of `hpmcounter18`, RV32 only
+            0xC93 => Ok(CSRRegisterName::hpmcounter19h), // upper 32 bits of `hpmcounter19`, RV32 only
+            0xC94 => Ok(CSRRegisterName::hpmcounter20h), // upper 32 bits of `hpmcounter20`, RV32 only
+            0xC95 => Ok(CSRRegisterName::hpmcounter21h), // upper 32 bits of `hpmcounter21`, RV32 only
+            0xC96 => Ok(CSRRegisterName::hpmcounter22h), // upper 32 bits of `hpmcounter22`, RV32 only
+            0xC97 => Ok(CSRRegisterName::hpmcounter23h), // upper 32 bits of `hpmcounter23`, RV32 only
+            0xC98 => Ok(CSRRegisterName::hpmcounter24h), // upper 32 bits of `hpmcounter24`, RV32 only
+            0xC99 => Ok(CSRRegisterName::hpmcounter25h), // upper 32 bits of `hpmcounter25`, RV32 only
+            0xC9A => Ok(CSRRegisterName::hpmcounter26h), // upper 32 bits of `hpmcounter26`, RV32 only
+            0xC9B => Ok(CSRRegisterName::hpmcounter27h), // upper 32 bits of `hpmcounter27`, RV32 only
+            0xC9C => Ok(CSRRegisterName::hpmcounter28h), // upper 32 bits of `hpmcounter28`, RV32 only
+            0xC9D => Ok(CSRRegisterName::hpmcounter29h), // upper 32 bits of `hpmcounter29`, RV32 only
+            0xC9E => Ok(CSRRegisterName::hpmcounter30h), // upper 32 bits of `hpmcounter30`, RV32 only
+            0xC9F => Ok(CSRRegisterName::hpmcounter31h), // upper 32 bits of `hpmcounter31`, RV32 only
+
+            // supervisor-level CSRs
+
+            // supervisor trap setup
+            0x100 => Ok(CSRRegisterName::sstatus), // supervisor status register
+            0x104 => Ok(CSRRegisterName::sie), // supervisor interrupt-enable register
+            0x105 => Ok(CSRRegisterName::stvec), // supervisor trap handler base address
+            0x106 => Ok(CSRRegisterName::scounteren), // supervisor conter enable
+
+            // supervisor configuration
+            0x10A => Ok(CSRRegisterName::senvcfg), // supervisor environment configuration register
+
+            // supervisor counter setup
+            0x120 => Ok(CSRRegisterName::scountinhibit), // supervisor counter-inhibit register
+
+            // supervisor trap handling
+            0x140 => Ok(CSRRegisterName::sscratch), // supervisor scratch register
+            0x141 => Ok(CSRRegisterName::sepc), // supervisor exception program counter
+            0x142 => Ok(CSRRegisterName::scause), // supervisor trap cause
+            0x143 => Ok(CSRRegisterName::stval), // supervisor trap value
+            0x144 => Ok(CSRRegisterName::sip),  // supervisor interrupt pending
+            0xDA0 => Ok(CSRRegisterName::scountovf), // supervisor count overflow
+
+            // supervisor indirect
+            0x150 => Ok(CSRRegisterName::siselect), // supervisor indirect register select
+            0x151 => Ok(CSRRegisterName::sireg), // supervisor indirect register alias
+            0x152 => Ok(CSRRegisterName::sireg2), // supervisor indirect register alias 2
+            0x153 => Ok(CSRRegisterName::sireg3), // supervisor indirect register alias 3
+            0x155 => Ok(CSRRegisterName::sireg4), // supervisor indirect register alias 4
+            0x156 => Ok(CSRRegisterName::sireg5), // supervisor indirect register alias 5
+            0x157 => Ok(CSRRegisterName::sireg6), // supervisor indirect register alias 6
+
+            // supervisor protection and translation
+            0x180 => Ok(CSRRegisterName::satp), // supervisor address translation and protection
+
+            // supervisor timer compare
+            0x14D => Ok(CSRRegisterName::stimecpm), // supervisor timer compare
+            0x15D => Ok(CSRRegisterName::stimecpmh), // upper 32 bits of `stimecpm`, RV32 only
+
+            // supervisor debug/trace registers
+            0x5A8 => Ok(CSRRegisterName::scontext), // supervisor-mode context register
+
+            // supervisor resource management configuration
+            0x181 => Ok(CSRRegisterName::srmcfg), // supervisor resource management configuration
+
+            // supervisor state enable registers
+            0x10C => Ok(CSRRegisterName::sstateen0), // supervisor state enable 0 register
+            0x10D => Ok(CSRRegisterName::sstateen1), // supervisor state enable 1 register
+            0x10E => Ok(CSRRegisterName::sstateen2), // supervisor state enable 2 register
+            0x10F => Ok(CSRRegisterName::sstateen3), // supervisor state enable 3 register
+
+            // supervisor control transfer records configuration
+            0x14E => Ok(CSRRegisterName::sctrctl), // supervisor control transfer records control register
+            0x14F => Ok(CSRRegisterName::sctrstatus), // supervisor control transfer records status register
+            0x15F => Ok(CSRRegisterName::sctrdepth), // supervisor control transfer records depth register
+
+            // hypervisor-level and virtual supervisor (VS) CSRs
+
+            // hypervisor trap setup
+            0x600 => Ok(CSRRegisterName::hstatus), // hypervisor status register
+            0x602 => Ok(CSRRegisterName::hedeleg), // hypervisor exception delegation register
+            0x603 => Ok(CSRRegisterName::hideleg), // hypervisor interrupt delegation register
+            0x604 => Ok(CSRRegisterName::hie), // hypervisor interrupt-enable register
+            0x606 => Ok(CSRRegisterName::hcounteren), // hypervisor counter enable
+            0x607 => Ok(CSRRegisterName::hgeie), // hypervisor guest external interrupt-enable register
+            0x612 => Ok(CSRRegisterName::hedelegh), // 32 upper bits of `hedeleg`, RV32 only
+
+            // hypervisor trap handling
+            0x643 => Ok(CSRRegisterName::htval), // hypervisor trap value
+            0x644 => Ok(CSRRegisterName::hip),   // hypervisor interrupt pending
+            0x645 => Ok(CSRRegisterName::hvip),  // hypervisor interrupt pending
+            0x64A => Ok(CSRRegisterName::htinst), // hypervisor count overflow
+            0xE12 => Ok(CSRRegisterName::hgeip), // hypervisor interrupt pending
+
+            // hypervisor configuration
+            0x60A => Ok(CSRRegisterName::henvcfg), // hypervisor environment configuration register
+            0x61A => Ok(CSRRegisterName::henvcfgh), // 32 upper bits of `henvcfg`, RV32 only
+
+            // hypervisor protection and translation
+            0x680 => Ok(CSRRegisterName::hgatp), // hypervisor guest address translation and protection
+
+            // hypervisor debug/trace registers
+            0x6A8 => Ok(CSRRegisterName::hcontext), // hypervisor-mode context register
+
+            // hypervisor counter/timer virtualization registers
+            0x605 => Ok(CSRRegisterName::htimedelta), // delta for VS/VU-mode timer
+            0x615 => Ok(CSRRegisterName::htimedeltah), // 32 upper bits of `htimedelta`, RV32 only
+
+            // hypervisor state enable registers
+            0x60C => Ok(CSRRegisterName::hstateen0), // hypervisor state enable 0 register
+            0x60D => Ok(CSRRegisterName::hstateen1), // hypervisor state enable 1 register
+            0x60E => Ok(CSRRegisterName::hstateen2), // hypervisor state enable 2 register
+            0x60F => Ok(CSRRegisterName::hstateen3), // hypervisor state enable 3 register
+            0x61C => Ok(CSRRegisterName::hstateen0h), // 32 upper bits of `hstateen0`, RV32 only
+            0x61D => Ok(CSRRegisterName::hstateen1h), // 32 upper bits of `hstateen1`, RV32 only
+            0x61E => Ok(CSRRegisterName::hstateen2h), // 32 upper bits of `hstateen2`, RV32 only
+            0x61F => Ok(CSRRegisterName::hstateen3h), // 32 upper bits of `hstateen3`, RV32 only
+
+            // virtual supervisor (VS) registers
+            // virtual supervisor (VS) registers
+            0x200 => Ok(CSRRegisterName::vstatus), // virtual supervisor status register
+            0x204 => Ok(CSRRegisterName::vsie), // virtual supervisor interrupt-enable register
+            0x205 => Ok(CSRRegisterName::vstvec), // virtual supervisor trap handler base address
+            0x240 => Ok(CSRRegisterName::vsscratch), // virtual supervisor scratch register
+            0x241 => Ok(CSRRegisterName::vsepc), // virtual supervisor exception program counter
+            0x242 => Ok(CSRRegisterName::vscause), // virtual supervisor trap cause
+            0x243 => Ok(CSRRegisterName::vstval), // virtual supervisor trap value
+            0x244 => Ok(CSRRegisterName::vsip), // virtual supervisor interrupt pending
+            0x280 => Ok(CSRRegisterName::vsatp), // virtual supervisor address translation and protection
+
+            // virtual supervisor indirect
+            0x250 => Ok(CSRRegisterName::vsiselect), // virtual supervisor indirect register select
+            0x251 => Ok(CSRRegisterName::vsireg), // virtual supervisor indirect register alias
+            0x252 => Ok(CSRRegisterName::vsireg2), // virtual supervisor indirect register alias 2
+            0x253 => Ok(CSRRegisterName::vsireg3), // virtual supervisor indirect register alias 3
+            0x255 => Ok(CSRRegisterName::vsireg4), // virtual supervisor indirect register alias 4
+            0x256 => Ok(CSRRegisterName::vsireg5), // virtual supervisor indirect register alias 5
+            0x257 => Ok(CSRRegisterName::vsireg6), // virtual supervisor indirect register alias 6
+
+            // virtual supervisor timer compare
+            0x24D => Ok(CSRRegisterName::vstimecpm), // virtual supervisor timer compare
+            0x25D => Ok(CSRRegisterName::vstimecpmh), // virtual upper 32 bits of `vstimecpm`, RV32 only
+
+            // virtual supervisor control transfer records configuration
+            0x24E => Ok(CSRRegisterName::vsctrctl), // virtual supervisor control transfer records control register
+
+            // machine-level CSRs
+
+            // machine information registers
+            0xF11 => Ok(CSRRegisterName::mvendorid), // vendor ID
+            0xF12 => Ok(CSRRegisterName::marchid),   // architecture ID
+            0xF13 => Ok(CSRRegisterName::mimpid),    // implementation ID
+            0xF14 => Ok(CSRRegisterName::mhartid),   // hardware thread ID
+            0xF15 => Ok(CSRRegisterName::mconfigptr), // pointer to configuration data structure
+
+            // machine trap setup
+            0x300 => Ok(CSRRegisterName::mstatus), // machine status register
+            0x301 => Ok(CSRRegisterName::misa),    // ISA and extensions
+            0x302 => Ok(CSRRegisterName::medeleg), // machine exception delegation register
+            0x303 => Ok(CSRRegisterName::mideleg), // machine interrupt delegation register
+            0x304 => Ok(CSRRegisterName::mie), // machine interrupt-enable register
+            0x305 => Ok(CSRRegisterName::mtvec), // machine trap-handler base address
+            0x306 => Ok(CSRRegisterName::mcounteren), // machine counter enable
+            0x310 => Ok(CSRRegisterName::mstatush), // 32 upper bits of `mstatus`, RV32 only
+            0x312 => Ok(CSRRegisterName::medelegh), // 32 upper bits of `medeleg`, RV32 only
+
+            // machine trap handling
+            0x340 => Ok(CSRRegisterName::mscratch), // machine scratch register
+            0x341 => Ok(CSRRegisterName::mepc), // machine exception program counter
+            0x342 => Ok(CSRRegisterName::mcause), // machine trap cause
+            0x343 => Ok(CSRRegisterName::mtval), // machine trap value
+            0x344 => Ok(CSRRegisterName::mip),  // machine interrupt pending
+            0x34A => Ok(CSRRegisterName::mtinst), // machine
+            0x34B => Ok(CSRRegisterName::mtval2), // machine second trap value
+
+            // machine indirect
+            0x350 => Ok(CSRRegisterName::miselect), // machine indirect register select
+            0x351 => Ok(CSRRegisterName::mireg), // machine indirect register alias
+            0x352 => Ok(CSRRegisterName::mireg2), // machine indirect register alias 2
+            0x353 => Ok(CSRRegisterName::mireg3), // machine indirect register alias 3
+            0x355 => Ok(CSRRegisterName::mireg4), // machine indirect register alias 4
+            0x356 => Ok(CSRRegisterName::mireg5), // machine indirect register alias 5
+            0x357 => Ok(CSRRegisterName::mireg6), // machine indirect register alias 6
+
+            // machine configuration
+            0x30A => Ok(CSRRegisterName::menvcfg), // machine environment configuration register
+            0x31A => Ok(CSRRegisterName::menvcfgh), // 32 upper bits of `menvcfg`, RV32 only
+            0x747 => Ok(CSRRegisterName::mseccfg), // machine security configuration register
+            0x757 => Ok(CSRRegisterName::mseccfgh), // 32 upper bits of `mseccfg`, RV32 only
+
+            // machine memory protection
+            0x3A0 => Ok(CSRRegisterName::pmpcfg0), // physical memory protection configuraiton
+            0x3A1 => Ok(CSRRegisterName::pmpcfg1), // physical memory protection configuraiton, RV32 only
+            0x3A2 => Ok(CSRRegisterName::pmpcfg2), // physical memory protection configuraiton
+            0x3A3 => Ok(CSRRegisterName::pmpcfg3), // physical memory protection configuraiton, RV32 only
+            0x3A4 => Ok(CSRRegisterName::pmpcfg4), // physical memory protection configuraiton
+            0x3A5 => Ok(CSRRegisterName::pmpcfg5), // physical memory protection configuraiton, RV32 only
+            0x3A6 => Ok(CSRRegisterName::pmpcfg6), // physical memory protection configuraiton
+            0x3A7 => Ok(CSRRegisterName::pmpcfg7), // physical memory protection configuraiton, RV32 only
+            0x3A8 => Ok(CSRRegisterName::pmpcfg8), // physical memory protection configuraiton
+            0x3A9 => Ok(CSRRegisterName::pmpcfg9), // physical memory protection configuraiton, RV32 only
+            0x3AA => Ok(CSRRegisterName::pmpcfg10), // physical memory protection configuraiton
+            0x3AB => Ok(CSRRegisterName::pmpcfg11), // physical memory protection configuraiton, RV32 only
+            0x3AC => Ok(CSRRegisterName::pmpcfg12), // physical memory protection configuraiton
+            0x3AD => Ok(CSRRegisterName::pmpcfg13), // physical memory protection configuraiton, RV32 only
+            0x3AE => Ok(CSRRegisterName::pmpcfg14), // physical memory protection configuraiton
+            0x3AF => Ok(CSRRegisterName::pmpcfg15), // physical memory protection configuraiton, RV32 only
+            0x3B0 => Ok(CSRRegisterName::pmaddr0), // physical memory protection address register
+            0x3B1 => Ok(CSRRegisterName::pmaddr1), // physical memory protection address register
+            0x3B2 => Ok(CSRRegisterName::pmaddr2), // physical memory protection address register
+            0x3B3 => Ok(CSRRegisterName::pmaddr3), // physical memory protection address register
+            0x3B4 => Ok(CSRRegisterName::pmaddr4), // physical memory protection address register
+            0x3B5 => Ok(CSRRegisterName::pmaddr5), // physical memory protection address register
+            0x3B6 => Ok(CSRRegisterName::pmaddr6), // physical memory protection address register
+            0x3B7 => Ok(CSRRegisterName::pmaddr7), // physical memory protection address register
+            0x3B8 => Ok(CSRRegisterName::pmaddr8), // physical memory protection address register
+            0x3B9 => Ok(CSRRegisterName::pmaddr9), // physical memory protection address register
+            0x3BA => Ok(CSRRegisterName::pmaddr10), // physical memory protection address register
+            0x3BB => Ok(CSRRegisterName::pmaddr11), // physical memory protection address register
+            0x3BC => Ok(CSRRegisterName::pmaddr12), // physical memory protection address register
+            0x3BD => Ok(CSRRegisterName::pmaddr13), // physical memory protection address register
+            0x3BE => Ok(CSRRegisterName::pmaddr14), // physical memory protection address register
+            0x3BF => Ok(CSRRegisterName::pmaddr15), // physical memory protection address register
+            0x3C0 => Ok(CSRRegisterName::pmaddr16), // physical memory protection address register
+            0x3C1 => Ok(CSRRegisterName::pmaddr17), // physical memory protection address register
+            0x3C2 => Ok(CSRRegisterName::pmaddr18), // physical memory protection address register
+            0x3C3 => Ok(CSRRegisterName::pmaddr19), // physical memory protection address register
+            0x3C4 => Ok(CSRRegisterName::pmaddr20), // physical memory protection address register
+            0x3C5 => Ok(CSRRegisterName::pmaddr21), // physical memory protection address register
+            0x3C6 => Ok(CSRRegisterName::pmaddr22), // physical memory protection address register
+            0x3C7 => Ok(CSRRegisterName::pmaddr23), // physical memory protection address register
+            0x3C8 => Ok(CSRRegisterName::pmaddr24), // physical memory protection address register
+            0x3C9 => Ok(CSRRegisterName::pmaddr25), // physical memory protection address register
+            0x3CA => Ok(CSRRegisterName::pmaddr26), // physical memory protection address register
+            0x3CB => Ok(CSRRegisterName::pmaddr27), // physical memory protection address register
+            0x3CC => Ok(CSRRegisterName::pmaddr28), // physical memory protection address register
+            0x3CD => Ok(CSRRegisterName::pmaddr29), // physical memory protection address register
+            0x3CE => Ok(CSRRegisterName::pmaddr30), // physical memory protection address register
+            0x3CF => Ok(CSRRegisterName::pmaddr31), // physical memory protection address register
+            0x3D0 => Ok(CSRRegisterName::pmaddr32), // physical memory protection address register
+            0x3D1 => Ok(CSRRegisterName::pmaddr33), // physical memory protection address register
+            0x3D2 => Ok(CSRRegisterName::pmaddr34), // physical memory protection address register
+            0x3D3 => Ok(CSRRegisterName::pmaddr35), // physical memory protection address register
+            0x3D4 => Ok(CSRRegisterName::pmaddr36), // physical memory protection address register
+            0x3D5 => Ok(CSRRegisterName::pmaddr37), // physical memory protection address register
+            0x3D6 => Ok(CSRRegisterName::pmaddr38), // physical memory protection address register
+            0x3D7 => Ok(CSRRegisterName::pmaddr39), // physical memory protection address register
+            0x3D8 => Ok(CSRRegisterName::pmaddr40), // physical memory protection address register
+            0x3D9 => Ok(CSRRegisterName::pmaddr41), // physical memory protection address register
+            0x3DA => Ok(CSRRegisterName::pmaddr42), // physical memory protection address register
+            0x3DB => Ok(CSRRegisterName::pmaddr43), // physical memory protection address register
+            0x3DC => Ok(CSRRegisterName::pmaddr44), // physical memory protection address register
+            0x3DD => Ok(CSRRegisterName::pmaddr45), // physical memory protection address register
+            0x3DE => Ok(CSRRegisterName::pmaddr46), // physical memory protection address register
+            0x3DF => Ok(CSRRegisterName::pmaddr47), // physical memory protection address register
+            0x3E0 => Ok(CSRRegisterName::pmaddr48), // physical memory protection address register
+            0x3E1 => Ok(CSRRegisterName::pmaddr49), // physical memory protection address register
+            0x3E2 => Ok(CSRRegisterName::pmaddr50), // physical memory protection address register
+            0x3E3 => Ok(CSRRegisterName::pmaddr51), // physical memory protection address register
+            0x3E4 => Ok(CSRRegisterName::pmaddr52), // physical memory protection address register
+            0x3E5 => Ok(CSRRegisterName::pmaddr53), // physical memory protection address register
+            0x3E6 => Ok(CSRRegisterName::pmaddr54), // physical memory protection address register
+            0x3E7 => Ok(CSRRegisterName::pmaddr55), // physical memory protection address register
+            0x3E8 => Ok(CSRRegisterName::pmaddr56), // physical memory protection address register
+            0x3E9 => Ok(CSRRegisterName::pmaddr57), // physical memory protection address register
+            0x3EA => Ok(CSRRegisterName::pmaddr58), // physical memory protection address register
+            0x3EB => Ok(CSRRegisterName::pmaddr59), // physical memory protection address register
+            0x3EC => Ok(CSRRegisterName::pmaddr60), // physical memory protection address register
+            0x3ED => Ok(CSRRegisterName::pmaddr61), // physical memory protection address register
+            0x3EE => Ok(CSRRegisterName::pmaddr62), // physical memory protection address register
+            0x3EF => Ok(CSRRegisterName::pmaddr63), // physical memory protection address register
+
+            // machine state enable registers
+            0x30C => Ok(CSRRegisterName::mstateen0), // machine state enable 0 register
+            0x30D => Ok(CSRRegisterName::mstateen1), // machine state enable 1 register
+            0x30E => Ok(CSRRegisterName::mstateen2), // machine state enable 2 register
+            0x30F => Ok(CSRRegisterName::mstateen3), // machine state enable 3 register
+            0x31C => Ok(CSRRegisterName::mstateen0h), // 32 upper bits of `mstateen0`, RV32 only
+            0x31D => Ok(CSRRegisterName::mstateen1h), // 32 upper bits of `mstateen1`, RV32 only
+            0x31E => Ok(CSRRegisterName::mstateen2h), // 32 upper bits of `mstateen2`, RV32 only
+            0x31F => Ok(CSRRegisterName::mstateen3h), // 32 upper bits of `mstateen3`, RV32 only
+
+            // machine non-maskable interrupt handling
+            0x740 => Ok(CSRRegisterName::mnscratch), // resumable NMI scratch register
+            0x741 => Ok(CSRRegisterName::mnepc), // resumable NMI program counter
+            0x742 => Ok(CSRRegisterName::mncause), // resumable NMI cause
+            0x744 => Ok(CSRRegisterName::mnstatus), // resumable NMI status
+
+            // machine counter/timers
+            0xB00 => Ok(CSRRegisterName::mcycle), // machine cycle counter
+            0xB02 => Ok(CSRRegisterName::minstret), // machine instructions-retired counter
+            0xB03 => Ok(CSRRegisterName::mhpmcounter3), // machine performance-monitoring counter
+            0xB04 => Ok(CSRRegisterName::mhpmcounter4), // machine performance-monitoring counter
+            0xB05 => Ok(CSRRegisterName::mhpmcounter5), // machine performance-monitoring counter
+            0xB06 => Ok(CSRRegisterName::mhpmcounter6), // machine performance-monitoring counter
+            0xB07 => Ok(CSRRegisterName::mhpmcounter7), // machine performance-monitoring counter
+            0xB08 => Ok(CSRRegisterName::mhpmcounter8), // machine performance-monitoring counter
+            0xB09 => Ok(CSRRegisterName::mhpmcounter9), // machine performance-monitoring counter
+            0xB0A => Ok(CSRRegisterName::mhpmcounter10), // machine performance-monitoring counter
+            0xB0B => Ok(CSRRegisterName::mhpmcounter11), // machine performance-monitoring counter
+            0xB0C => Ok(CSRRegisterName::mhpmcounter12), // machine performance-monitoring counter
+            0xB0D => Ok(CSRRegisterName::mhpmcounter13), // machine performance-monitoring counter
+            0xB0E => Ok(CSRRegisterName::mhpmcounter14), // machine performance-monitoring counter
+            0xB0F => Ok(CSRRegisterName::mhpmcounter15), // machine performance-monitoring counter
+            0xB10 => Ok(CSRRegisterName::mhpmcounter16), // machine performance-monitoring counter
+            0xB11 => Ok(CSRRegisterName::mhpmcounter17), // machine performance-monitoring counter
+            0xB12 => Ok(CSRRegisterName::mhpmcounter18), // machine performance-monitoring counter
+            0xB13 => Ok(CSRRegisterName::mhpmcounter19), // machine performance-monitoring counter
+            0xB14 => Ok(CSRRegisterName::mhpmcounter20), // machine performance-monitoring counter
+            0xB15 => Ok(CSRRegisterName::mhpmcounter21), // machine performance-monitoring counter
+            0xB16 => Ok(CSRRegisterName::mhpmcounter22), // machine performance-monitoring counter
+            0xB17 => Ok(CSRRegisterName::mhpmcounter23), // machine performance-monitoring counter
+            0xB18 => Ok(CSRRegisterName::mhpmcounter24), // machine performance-monitoring counter
+            0xB19 => Ok(CSRRegisterName::mhpmcounter25), // machine performance-monitoring counter
+            0xB1A => Ok(CSRRegisterName::mhpmcounter26), // machine performance-monitoring counter
+            0xB1B => Ok(CSRRegisterName::mhpmcounter27), // machine performance-monitoring counter
+            0xB1C => Ok(CSRRegisterName::mhpmcounter28), // machine performance-monitoring counter
+            0xB1D => Ok(CSRRegisterName::mhpmcounter29), // machine performance-monitoring counter
+            0xB1E => Ok(CSRRegisterName::mhpmcounter30), // machine performance-monitoring counter
+            0xB1F => Ok(CSRRegisterName::mhpmcounter31), // machine performance-monitoring counter
+
+            0xB80 => Ok(CSRRegisterName::mcycleh), // upper 32 bits of `mcycle`, RV32 only
+            0xB82 => Ok(CSRRegisterName::minstreth), // upper 32 bits of `minstret`, RV32 only
+            0xB83 => Ok(CSRRegisterName::mhpmcounter3h), // upper 32 bits of `mhpmcounter3`, RV32 only
+            0xB84 => Ok(CSRRegisterName::mhpmcounter4h), // upper 32 bits of `mhpmcounter4`, RV32 only
+            0xB85 => Ok(CSRRegisterName::mhpmcounter5h), // upper 32 bits of `mhpmcounter5`, RV32 only
+            0xB86 => Ok(CSRRegisterName::mhpmcounter6h), // upper 32 bits of `mhpmcounter6`, RV32 only
+            0xB87 => Ok(CSRRegisterName::mhpmcounter7h), // upper 32 bits of `mhpmcounter7`, RV32 only
+            0xB88 => Ok(CSRRegisterName::mhpmcounter8h), // upper 32 bits of `mhpmcounter8`, RV32 only
+            0xB89 => Ok(CSRRegisterName::mhpmcounter9h), // upper 32 bits of `mhpmcounter9`, RV32 only
+            0xB8A => Ok(CSRRegisterName::mhpmcounter10h), // upper 32 bits of `mhpmcounter10`, RV32 only
+            0xB8B => Ok(CSRRegisterName::mhpmcounter11h), // upper 32 bits of `mhpmcounter11`, RV32 only
+            0xB8C => Ok(CSRRegisterName::mhpmcounter12h), // upper 32 bits of `mhpmcounter12`, RV32 only
+            0xB8D => Ok(CSRRegisterName::mhpmcounter13h), // upper 32 bits of `mhpmcounter13`, RV32 only
+            0xB8E => Ok(CSRRegisterName::mhpmcounter14h), // upper 32 bits of `mhpmcounter14`, RV32 only
+            0xB8F => Ok(CSRRegisterName::mhpmcounter15h), // upper 32 bits of `mhpmcounter15`, RV32 only
+            0xB90 => Ok(CSRRegisterName::mhpmcounter16h), // upper 32 bits of `mhpmcounter16`, RV32 only
+            0xB91 => Ok(CSRRegisterName::mhpmcounter17h), // upper 32 bits of `mhpmcounter17`, RV32 only
+            0xB92 => Ok(CSRRegisterName::mhpmcounter18h), // upper 32 bits of `mhpmcounter18`, RV32 only
+            0xB93 => Ok(CSRRegisterName::mhpmcounter19h), // upper 32 bits of `mhpmcounter19`, RV32 only
+            0xB94 => Ok(CSRRegisterName::mhpmcounter20h), // upper 32 bits of `mhpmcounter20`, RV32 only
+            0xB95 => Ok(CSRRegisterName::mhpmcounter21h), // upper 32 bits of `mhpmcounter21`, RV32 only
+            0xB96 => Ok(CSRRegisterName::mhpmcounter22h), // upper 32 bits of `mhpmcounter22`, RV32 only
+            0xB97 => Ok(CSRRegisterName::mhpmcounter23h), // upper 32 bits of `mhpmcounter23`, RV32 only
+            0xB98 => Ok(CSRRegisterName::mhpmcounter24h), // upper 32 bits of `mhpmcounter24`, RV32 only
+            0xB99 => Ok(CSRRegisterName::mhpmcounter25h), // upper 32 bits of `mhpmcounter25`, RV32 only
+            0xB9A => Ok(CSRRegisterName::mhpmcounter26h), // upper 32 bits of `mhpmcounter26`, RV32 only
+            0xB9B => Ok(CSRRegisterName::mhpmcounter27h), // upper 32 bits of `mhpmcounter27`, RV32 only
+            0xB9C => Ok(CSRRegisterName::mhpmcounter28h), // upper 32 bits of `mhpmcounter28`, RV32 only
+            0xB9D => Ok(CSRRegisterName::mhpmcounter29h), // upper 32 bits of `mhpmcounter29`, RV32 only
+            0xB9E => Ok(CSRRegisterName::mhpmcounter30h), // upper 32 bits of `mhpmcounter30`, RV32 only
+            0xB9F => Ok(CSRRegisterName::mhpmcounter31h), // upper 32 bits of `mhpmcounter31`, RV32 only
+
+            // machine counter setup
+            0x320 => Ok(CSRRegisterName::mcountinhibit), // machine counter-inhibit register
+            0x321 => Ok(CSRRegisterName::mcyclecfg), // machine cycle-counter configuration register
+            0x322 => Ok(CSRRegisterName::minstretcfg), // machine insert counter configuration register
+            0x323 => Ok(CSRRegisterName::mhpmevent3), // machine performance-monitoring event selector
+            0x324 => Ok(CSRRegisterName::mhpmevent4), // machine performance-monitoring event selector
+            0x325 => Ok(CSRRegisterName::mhpmevent5), // machine performance-monitoring event selector
+            0x326 => Ok(CSRRegisterName::mhpmevent6), // machine performance-monitoring event selector
+            0x327 => Ok(CSRRegisterName::mhpmevent7), // machine performance-monitoring event selector
+            0x328 => Ok(CSRRegisterName::mhpmevent8), // machine performance-monitoring event selector
+            0x329 => Ok(CSRRegisterName::mhpmevent9), // machine performance-monitoring event selector
+            0x32A => Ok(CSRRegisterName::mhpmevent10), // machine performance-monitoring event selector
+            0x32B => Ok(CSRRegisterName::mhpmevent11), // machine performance-monitoring event selector
+            0x32C => Ok(CSRRegisterName::mhpmevent12), // machine performance-monitoring event selector
+            0x32D => Ok(CSRRegisterName::mhpmevent13), // machine performance-monitoring event selector
+            0x32E => Ok(CSRRegisterName::mhpmevent14), // machine performance-monitoring event selector
+            0x32F => Ok(CSRRegisterName::mhpmevent15), // machine performance-monitoring event selector
+            0x330 => Ok(CSRRegisterName::mhpmevent16), // machine performance-monitoring event selector
+            0x331 => Ok(CSRRegisterName::mhpmevent17), // machine performance-monitoring event selector
+            0x332 => Ok(CSRRegisterName::mhpmevent18), // machine performance-monitoring event selector
+            0x333 => Ok(CSRRegisterName::mhpmevent19), // machine performance-monitoring event selector
+            0x334 => Ok(CSRRegisterName::mhpmevent20), // machine performance-monitoring event selector
+            0x335 => Ok(CSRRegisterName::mhpmevent21), // machine performance-monitoring event selector
+            0x336 => Ok(CSRRegisterName::mhpmevent22), // machine performance-monitoring event selector
+            0x337 => Ok(CSRRegisterName::mhpmevent23), // machine performance-monitoring event selector
+            0x338 => Ok(CSRRegisterName::mhpmevent24), // machine performance-monitoring event selector
+            0x339 => Ok(CSRRegisterName::mhpmevent25), // machine performance-monitoring event selector
+            0x33A => Ok(CSRRegisterName::mhpmevent26), // machine performance-monitoring event selector
+            0x33B => Ok(CSRRegisterName::mhpmevent27), // machine performance-monitoring event selector
+            0x33C => Ok(CSRRegisterName::mhpmevent28), // machine performance-monitoring event selector
+            0x33D => Ok(CSRRegisterName::mhpmevent29), // machine performance-monitoring event selector
+            0x33E => Ok(CSRRegisterName::mhpmevent30), // machine performance-monitoring event selector
+            0x33F => Ok(CSRRegisterName::mhpmevent31), // machine performance-monitoring event selector
+
+            0x721 => Ok(CSRRegisterName::mcyclecfgh), // upper 32 bits of `mcyclecfg`, RV32 only
+            0x722 => Ok(CSRRegisterName::minstretcfgh), // upper 32 bits of `minstretcfg`, RV32 only
+            0x723 => Ok(CSRRegisterName::mhpmevent3h), // upper 32 bits of `mhpmevent3`, RV32 only
+            0x724 => Ok(CSRRegisterName::mhpmevent4h), // upper 32 bits of `mhpmevent4`, RV32 only
+            0x725 => Ok(CSRRegisterName::mhpmevent5h), // upper 32 bits of `mhpmevent5`, RV32 only
+            0x726 => Ok(CSRRegisterName::mhpmevent6h), // upper 32 bits of `mhpmevent6`, RV32 only
+            0x727 => Ok(CSRRegisterName::mhpmevent7h), // upper 32 bits of `mhpmevent7`, RV32 only
+            0x728 => Ok(CSRRegisterName::mhpmevent8h), // upper 32 bits of `mhpmevent8`, RV32 only
+            0x729 => Ok(CSRRegisterName::mhpmevent9h), // upper 32 bits of `mhpmevent9`, RV32 only
+            0x72A => Ok(CSRRegisterName::mhpmevent10h), // upper 32 bits of `mhpmevent10`, RV32 only
+            0x72B => Ok(CSRRegisterName::mhpmevent11h), // upper 32 bits of `mhpmevent11`, RV32 only
+            0x72C => Ok(CSRRegisterName::mhpmevent12h), // upper 32 bits of `mhpmevent12`, RV32 only
+            0x72D => Ok(CSRRegisterName::mhpmevent13h), // upper 32 bits of `mhpmevent13`, RV32 only
+            0x72E => Ok(CSRRegisterName::mhpmevent14h), // upper 32 bits of `mhpmevent14`, RV32 only
+            0x72F => Ok(CSRRegisterName::mhpmevent15h), // upper 32 bits of `mhpmevent15`, RV32 only
+            0x730 => Ok(CSRRegisterName::mhpmevent16h), // upper 32 bits of `mhpmevent16`, RV32 only
+            0x731 => Ok(CSRRegisterName::mhpmevent17h), // upper 32 bits of `mhpmevent17`, RV32 only
+            0x732 => Ok(CSRRegisterName::mhpmevent18h), // upper 32 bits of `mhpmevent18`, RV32 only
+            0x733 => Ok(CSRRegisterName::mhpmevent19h), // upper 32 bits of `mhpmevent19`, RV32 only
+            0x734 => Ok(CSRRegisterName::mhpmevent20h), // upper 32 bits of `mhpmevent20`, RV32 only
+            0x735 => Ok(CSRRegisterName::mhpmevent21h), // upper 32 bits of `mhpmevent21`, RV32 only
+            0x736 => Ok(CSRRegisterName::mhpmevent22h), // upper 32 bits of `mhpmevent22`, RV32 only
+            0x737 => Ok(CSRRegisterName::mhpmevent23h), // upper 32 bits of `mhpmevent23`, RV32 only
+            0x738 => Ok(CSRRegisterName::mhpmevent24h), // upper 32 bits of `mhpmevent24`, RV32 only
+            0x739 => Ok(CSRRegisterName::mhpmevent25h), // upper 32 bits of `mhpmevent25`, RV32 only
+            0x73A => Ok(CSRRegisterName::mhpmevent26h), // upper 32 bits of `mhpmevent26`, RV32 only
+            0x73B => Ok(CSRRegisterName::mhpmevent27h), // upper 32 bits of `mhpmevent27`, RV32 only
+            0x73C => Ok(CSRRegisterName::mhpmevent28h), // upper 32 bits of `mhpmevent28`, RV32 only
+            0x73D => Ok(CSRRegisterName::mhpmevent29h), // upper 32 bits of `mhpmevent29`, RV32 only
+            0x73E => Ok(CSRRegisterName::mhpmevent30h), // upper 32 bits of `mhpmevent30`, RV32 only
+            0x73F => Ok(CSRRegisterName::mhpmevent31h), // upper 32 bits of `mhpmevent31`, RV32 only
+
+            // machine control transfer records configuration
+            0x34E => Ok(CSRRegisterName::mctrctl), // machine control transfer records control register
+
+            // machine/debug level CSRs
+
+            // debug/trace registers (shared with debug mode)
+            0x7A0 => Ok(CSRRegisterName::tselect), // debug/trace trigger register select
+            0x7A1 => Ok(CSRRegisterName::tdata1), // first debug/trace trigger data register
+            0x7A2 => Ok(CSRRegisterName::tdata2), // second debug/trace trigger data register
+            0x7A3 => Ok(CSRRegisterName::tdata3), // third debug/trace trigger data register
+            0x7A8 => Ok(CSRRegisterName::mcontext), // machine-mode context register
+
+            // debug mode registers
+
+            // debug mode registers
+            0x7B0 => Ok(CSRRegisterName::dcsr), // debug control and status register
+            0x7B1 => Ok(CSRRegisterName::dpc),  // debug program counter
+            0x7B2 => Ok(CSRRegisterName::dscratch0), // debug scratch register 0
+            0x7B3 => Ok(CSRRegisterName::dscratch1), // debug scratch register 1
+            //
+            _ => Err("unknown CSR offset"),
+        }
+    }
+}
+
+impl Display for CSRRegisterName {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // let csr_name_string = "{self:?}";
+        let csr_name_string = match self {
+            // user lever (unprivilleged) CSRs
+
+            // unprivilleged floating-point CSRs
+            CSRRegisterName::fflags => "fflags", // floating-point accrued exceptions
+            CSRRegisterName::frm => "frm", // floating-point dynamic rounding mode
+            CSRRegisterName::fcsr => "fcsr", // floating-point control and status register (frm + fflags)
+
+            // unprivilleged vector CSRs
+            CSRRegisterName::vstart => "vstart", // vector start position
+            CSRRegisterName::vxsat => "vxsat", // fixed point accrued saturation flag
+            CSRRegisterName::vxrm => "vxrm",   // fixed point rounding mode
+            CSRRegisterName::vcsr => "vcsr", // vector control and status register
+            CSRRegisterName::vl => "vl",     // vector length
+            CSRRegisterName::vtype => "vtype", // vector data type register
+            CSRRegisterName::vlenb => "vlenb", // vector register length in bytes
+
+            // unprivilleged Zicfiss extension CSR
+            CSRRegisterName::ssp => "ssp", // shadow stack pointer
+
+            // unprivilleged entropy source extension CSR
+            CSRRegisterName::seed => "seed", // seed for cryptographic random bit generators
+
+            // unprivilleged Zcmt extension CSR
+            CSRRegisterName::jvt => "jvt", // table jump base vector and control register (CR)
+
+            // unprivilleged counter/timers
+            CSRRegisterName::cycle => "cycle", // cycle counter for RDCYCLE instruction
+            CSRRegisterName::time => "time",   // timer for RDTIME instruction
+            CSRRegisterName::instret => "instret", // instructions-retired counter for RDINSTRET instruction
+            CSRRegisterName::hpmcounter3 => "hpmcounter3", // performance-monitoring counter
+            CSRRegisterName::hpmcounter4 => "hpmcounter4", // performance-monitoring counter
+            CSRRegisterName::hpmcounter5 => "hpmcounter5", // performance-monitoring counter
+            CSRRegisterName::hpmcounter6 => "hpmcounter6", // performance-monitoring counter
+            CSRRegisterName::hpmcounter7 => "hpmcounter7", // performance-monitoring counter
+            CSRRegisterName::hpmcounter8 => "hpmcounter8", // performance-monitoring counter
+            CSRRegisterName::hpmcounter9 => "hpmcounter9", // performance-monitoring counter
+            CSRRegisterName::hpmcounter10 => "hpmcounter10", // performance-monitoring counter
+            CSRRegisterName::hpmcounter11 => "hpmcounter11", // performance-monitoring counter
+            CSRRegisterName::hpmcounter12 => "hpmcounter12", // performance-monitoring counter
+            CSRRegisterName::hpmcounter13 => "hpmcounter13", // performance-monitoring counter
+            CSRRegisterName::hpmcounter14 => "hpmcounter14", // performance-monitoring counter
+            CSRRegisterName::hpmcounter15 => "hpmcounter15", // performance-monitoring counter
+            CSRRegisterName::hpmcounter16 => "hpmcounter16", // performance-monitoring counter
+            CSRRegisterName::hpmcounter17 => "hpmcounter17", // performance-monitoring counter
+            CSRRegisterName::hpmcounter18 => "hpmcounter18", // performance-monitoring counter
+            CSRRegisterName::hpmcounter19 => "hpmcounter19", // performance-monitoring counter
+            CSRRegisterName::hpmcounter20 => "hpmcounter20", // performance-monitoring counter
+            CSRRegisterName::hpmcounter21 => "hpmcounter21", // performance-monitoring counter
+            CSRRegisterName::hpmcounter22 => "hpmcounter22", // performance-monitoring counter
+            CSRRegisterName::hpmcounter23 => "hpmcounter23", // performance-monitoring counter
+            CSRRegisterName::hpmcounter24 => "hpmcounter24", // performance-monitoring counter
+            CSRRegisterName::hpmcounter25 => "hpmcounter25", // performance-monitoring counter
+            CSRRegisterName::hpmcounter26 => "hpmcounter26", // performance-monitoring counter
+            CSRRegisterName::hpmcounter27 => "hpmcounter27", // performance-monitoring counter
+            CSRRegisterName::hpmcounter28 => "hpmcounter28", // performance-monitoring counter
+            CSRRegisterName::hpmcounter29 => "hpmcounter29", // performance-monitoring counter
+            CSRRegisterName::hpmcounter30 => "hpmcounter30", // performance-monitoring counter
+            CSRRegisterName::hpmcounter31 => "hpmcounter31", // performance-monitoring counter
+
+            CSRRegisterName::cycleh => "cycleh", // upper 32 bits of `cycle`, RV32 only
+            CSRRegisterName::timeh => "timeh", // upper 32 bits of `time`, RV32 only
+            CSRRegisterName::instreth => "instreth", // upper 32 bits of `instret`, RV32 only
+            CSRRegisterName::hpmcounter3h => "hpmcounter3h", // upper 32 bits of `hpmcounter3`, RV32 only
+            CSRRegisterName::hpmcounter4h => "hpmcounter4h", // upper 32 bits of `hpmcounter4`, RV32 only
+            CSRRegisterName::hpmcounter5h => "hpmcounter5h", // upper 32 bits of `hpmcounter5`, RV32 only
+            CSRRegisterName::hpmcounter6h => "hpmcounter6h", // upper 32 bits of `hpmcounter6`, RV32 only
+            CSRRegisterName::hpmcounter7h => "hpmcounter7h", // upper 32 bits of `hpmcounter7`, RV32 only
+            CSRRegisterName::hpmcounter8h => "hpmcounter8h", // upper 32 bits of `hpmcounter8`, RV32 only
+            CSRRegisterName::hpmcounter9h => "hpmcounter9h", // upper 32 bits of `hpmcounter9`, RV32 only
+            CSRRegisterName::hpmcounter10h => "hpmcounter10h", // upper 32 bits of `hpmcounter10`, RV32 only
+            CSRRegisterName::hpmcounter11h => "hpmcounter11h", // upper 32 bits of `hpmcounter11`, RV32 only
+            CSRRegisterName::hpmcounter12h => "hpmcounter12h", // upper 32 bits of `hpmcounter12`, RV32 only
+            CSRRegisterName::hpmcounter13h => "hpmcounter13h", // upper 32 bits of `hpmcounter13`, RV32 only
+            CSRRegisterName::hpmcounter14h => "hpmcounter14h", // upper 32 bits of `hpmcounter14`, RV32 only
+            CSRRegisterName::hpmcounter15h => "hpmcounter15h", // upper 32 bits of `hpmcounter15`, RV32 only
+            CSRRegisterName::hpmcounter16h => "hpmcounter16h", // upper 32 bits of `hpmcounter16`, RV32 only
+            CSRRegisterName::hpmcounter17h => "hpmcounter17h", // upper 32 bits of `hpmcounter17`, RV32 only
+            CSRRegisterName::hpmcounter18h => "hpmcounter18h", // upper 32 bits of `hpmcounter18`, RV32 only
+            CSRRegisterName::hpmcounter19h => "hpmcounter19h", // upper 32 bits of `hpmcounter19`, RV32 only
+            CSRRegisterName::hpmcounter20h => "hpmcounter20h", // upper 32 bits of `hpmcounter20`, RV32 only
+            CSRRegisterName::hpmcounter21h => "hpmcounter21h", // upper 32 bits of `hpmcounter21`, RV32 only
+            CSRRegisterName::hpmcounter22h => "hpmcounter22h", // upper 32 bits of `hpmcounter22`, RV32 only
+            CSRRegisterName::hpmcounter23h => "hpmcounter23h", // upper 32 bits of `hpmcounter23`, RV32 only
+            CSRRegisterName::hpmcounter24h => "hpmcounter24h", // upper 32 bits of `hpmcounter24`, RV32 only
+            CSRRegisterName::hpmcounter25h => "hpmcounter25h", // upper 32 bits of `hpmcounter25`, RV32 only
+            CSRRegisterName::hpmcounter26h => "hpmcounter26h", // upper 32 bits of `hpmcounter26`, RV32 only
+            CSRRegisterName::hpmcounter27h => "hpmcounter27h", // upper 32 bits of `hpmcounter27`, RV32 only
+            CSRRegisterName::hpmcounter28h => "hpmcounter28h", // upper 32 bits of `hpmcounter28`, RV32 only
+            CSRRegisterName::hpmcounter29h => "hpmcounter29h", // upper 32 bits of `hpmcounter29`, RV32 only
+            CSRRegisterName::hpmcounter30h => "hpmcounter30h", // upper 32 bits of `hpmcounter30`, RV32 only
+            CSRRegisterName::hpmcounter31h => "hpmcounter31h", // upper 32 bits of `hpmcounter31`, RV32 only
+
+            // supervisor-level CSRs
+
+            // supervisor trap setup
+            CSRRegisterName::sstatus => "sstatus", // supervisor status register
+            CSRRegisterName::sie => "sie", // supervisor interrupt-enable register
+            CSRRegisterName::stvec => "stvec", // supervisor trap handler base address
+            CSRRegisterName::scounteren => "scounteren", // supervisor conter enable
+
+            // supervisor configuration
+            CSRRegisterName::senvcfg => "senvcfg", // supervisor environment configuration register
+
+            // supervisor counter setup
+            CSRRegisterName::scountinhibit => "scountinhibit", // supervisor counter-inhibit register
+
+            // supervisor trap handling
+            CSRRegisterName::sscratch => "sscratch", // supervisor scratch register
+            CSRRegisterName::sepc => "sepc", // supervisor exception program counter
+            CSRRegisterName::scause => "scause", // supervisor trap cause
+            CSRRegisterName::stval => "stval", // supervisor trap value
+            CSRRegisterName::sip => "sip",   // supervisor interrupt pending
+            CSRRegisterName::scountovf => "scountovf", // supervisor count overflow
+
+            // supervisor indirect
+            CSRRegisterName::siselect => "siselect", // supervisor indirect register select
+            CSRRegisterName::sireg => "sireg", // supervisor indirect register alias
+            CSRRegisterName::sireg2 => "sireg2", // supervisor indirect register alias 2
+            CSRRegisterName::sireg3 => "sireg3", // supervisor indirect register alias 3
+            CSRRegisterName::sireg4 => "sireg4", // supervisor indirect register alias 4
+            CSRRegisterName::sireg5 => "sireg5", // supervisor indirect register alias 5
+            CSRRegisterName::sireg6 => "sireg6", // supervisor indirect register alias 6
+
+            // supervisor protection and translation
+            CSRRegisterName::satp => "satp", // supervisor address translation and protection
+
+            // supervisor timer compare
+            CSRRegisterName::stimecpm => "stimecpm", // supervisor timer compare
+            CSRRegisterName::stimecpmh => "stimecpmh", // upper 32 bits of `stimecpm`, RV32 only
+
+            // supervisor debug/trace registers
+            CSRRegisterName::scontext => "scontext", // supervisor-mode context register
+
+            // supervisor resource management configuration
+            CSRRegisterName::srmcfg => "srmcfg", // supervisor resource management configuration
+
+            // supervisor state enable registers
+            CSRRegisterName::sstateen0 => "sstateen0", // supervisor state enable 0 register
+            CSRRegisterName::sstateen1 => "sstateen1", // supervisor state enable 1 register
+            CSRRegisterName::sstateen2 => "sstateen2", // supervisor state enable 2 register
+            CSRRegisterName::sstateen3 => "sstateen3", // supervisor state enable 3 register
+
+            // supervisor control transfer records configuration
+            CSRRegisterName::sctrctl => "sctrctl", // supervisor control transfer records control register
+            CSRRegisterName::sctrstatus => "sctrstatus", // supervisor control transfer records status register
+            CSRRegisterName::sctrdepth => "sctrdepth", // supervisor control transfer records depth register
+
+            // hypervisor-level and virtual supervisor (VS) CSRs
+
+            // hypervisor trap setup
+            CSRRegisterName::hstatus => "hstatus", // hypervisor status register
+            CSRRegisterName::hedeleg => "hedeleg", // hypervisor exception delegation register
+            CSRRegisterName::hideleg => "hideleg", // hypervisor interrupt delegation register
+            CSRRegisterName::hie => "hie", // hypervisor interrupt-enable register
+            CSRRegisterName::hcounteren => "hcounteren", // hypervisor counter enable
+            CSRRegisterName::hgeie => "hgeie", // hypervisor guest external interrupt-enable register
+            CSRRegisterName::hedelegh => "hedelegh", // 32 upper bits of `hedeleg`, RV32 only
+
+            // hypervisor trap handling
+            CSRRegisterName::htval => "htval", // hypervisor trap value
+            CSRRegisterName::hip => "hip",     // hypervisor interrupt pending
+            CSRRegisterName::hvip => "hvip",   // hypervisor interrupt pending
+            CSRRegisterName::htinst => "htinst", // hypervisor count overflow
+            CSRRegisterName::hgeip => "hgeip", // hypervisor interrupt pending
+
+            // hypervisor configuration
+            CSRRegisterName::henvcfg => "henvcfg", // hypervisor environment configuration register
+            CSRRegisterName::henvcfgh => "henvcfgh", // 32 upper bits of `henvcfg`, RV32 only
+
+            // hypervisor protection and translation
+            CSRRegisterName::hgatp => "hgatp", // hypervisor guest address translation and protection
+
+            // hypervisor debug/trace registers
+            CSRRegisterName::hcontext => "hcontext", // hypervisor-mode context register
+
+            // hypervisor counter/timer virtualization registers
+            CSRRegisterName::htimedelta => "htimedelta", // delta for VS/VU-mode timer
+            CSRRegisterName::htimedeltah => "htimedeltah", // 32 upper bits of `htimedelta`, RV32 only
+
+            // hypervisor state enable registers
+            CSRRegisterName::hstateen0 => "hstateen0", // hypervisor state enable 0 register
+            CSRRegisterName::hstateen1 => "hstateen1", // hypervisor state enable 1 register
+            CSRRegisterName::hstateen2 => "hstateen2", // hypervisor state enable 2 register
+            CSRRegisterName::hstateen3 => "hstateen3", // hypervisor state enable 3 register
+            CSRRegisterName::hstateen0h => "hstateen0h", // 32 upper bits of `hstateen0`, RV32 only
+            CSRRegisterName::hstateen1h => "hstateen1h", // 32 upper bits of `hstateen1`, RV32 only
+            CSRRegisterName::hstateen2h => "hstateen2h", // 32 upper bits of `hstateen2`, RV32 only
+            CSRRegisterName::hstateen3h => "hstateen3h", // 32 upper bits of `hstateen3`, RV32 only
+
+            // virtual supervisor (VS) registers
+            // virtual supervisor (VS) registers
+            CSRRegisterName::vstatus => "vstatus", // virtual supervisor status register
+            CSRRegisterName::vsie => "vsie", // virtual supervisor interrupt-enable register
+            CSRRegisterName::vstvec => "vstvec", // virtual supervisor trap handler base address
+            CSRRegisterName::vsscratch => "vsscratch", // virtual supervisor scratch register
+            CSRRegisterName::vsepc => "vsepc", // virtual supervisor exception program counter
+            CSRRegisterName::vscause => "vscause", // virtual supervisor trap cause
+            CSRRegisterName::vstval => "vstval", // virtual supervisor trap value
+            CSRRegisterName::vsip => "vsip", // virtual supervisor interrupt pending
+            CSRRegisterName::vsatp => "vsatp", // virtual supervisor address translation and protection
+
+            // virtual supervisor indirect
+            CSRRegisterName::vsiselect => "vsiselect", // virtual supervisor indirect register select
+            CSRRegisterName::vsireg => "vsireg", // virtual supervisor indirect register alias
+            CSRRegisterName::vsireg2 => "vsireg2", // virtual supervisor indirect register alias 2
+            CSRRegisterName::vsireg3 => "vsireg3", // virtual supervisor indirect register alias 3
+            CSRRegisterName::vsireg4 => "vsireg4", // virtual supervisor indirect register alias 4
+            CSRRegisterName::vsireg5 => "vsireg5", // virtual supervisor indirect register alias 5
+            CSRRegisterName::vsireg6 => "vsireg6", // virtual supervisor indirect register alias 6
+
+            // virtual supervisor timer compare
+            CSRRegisterName::vstimecpm => "vstimecpm", // virtual supervisor timer compare
+            CSRRegisterName::vstimecpmh => "vstimecpmh", // virtual upper 32 bits of `vstimecpm`, RV32 only
+
+            // virtual supervisor control transfer records configuration
+            CSRRegisterName::vsctrctl => "vsctrctl", // virtual supervisor control transfer records control register
+
+            // machine-level CSRs
+
+            // machine information registers
+            CSRRegisterName::mvendorid => "mvendorid", // vendor ID
+            CSRRegisterName::marchid => "marchid",     // architecture ID
+            CSRRegisterName::mimpid => "mimpid",       // implementation ID
+            CSRRegisterName::mhartid => "mhartid",     // hardware thread ID
+            CSRRegisterName::mconfigptr => "mconfigptr", // pointer to configuration data structure
+
+            // machine trap setup
+            CSRRegisterName::mstatus => "mstatus", // machine status register
+            CSRRegisterName::misa => "misa",       // ISA and extensions
+            CSRRegisterName::medeleg => "medeleg", // machine exception delegation register
+            CSRRegisterName::mideleg => "mideleg", // machine interrupt delegation register
+            CSRRegisterName::mie => "mie", // machine interrupt-enable register
+            CSRRegisterName::mtvec => "mtvec", // machine trap-handler base address
+            CSRRegisterName::mcounteren => "mcounteren", // machine counter enable
+            CSRRegisterName::mstatush => "mstatush", // 32 upper bits of `mstatus`, RV32 only
+            CSRRegisterName::medelegh => "medelegh", // 32 upper bits of `medeleg`, RV32 only
+
+            // machine trap handling
+            CSRRegisterName::mscratch => "mscratch", // machine scratch register
+            CSRRegisterName::mepc => "mepc", // machine exception program counter
+            CSRRegisterName::mcause => "mcause", // machine trap cause
+            CSRRegisterName::mtval => "mtval", // machine trap value
+            CSRRegisterName::mip => "mip",   // machine interrupt pending
+            CSRRegisterName::mtinst => "mtinst", // machine
+            CSRRegisterName::mtval2 => "mtval2", // machine second trap value
+
+            // machine indirect
+            CSRRegisterName::miselect => "miselect", // machine indirect register select
+            CSRRegisterName::mireg => "mireg", // machine indirect register alias
+            CSRRegisterName::mireg2 => "mireg2", // machine indirect register alias 2
+            CSRRegisterName::mireg3 => "mireg3", // machine indirect register alias 3
+            CSRRegisterName::mireg4 => "mireg4", // machine indirect register alias 4
+            CSRRegisterName::mireg5 => "mireg5", // machine indirect register alias 5
+            CSRRegisterName::mireg6 => "mireg6", // machine indirect register alias 6
+
+            // machine configuration
+            CSRRegisterName::menvcfg => "menvcfg", // machine environment configuration register
+            CSRRegisterName::menvcfgh => "menvcfgh", // 32 upper bits of `menvcfg`, RV32 only
+            CSRRegisterName::mseccfg => "mseccfg", // machine security configuration register
+            CSRRegisterName::mseccfgh => "mseccfgh", // 32 upper bits of `mseccfg`, RV32 only
+
+            // machine memory protection
+            CSRRegisterName::pmpcfg0 => "pmpcfg0", // physical memory protection configuraiton
+            CSRRegisterName::pmpcfg1 => "pmpcfg1", // physical memory protection configuraiton, RV32 only
+            CSRRegisterName::pmpcfg2 => "pmpcfg2", // physical memory protection configuraiton
+            CSRRegisterName::pmpcfg3 => "pmpcfg3", // physical memory protection configuraiton, RV32 only
+            CSRRegisterName::pmpcfg4 => "pmpcfg4", // physical memory protection configuraiton
+            CSRRegisterName::pmpcfg5 => "pmpcfg5", // physical memory protection configuraiton, RV32 only
+            CSRRegisterName::pmpcfg6 => "pmpcfg6", // physical memory protection configuraiton
+            CSRRegisterName::pmpcfg7 => "pmpcfg7", // physical memory protection configuraiton, RV32 only
+            CSRRegisterName::pmpcfg8 => "pmpcfg8", // physical memory protection configuraiton
+            CSRRegisterName::pmpcfg9 => "pmpcfg9", // physical memory protection configuraiton, RV32 only
+            CSRRegisterName::pmpcfg10 => "pmpcfg10", // physical memory protection configuraiton
+            CSRRegisterName::pmpcfg11 => "pmpcfg11", // physical memory protection configuraiton, RV32 only
+            CSRRegisterName::pmpcfg12 => "pmpcfg12", // physical memory protection configuraiton
+            CSRRegisterName::pmpcfg13 => "pmpcfg13", // physical memory protection configuraiton, RV32 only
+            CSRRegisterName::pmpcfg14 => "pmpcfg14", // physical memory protection configuraiton
+            CSRRegisterName::pmpcfg15 => "pmpcfg15", // physical memory protection configuraiton, RV32 only
+            CSRRegisterName::pmaddr0 => "pmaddr0", // physical memory protection address register
+            CSRRegisterName::pmaddr1 => "pmaddr1", // physical memory protection address register
+            CSRRegisterName::pmaddr2 => "pmaddr2", // physical memory protection address register
+            CSRRegisterName::pmaddr3 => "pmaddr3", // physical memory protection address register
+            CSRRegisterName::pmaddr4 => "pmaddr4", // physical memory protection address register
+            CSRRegisterName::pmaddr5 => "pmaddr5", // physical memory protection address register
+            CSRRegisterName::pmaddr6 => "pmaddr6", // physical memory protection address register
+            CSRRegisterName::pmaddr7 => "pmaddr7", // physical memory protection address register
+            CSRRegisterName::pmaddr8 => "pmaddr8", // physical memory protection address register
+            CSRRegisterName::pmaddr9 => "pmaddr9", // physical memory protection address register
+            CSRRegisterName::pmaddr10 => "pmaddr10", // physical memory protection address register
+            CSRRegisterName::pmaddr11 => "pmaddr11", // physical memory protection address register
+            CSRRegisterName::pmaddr12 => "pmaddr12", // physical memory protection address register
+            CSRRegisterName::pmaddr13 => "pmaddr13", // physical memory protection address register
+            CSRRegisterName::pmaddr14 => "pmaddr14", // physical memory protection address register
+            CSRRegisterName::pmaddr15 => "pmaddr15", // physical memory protection address register
+            CSRRegisterName::pmaddr16 => "pmaddr16", // physical memory protection address register
+            CSRRegisterName::pmaddr17 => "pmaddr17", // physical memory protection address register
+            CSRRegisterName::pmaddr18 => "pmaddr18", // physical memory protection address register
+            CSRRegisterName::pmaddr19 => "pmaddr19", // physical memory protection address register
+            CSRRegisterName::pmaddr20 => "pmaddr20", // physical memory protection address register
+            CSRRegisterName::pmaddr21 => "pmaddr21", // physical memory protection address register
+            CSRRegisterName::pmaddr22 => "pmaddr22", // physical memory protection address register
+            CSRRegisterName::pmaddr23 => "pmaddr23", // physical memory protection address register
+            CSRRegisterName::pmaddr24 => "pmaddr24", // physical memory protection address register
+            CSRRegisterName::pmaddr25 => "pmaddr25", // physical memory protection address register
+            CSRRegisterName::pmaddr26 => "pmaddr26", // physical memory protection address register
+            CSRRegisterName::pmaddr27 => "pmaddr27", // physical memory protection address register
+            CSRRegisterName::pmaddr28 => "pmaddr28", // physical memory protection address register
+            CSRRegisterName::pmaddr29 => "pmaddr29", // physical memory protection address register
+            CSRRegisterName::pmaddr30 => "pmaddr30", // physical memory protection address register
+            CSRRegisterName::pmaddr31 => "pmaddr31", // physical memory protection address register
+            CSRRegisterName::pmaddr32 => "pmaddr32", // physical memory protection address register
+            CSRRegisterName::pmaddr33 => "pmaddr33", // physical memory protection address register
+            CSRRegisterName::pmaddr34 => "pmaddr34", // physical memory protection address register
+            CSRRegisterName::pmaddr35 => "pmaddr35", // physical memory protection address register
+            CSRRegisterName::pmaddr36 => "pmaddr36", // physical memory protection address register
+            CSRRegisterName::pmaddr37 => "pmaddr37", // physical memory protection address register
+            CSRRegisterName::pmaddr38 => "pmaddr38", // physical memory protection address register
+            CSRRegisterName::pmaddr39 => "pmaddr39", // physical memory protection address register
+            CSRRegisterName::pmaddr40 => "pmaddr40", // physical memory protection address register
+            CSRRegisterName::pmaddr41 => "pmaddr41", // physical memory protection address register
+            CSRRegisterName::pmaddr42 => "pmaddr42", // physical memory protection address register
+            CSRRegisterName::pmaddr43 => "pmaddr43", // physical memory protection address register
+            CSRRegisterName::pmaddr44 => "pmaddr44", // physical memory protection address register
+            CSRRegisterName::pmaddr45 => "pmaddr45", // physical memory protection address register
+            CSRRegisterName::pmaddr46 => "pmaddr46", // physical memory protection address register
+            CSRRegisterName::pmaddr47 => "pmaddr47", // physical memory protection address register
+            CSRRegisterName::pmaddr48 => "pmaddr48", // physical memory protection address register
+            CSRRegisterName::pmaddr49 => "pmaddr49", // physical memory protection address register
+            CSRRegisterName::pmaddr50 => "pmaddr50", // physical memory protection address register
+            CSRRegisterName::pmaddr51 => "pmaddr51", // physical memory protection address register
+            CSRRegisterName::pmaddr52 => "pmaddr52", // physical memory protection address register
+            CSRRegisterName::pmaddr53 => "pmaddr53", // physical memory protection address register
+            CSRRegisterName::pmaddr54 => "pmaddr54", // physical memory protection address register
+            CSRRegisterName::pmaddr55 => "pmaddr55", // physical memory protection address register
+            CSRRegisterName::pmaddr56 => "pmaddr56", // physical memory protection address register
+            CSRRegisterName::pmaddr57 => "pmaddr57", // physical memory protection address register
+            CSRRegisterName::pmaddr58 => "pmaddr58", // physical memory protection address register
+            CSRRegisterName::pmaddr59 => "pmaddr59", // physical memory protection address register
+            CSRRegisterName::pmaddr60 => "pmaddr60", // physical memory protection address register
+            CSRRegisterName::pmaddr61 => "pmaddr61", // physical memory protection address register
+            CSRRegisterName::pmaddr62 => "pmaddr62", // physical memory protection address register
+            CSRRegisterName::pmaddr63 => "pmaddr63", // physical memory protection address register
+
+            // machine state enable registers
+            CSRRegisterName::mstateen0 => "mstateen0", // machine state enable 0 register
+            CSRRegisterName::mstateen1 => "mstateen1", // machine state enable 1 register
+            CSRRegisterName::mstateen2 => "mstateen2", // machine state enable 2 register
+            CSRRegisterName::mstateen3 => "mstateen3", // machine state enable 3 register
+            CSRRegisterName::mstateen0h => "mstateen0h", // 32 upper bits of `mstateen0`, RV32 only
+            CSRRegisterName::mstateen1h => "mstateen1h", // 32 upper bits of `mstateen1`, RV32 only
+            CSRRegisterName::mstateen2h => "mstateen2h", // 32 upper bits of `mstateen2`, RV32 only
+            CSRRegisterName::mstateen3h => "mstateen3h", // 32 upper bits of `mstateen3`, RV32 only
+
+            // machine non-maskable interrupt handling
+            CSRRegisterName::mnscratch => "mnscratch", // resumable NMI scratch register
+            CSRRegisterName::mnepc => "mnepc", // resumable NMI program counter
+            CSRRegisterName::mncause => "mncause", // resumable NMI cause
+            CSRRegisterName::mnstatus => "mnstatus", // resumable NMI status
+
+            // machine counter/timers
+            CSRRegisterName::mcycle => "mcycle", // machine cycle counter
+            CSRRegisterName::minstret => "minstret", // machine instructions-retired counter
+            CSRRegisterName::mhpmcounter3 => "mhpmcounter3", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter4 => "mhpmcounter4", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter5 => "mhpmcounter5", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter6 => "mhpmcounter6", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter7 => "mhpmcounter7", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter8 => "mhpmcounter8", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter9 => "mhpmcounter9", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter10 => "mhpmcounter10", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter11 => "mhpmcounter11", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter12 => "mhpmcounter12", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter13 => "mhpmcounter13", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter14 => "mhpmcounter14", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter15 => "mhpmcounter15", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter16 => "mhpmcounter16", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter17 => "mhpmcounter17", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter18 => "mhpmcounter18", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter19 => "mhpmcounter19", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter20 => "mhpmcounter20", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter21 => "mhpmcounter21", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter22 => "mhpmcounter22", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter23 => "mhpmcounter23", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter24 => "mhpmcounter24", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter25 => "mhpmcounter25", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter26 => "mhpmcounter26", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter27 => "mhpmcounter27", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter28 => "mhpmcounter28", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter29 => "mhpmcounter29", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter30 => "mhpmcounter30", // machine performance-monitoring counter
+            CSRRegisterName::mhpmcounter31 => "mhpmcounter31", // machine performance-monitoring counter
+
+            CSRRegisterName::mcycleh => "mcycleh", // upper 32 bits of `mcycle`, RV32 only
+            CSRRegisterName::minstreth => "minstreth", // upper 32 bits of `minstret`, RV32 only
+            CSRRegisterName::mhpmcounter3h => "mhpmcounter3h", // upper 32 bits of `mhpmcounter3`, RV32 only
+            CSRRegisterName::mhpmcounter4h => "mhpmcounter4h", // upper 32 bits of `mhpmcounter4`, RV32 only
+            CSRRegisterName::mhpmcounter5h => "mhpmcounter5h", // upper 32 bits of `mhpmcounter5`, RV32 only
+            CSRRegisterName::mhpmcounter6h => "mhpmcounter6h", // upper 32 bits of `mhpmcounter6`, RV32 only
+            CSRRegisterName::mhpmcounter7h => "mhpmcounter7h", // upper 32 bits of `mhpmcounter7`, RV32 only
+            CSRRegisterName::mhpmcounter8h => "mhpmcounter8h", // upper 32 bits of `mhpmcounter8`, RV32 only
+            CSRRegisterName::mhpmcounter9h => "mhpmcounter9h", // upper 32 bits of `mhpmcounter9`, RV32 only
+            CSRRegisterName::mhpmcounter10h => "mhpmcounter10h", // upper 32 bits of `mhpmcounter10`, RV32 only
+            CSRRegisterName::mhpmcounter11h => "mhpmcounter11h", // upper 32 bits of `mhpmcounter11`, RV32 only
+            CSRRegisterName::mhpmcounter12h => "mhpmcounter12h", // upper 32 bits of `mhpmcounter12`, RV32 only
+            CSRRegisterName::mhpmcounter13h => "mhpmcounter13h", // upper 32 bits of `mhpmcounter13`, RV32 only
+            CSRRegisterName::mhpmcounter14h => "mhpmcounter14h", // upper 32 bits of `mhpmcounter14`, RV32 only
+            CSRRegisterName::mhpmcounter15h => "mhpmcounter15h", // upper 32 bits of `mhpmcounter15`, RV32 only
+            CSRRegisterName::mhpmcounter16h => "mhpmcounter16h", // upper 32 bits of `mhpmcounter16`, RV32 only
+            CSRRegisterName::mhpmcounter17h => "mhpmcounter17h", // upper 32 bits of `mhpmcounter17`, RV32 only
+            CSRRegisterName::mhpmcounter18h => "mhpmcounter18h", // upper 32 bits of `mhpmcounter18`, RV32 only
+            CSRRegisterName::mhpmcounter19h => "mhpmcounter19h", // upper 32 bits of `mhpmcounter19`, RV32 only
+            CSRRegisterName::mhpmcounter20h => "mhpmcounter20h", // upper 32 bits of `mhpmcounter20`, RV32 only
+            CSRRegisterName::mhpmcounter21h => "mhpmcounter21h", // upper 32 bits of `mhpmcounter21`, RV32 only
+            CSRRegisterName::mhpmcounter22h => "mhpmcounter22h", // upper 32 bits of `mhpmcounter22`, RV32 only
+            CSRRegisterName::mhpmcounter23h => "mhpmcounter23h", // upper 32 bits of `mhpmcounter23`, RV32 only
+            CSRRegisterName::mhpmcounter24h => "mhpmcounter24h", // upper 32 bits of `mhpmcounter24`, RV32 only
+            CSRRegisterName::mhpmcounter25h => "mhpmcounter25h", // upper 32 bits of `mhpmcounter25`, RV32 only
+            CSRRegisterName::mhpmcounter26h => "mhpmcounter26h", // upper 32 bits of `mhpmcounter26`, RV32 only
+            CSRRegisterName::mhpmcounter27h => "mhpmcounter27h", // upper 32 bits of `mhpmcounter27`, RV32 only
+            CSRRegisterName::mhpmcounter28h => "mhpmcounter28h", // upper 32 bits of `mhpmcounter28`, RV32 only
+            CSRRegisterName::mhpmcounter29h => "mhpmcounter29h", // upper 32 bits of `mhpmcounter29`, RV32 only
+            CSRRegisterName::mhpmcounter30h => "mhpmcounter30h", // upper 32 bits of `mhpmcounter30`, RV32 only
+            CSRRegisterName::mhpmcounter31h => "mhpmcounter31h", // upper 32 bits of `mhpmcounter31`, RV32 only
+
+            // machine counter setup
+            CSRRegisterName::mcountinhibit => "mcountinhibit", // machine counter-inhibit register
+            CSRRegisterName::mcyclecfg => "mcyclecfg", // machine cycle-counter configuration register
+            CSRRegisterName::minstretcfg => "minstretcfg", // machine insert counter configuration register
+            CSRRegisterName::mhpmevent3 => "mhpmevent3", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent4 => "mhpmevent4", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent5 => "mhpmevent5", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent6 => "mhpmevent6", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent7 => "mhpmevent7", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent8 => "mhpmevent8", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent9 => "mhpmevent9", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent10 => "mhpmevent10", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent11 => "mhpmevent11", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent12 => "mhpmevent12", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent13 => "mhpmevent13", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent14 => "mhpmevent14", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent15 => "mhpmevent15", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent16 => "mhpmevent16", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent17 => "mhpmevent17", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent18 => "mhpmevent18", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent19 => "mhpmevent19", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent20 => "mhpmevent20", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent21 => "mhpmevent21", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent22 => "mhpmevent22", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent23 => "mhpmevent23", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent24 => "mhpmevent24", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent25 => "mhpmevent25", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent26 => "mhpmevent26", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent27 => "mhpmevent27", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent28 => "mhpmevent28", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent29 => "mhpmevent29", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent30 => "mhpmevent30", // machine performance-monitoring event selector
+            CSRRegisterName::mhpmevent31 => "mhpmevent31", // machine performance-monitoring event selector
+
+            CSRRegisterName::mcyclecfgh => "mcyclecfgh", // upper 32 bits of `mcyclecfg`, RV32 only
+            CSRRegisterName::minstretcfgh => "minstretcfgh", // upper 32 bits of `minstretcfg`, RV32 only
+            CSRRegisterName::mhpmevent3h => "mhpmevent3h", // upper 32 bits of `mhpmevent3`, RV32 only
+            CSRRegisterName::mhpmevent4h => "mhpmevent4h", // upper 32 bits of `mhpmevent4`, RV32 only
+            CSRRegisterName::mhpmevent5h => "mhpmevent5h", // upper 32 bits of `mhpmevent5`, RV32 only
+            CSRRegisterName::mhpmevent6h => "mhpmevent6h", // upper 32 bits of `mhpmevent6`, RV32 only
+            CSRRegisterName::mhpmevent7h => "mhpmevent7h", // upper 32 bits of `mhpmevent7`, RV32 only
+            CSRRegisterName::mhpmevent8h => "mhpmevent8h", // upper 32 bits of `mhpmevent8`, RV32 only
+            CSRRegisterName::mhpmevent9h => "mhpmevent9h", // upper 32 bits of `mhpmevent9`, RV32 only
+            CSRRegisterName::mhpmevent10h => "mhpmevent10h", // upper 32 bits of `mhpmevent10`, RV32 only
+            CSRRegisterName::mhpmevent11h => "mhpmevent11h", // upper 32 bits of `mhpmevent11`, RV32 only
+            CSRRegisterName::mhpmevent12h => "mhpmevent12h", // upper 32 bits of `mhpmevent12`, RV32 only
+            CSRRegisterName::mhpmevent13h => "mhpmevent13h", // upper 32 bits of `mhpmevent13`, RV32 only
+            CSRRegisterName::mhpmevent14h => "mhpmevent14h", // upper 32 bits of `mhpmevent14`, RV32 only
+            CSRRegisterName::mhpmevent15h => "mhpmevent15h", // upper 32 bits of `mhpmevent15`, RV32 only
+            CSRRegisterName::mhpmevent16h => "mhpmevent16h", // upper 32 bits of `mhpmevent16`, RV32 only
+            CSRRegisterName::mhpmevent17h => "mhpmevent17h", // upper 32 bits of `mhpmevent17`, RV32 only
+            CSRRegisterName::mhpmevent18h => "mhpmevent18h", // upper 32 bits of `mhpmevent18`, RV32 only
+            CSRRegisterName::mhpmevent19h => "mhpmevent19h", // upper 32 bits of `mhpmevent19`, RV32 only
+            CSRRegisterName::mhpmevent20h => "mhpmevent20h", // upper 32 bits of `mhpmevent20`, RV32 only
+            CSRRegisterName::mhpmevent21h => "mhpmevent21h", // upper 32 bits of `mhpmevent21`, RV32 only
+            CSRRegisterName::mhpmevent22h => "mhpmevent22h", // upper 32 bits of `mhpmevent22`, RV32 only
+            CSRRegisterName::mhpmevent23h => "mhpmevent23h", // upper 32 bits of `mhpmevent23`, RV32 only
+            CSRRegisterName::mhpmevent24h => "mhpmevent24h", // upper 32 bits of `mhpmevent24`, RV32 only
+            CSRRegisterName::mhpmevent25h => "mhpmevent25h", // upper 32 bits of `mhpmevent25`, RV32 only
+            CSRRegisterName::mhpmevent26h => "mhpmevent26h", // upper 32 bits of `mhpmevent26`, RV32 only
+            CSRRegisterName::mhpmevent27h => "mhpmevent27h", // upper 32 bits of `mhpmevent27`, RV32 only
+            CSRRegisterName::mhpmevent28h => "mhpmevent28h", // upper 32 bits of `mhpmevent28`, RV32 only
+            CSRRegisterName::mhpmevent29h => "mhpmevent29h", // upper 32 bits of `mhpmevent29`, RV32 only
+            CSRRegisterName::mhpmevent30h => "mhpmevent30h", // upper 32 bits of `mhpmevent30`, RV32 only
+            CSRRegisterName::mhpmevent31h => "mhpmevent31h", // upper 32 bits of `mhpmevent31`, RV32 only
+
+            // machine control transfer records configuration
+            CSRRegisterName::mctrctl => "mctrctl", // machine control transfer records control register
+
+            // machine/debug level CSRs
+
+            // debug/trace registers (shared with debug mode)
+            CSRRegisterName::tselect => "tselect", // debug/trace trigger register select
+            CSRRegisterName::tdata1 => "tdata1", // first debug/trace trigger data register
+            CSRRegisterName::tdata2 => "tdata2", // second debug/trace trigger data register
+            CSRRegisterName::tdata3 => "tdata3", // third debug/trace trigger data register
+            CSRRegisterName::mcontext => "mcontext", // machine-mode context register
+
+            // debug mode registers
+
+            // debug mode registers
+            CSRRegisterName::dcsr => "dcsr", // debug control and status register
+            CSRRegisterName::dpc => "dpc",   // debug program counter
+            CSRRegisterName::dscratch0 => "dscratch0", // debug scratch register 0
+            CSRRegisterName::dscratch1 => "dscratch1", // debug scratch register 1
+        };
+
+        // write!(formatter, "{csr_name_string}")
+        formatter.pad(csr_name_string)
+    }
+
+    // `(\w+)\ =\ (0x[0-9A-Fa-f]+),` --> `$2 => Ok(CSRRegisterName::$1),`
+    // `(\w+)\ =\ (0x[0-9A-Fa-f]+),` --> `CSRRegisterName::$1 => "$1",`
 }

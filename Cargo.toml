@@ -9,7 +9,7 @@ repository = "https://github.com/0xD503/riscvmulator.git"
 license = "MIT OR Apache-2.0"
 keywords = [ "emulator", "risc-v", "riscv", "cpu" ]
 categories = [ "emulators" ]
-rust-version = "1.98"  ## use fixed `major`/`minor`, but latest `patch` version
+rust-version = "1.99"  ## use fixed `major`/`minor`, but latest `patch` version
 
 [workspace.dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
@@ -24,6 +24,9 @@ ctrlc = { version = "3.5.2" }
 unsafe_code = "forbid"
 unnameable_types = "deny"
 private_interfaces = "deny"
+
+[workspace.lints.clippy]
+unreadable_literal = "deny"
 
 [package]
 name = "riscvmulator"
@@ -78,3 +81,8 @@ inherits = "release"
 opt-level = "z"
 strip = "symbols"
 panic = "abort"
+
+
+## features
+[features]
+print-instructions = ["riscvmulator-emulator/print-instructions"]
