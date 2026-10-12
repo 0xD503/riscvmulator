@@ -921,7 +921,15 @@ impl Executor {
     }
 
     fn instruction_add_immediate_word(&mut self, decoder: &Decoder) {
-        debug!("Executing ADDIW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm_32,
+            "addiw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value as XLen32
+        );
 
         // use wrapping operation in order to allow overruns
         let result32 = XLen32::wrapping_add(
@@ -935,7 +943,15 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        debug!("Executing SLLIW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm_32,
+            "slliw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value as XLen32
+        );
 
         let result32 =
             (decoder.source_register_1_value as XLen32) << decoder.immediate;
@@ -946,7 +962,15 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        debug!("Executing SRLIW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm_32,
+            "srliw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value as XLen32
+        );
 
         let result32 =
             (decoder.source_register_1_value as XLen32) >> decoder.immediate;
@@ -957,9 +981,14 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        debug!(
-            "Executing SRAIW: {:#018X} >> {}...",
-            decoder.source_register_1_value as SignedXLen32, decoder.immediate
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm_32,
+            "sraiw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value as SignedXLen32
         );
 
         let result32 = SignedXLen32::wrapping_shr(
