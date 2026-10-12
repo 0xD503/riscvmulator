@@ -9,9 +9,14 @@ use super::gp_registers::Register;
 use super::registers::{RegisterFileInterface, RegisterInterface};
 
 use crate::constants::arch::{
-    Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, SignedImmediate, SignedXLen,
-    SignedXLen32, UnsignedImmediate, UnsignedXLen, Word, XLen, XLen32,
+    Byte, DoubleWord, HalfWord, RISCV_NUM_OF_CSR, SignedXLen, SignedXLen32,
+    UnsignedImmediate, UnsignedXLen, Word, XLen, XLen32,
 };
+#[cfg(feature = "print-instructions")]
+use crate::print_instructions::print_full_instruction;
+#[cfg(feature = "print-instructions")]
+use crate::soc::hart::core::gp_registers::constants::GPRegisterName;
+use crate::soc::hart::core::registers::RawRegisterFileInterface;
 use crate::soc::hart::extensions::zicsr::constants::CSRRegisterName;
 use crate::soc::hart::extensions::zicsr::{CSRFile, ExecutorZicsrContext};
 use crate::soc::hart::privileged::constants::{
@@ -300,67 +305,131 @@ impl Executor {
     // use wrapping operation in order to allow overruns
     fn update_memory_address(&mut self, decoder: &Decoder) {
         self.memory_address = XLen::wrapping_add(
-            decoder.source_register_1,
-            decoder.immediate.sign_extend(),
+            decoder.source_register_1_value,
+            decoder.immediate as UnsignedXLen,
         );
     }
 
     fn instruction_load_byte(&mut self, decoder: &Decoder) {
-        debug!("Executing LB...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lb",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::BYTE;
     }
 
     fn instruction_load_half(&mut self, decoder: &Decoder) {
-        debug!("Executing LH...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lh",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::HALF_WORD;
     }
 
     fn instruction_load_word(&mut self, decoder: &Decoder) {
-        debug!("Executing LW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::WORD;
     }
 
     fn instruction_load_byte_unsigned(&mut self, decoder: &Decoder) {
-        debug!("Executing LBU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lbu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_BYTE;
     }
 
     fn instruction_load_half_unsigned(&mut self, decoder: &Decoder) {
-        debug!("Executing LHU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lhu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_HALF_WORD;
     }
 
     fn instruction_addi(&mut self, decoder: &Decoder) {
-        let sign_extended_imm = decoder.immediate.sign_extend();
-
-        debug!("Executing ADDI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "addi",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         // use wrapping operation in order to allow overruns
-        self.result =
-            XLen::wrapping_add(decoder.source_register_1, sign_extended_imm);
+        self.result = XLen::wrapping_add(
+            decoder.source_register_1_value,
+            decoder.immediate as UnsignedXLen,
+        );
     }
 
     fn instruction_slli(&mut self, decoder: &Decoder) {
-        debug!("Executing SLLI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "slli",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
-        self.result = decoder.source_register_1 << decoder.shamt;
+        self.result = decoder.source_register_1_value << decoder.shamt;
     }
 
     fn instruction_slti(&mut self, decoder: &Decoder) {
-        debug!("Executing SLTI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "slti",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
-        self.result = if (decoder.source_register_1 as SignedXLen)
-            < (decoder.immediate as SignedImmediate as SignedXLen)
+        self.result = if (decoder.source_register_1_value as SignedXLen)
+            < decoder.immediate
         {
             1
         } else {
@@ -369,10 +438,18 @@ impl Executor {
     }
 
     fn instruction_sltiu(&mut self, decoder: &Decoder) {
-        debug!("Executing SLTIU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "sltiu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
-        self.result = if (decoder.source_register_1 as UnsignedXLen)
-            < decoder.immediate.sign_extend()
+        self.result = if (decoder.source_register_1_value as UnsignedXLen)
+            < decoder.immediate as UnsignedXLen
         {
             1
         } else {
@@ -381,102 +458,211 @@ impl Executor {
     }
 
     fn instruction_xori(&mut self, decoder: &Decoder) {
-        debug!("Executing XORI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "xori",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.result =
-            decoder.source_register_1 ^ decoder.immediate.sign_extend();
+            decoder.source_register_1_value ^ decoder.immediate as UnsignedXLen;
     }
 
     fn instruction_srli(&mut self, decoder: &Decoder) {
-        debug!("Executing SRLI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "srli",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
-        self.result = decoder.source_register_1 >> decoder.shamt;
+        self.result = decoder.source_register_1_value >> decoder.shamt;
     }
 
     fn instruction_srai(&mut self, decoder: &Decoder) {
-        debug!("Executing SRAI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "srai",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.shamt,
+            decoder.source_register_1_value
+        );
 
-        self.result = ((decoder.source_register_1 as SignedXLen)
+        self.result = ((decoder.source_register_1_value as SignedXLen)
             >> decoder.shamt) as XLen;
     }
 
     fn instruction_ori(&mut self, decoder: &Decoder) {
-        debug!("Executing ORI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "ori",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.result =
-            decoder.source_register_1 | decoder.immediate.sign_extend();
+            decoder.source_register_1_value | decoder.immediate as UnsignedXLen;
     }
 
     fn instruction_andi(&mut self, decoder: &Decoder) {
-        debug!("Executing ANDI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "andi",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.result =
-            decoder.source_register_1 & decoder.immediate.sign_extend();
+            decoder.source_register_1_value & decoder.immediate as UnsignedXLen;
     }
 
     fn instruction_auipc(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing AUIPC...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            luipc,
+            "auipc",
+            decoder.destination_register_offset,
+            decoder.immediate
+        );
 
         self.result =
-            XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen);
     }
 
     fn instruction_store_byte(&mut self, decoder: &Decoder) {
-        debug!("Executing SB...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            store,
+            "sb",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         self.update_memory_address(decoder);
-        self.value_to_store_u8 = decoder.source_register_2 as Byte;
+        self.value_to_store_u8 = decoder.source_register_2_value as Byte;
         self.memory_value_type = MemoryValueTypeEnum::BYTE;
     }
 
     fn instruction_store_half_word(&mut self, decoder: &Decoder) {
-        debug!("Executing SH...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            store,
+            "sh",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         self.update_memory_address(decoder);
-        self.value_to_store_u16 = decoder.source_register_2 as HalfWord;
+        self.value_to_store_u16 = decoder.source_register_2_value as HalfWord;
         self.memory_value_type = MemoryValueTypeEnum::HALF_WORD;
     }
 
     fn instruction_store_word(&mut self, decoder: &Decoder) {
-        debug!("Executing SW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            store,
+            "sw",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         self.update_memory_address(decoder);
-        self.value_to_store_u32 = decoder.source_register_2 as Word;
+        self.value_to_store_u32 = decoder.source_register_2_value as Word;
         self.memory_value_type = MemoryValueTypeEnum::WORD;
     }
 
     fn instruction_add(&mut self, decoder: &Decoder) {
-        debug!("Executing ADD...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "add",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         self.result = XLen::wrapping_add(
-            decoder.source_register_1,
-            decoder.source_register_2,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value,
         );
     }
 
     fn instruction_sub(&mut self, decoder: &Decoder) {
-        debug!("Executing SUB...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "sub",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         self.result = XLen::wrapping_sub(
-            decoder.source_register_1,
-            decoder.source_register_2,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value,
         );
     }
 
     fn instruction_sll(&mut self, decoder: &Decoder) {
-        debug!("Executing SLL...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "sll",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         self.result = XLen::wrapping_shl(
-            decoder.source_register_1,
-            decoder.source_register_2 as UnsignedImmediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value as UnsignedImmediate,
         );
     }
 
     fn instruction_slt(&mut self, decoder: &Decoder) {
-        debug!("Executing SLT...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "slt",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        self.result = if (decoder.source_register_1 as SignedXLen)
-            < (decoder.source_register_2 as SignedXLen)
+        self.result = if (decoder.source_register_1_value as SignedXLen)
+            < (decoder.source_register_2_value as SignedXLen)
         {
             1
         } else {
@@ -485,9 +671,20 @@ impl Executor {
     }
 
     fn instruction_sltu(&mut self, decoder: &Decoder) {
-        debug!("Executing SLTU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "sltu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        self.result = if decoder.source_register_1 < decoder.source_register_2 {
+        self.result = if decoder.source_register_1_value
+            < decoder.source_register_2_value
+        {
             1
         } else {
             0
@@ -495,67 +692,140 @@ impl Executor {
     }
 
     fn instruction_xor(&mut self, decoder: &Decoder) {
-        debug!("Executing XOR...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "xor",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        self.result = decoder.source_register_1 ^ decoder.source_register_2;
+        self.result =
+            decoder.source_register_1_value ^ decoder.source_register_2_value;
     }
 
     fn instruction_srl(&mut self, decoder: &Decoder) {
-        debug!("Executing SRL...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "srl",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         self.result = XLen::wrapping_shr(
-            decoder.source_register_1,
-            decoder.source_register_2 as UnsignedImmediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value as UnsignedImmediate,
         );
     }
 
     fn instruction_sra(&mut self, decoder: &Decoder) {
-        debug!("Executing SRA...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "sra",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         self.result = SignedXLen::wrapping_shr(
-            decoder.source_register_1 as SignedXLen,
-            decoder.source_register_2 as UnsignedImmediate,
+            decoder.source_register_1_value as SignedXLen,
+            decoder.source_register_2_value as UnsignedImmediate,
         ) as XLen;
     }
 
     fn instruction_or(&mut self, decoder: &Decoder) {
-        debug!("Executing OR...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "or",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        self.result = decoder.source_register_1 | decoder.source_register_2;
+        self.result =
+            decoder.source_register_1_value | decoder.source_register_2_value;
     }
 
     fn instruction_and(&mut self, decoder: &Decoder) {
-        debug!("Executing AND...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op,
+            "and",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        self.result = decoder.source_register_1 & decoder.source_register_2;
+        self.result =
+            decoder.source_register_1_value & decoder.source_register_2_value;
     }
 
     fn instruction_lui(&mut self, decoder: &Decoder) {
-        debug!("Executing LUI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            luipc,
+            "lui",
+            decoder.destination_register_offset,
+            decoder.immediate
+        );
 
-        self.result = decoder.immediate.sign_extend();
+        self.result = decoder.immediate as UnsignedXLen;
     }
 
     fn instruction_beq(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BEQ...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "beq",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        if decoder.source_register_1 == decoder.source_register_2 {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+        if decoder.source_register_1_value == decoder.source_register_2_value {
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
 
     fn instruction_bne(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!(
-            "Executing BNE: {:#018X}, {:#018X}...",
-            decoder.source_register_1, decoder.source_register_2
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "bne",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
         );
 
-        if decoder.source_register_1 != decoder.source_register_2 {
+        if decoder.source_register_1_value != decoder.source_register_2_value {
             // use wrapping operation in order to allow overruns
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as UnsignedXLen,
+            );
             self.need_to_branch = true;
         } else {
             trace!("Skip BNE...");
@@ -563,49 +833,93 @@ impl Executor {
     }
 
     fn instruction_blt(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BLT...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "blt",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        if (decoder.source_register_1 as SignedXLen)
-            < (decoder.source_register_2 as SignedXLen)
+        if (decoder.source_register_1_value as SignedXLen)
+            < (decoder.source_register_2_value as SignedXLen)
         {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
 
     fn instruction_bge(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BGE...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "bge",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        if (decoder.source_register_1 as SignedXLen)
-            >= (decoder.source_register_2 as SignedXLen)
+        if (decoder.source_register_1_value as SignedXLen)
+            >= (decoder.source_register_2_value as SignedXLen)
         {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
 
     fn instruction_bltu(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BLTU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "bltu",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        if (decoder.source_register_1 as UnsignedXLen)
-            < (decoder.source_register_2 as UnsignedXLen)
+        if (decoder.source_register_1_value as UnsignedXLen)
+            < (decoder.source_register_2_value as UnsignedXLen)
         {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
 
     fn instruction_bgeu(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing BGEU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            branch,
+            "bgeu",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
-        if (decoder.source_register_1 as UnsignedXLen)
-            >= (decoder.source_register_2 as UnsignedXLen)
+        if (decoder.source_register_1_value as UnsignedXLen)
+            >= (decoder.source_register_2_value as UnsignedXLen)
         {
-            self.branch_target_address =
-                XLen::wrapping_add(pc.read(), decoder.immediate.sign_extend());
+            self.branch_target_address = XLen::wrapping_add(
+                pc.read(),
+                decoder.immediate as UnsignedXLen,
+            );
             self.need_to_branch = true;
         }
     }
@@ -616,11 +930,19 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
-        debug!("Executing JALR...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            jalr,
+            "jalr",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.jump_target_address = (XLen::wrapping_add(
-            decoder.source_register_1,
-            decoder.immediate.sign_extend(),
+            decoder.source_register_1_value,
+            decoder.immediate as UnsignedXLen,
         )) & !(XLen::MAX & 0x01);
         self.result =
             XLen::wrapping_add(pc.read(), fetch_unit.instruction_size as XLen);
@@ -632,36 +954,65 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
-        let sign_extended_imm = decoder.immediate.sign_extend();
-        self.jump_target_address =
-            XLen::wrapping_add(pc.read(), sign_extended_imm);
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            jal,
+            "jal",
+            decoder.destination_register_offset,
+            decoder.immediate
+        );
 
-        debug!("Executing JAL...");
+        self.jump_target_address =
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen);
 
         self.result = pc.read() + fetch_unit.instruction_size as XLen;
     }
 
     fn instruction_load_double_word(&mut self, decoder: &Decoder) {
-        debug!("Executing LD...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "ld",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::DOUBLE_WORD;
     }
 
     fn instruction_load_word_unsigned(&mut self, decoder: &Decoder) {
-        debug!("Executing LWU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            load,
+            "lwu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value
+        );
 
         self.update_memory_address(decoder);
         self.memory_value_type = MemoryValueTypeEnum::UNSIGNED_WORD;
     }
 
     fn instruction_add_immediate_word(&mut self, decoder: &Decoder) {
-        debug!("Executing ADDIW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm_32,
+            "addiw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value as XLen32
+        );
 
         // use wrapping operation in order to allow overruns
         let result32 = XLen32::wrapping_add(
-            decoder.source_register_1 as XLen32,
-            decoder.immediate,
+            decoder.source_register_1_value as XLen32,
+            decoder.immediate as UnsignedImmediate,
         );
         self.result = result32.sign_extend();
     }
@@ -670,10 +1021,18 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        debug!("Executing SLLIW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm_32,
+            "slliw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value as XLen32
+        );
 
         let result32 =
-            (decoder.source_register_1 as XLen32) << decoder.immediate;
+            (decoder.source_register_1_value as XLen32) << decoder.immediate;
         self.result = result32.sign_extend();
     }
 
@@ -681,10 +1040,18 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        debug!("Executing SRLIW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm_32,
+            "srliw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1_value as XLen32
+        );
 
         let result32 =
-            (decoder.source_register_1 as XLen32) >> decoder.immediate;
+            (decoder.source_register_1_value as XLen32) >> decoder.immediate;
         self.result = result32.sign_extend();
     }
 
@@ -692,80 +1059,140 @@ impl Executor {
         &mut self,
         decoder: &Decoder,
     ) {
-        debug!(
-            "Executing SRAIW: {:#018X} >> {}...",
-            decoder.source_register_1 as SignedXLen32, decoder.immediate
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm_32,
+            "sraiw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.shamt,
+            decoder.source_register_1_value as SignedXLen32
         );
 
         let result32 = SignedXLen32::wrapping_shr(
-            decoder.source_register_1 as SignedXLen32,
-            decoder.immediate,
+            decoder.source_register_1_value as SignedXLen32,
+            decoder.immediate as UnsignedImmediate,
         ) as XLen32;
         self.result = result32.sign_extend();
     }
 
     fn instruction_store_double_word(&mut self, decoder: &Decoder) {
-        debug!("Executing SD...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            store,
+            "sd",
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.immediate,
+            decoder.source_register_1_value,
+            decoder.source_register_2_value
+        );
 
         self.update_memory_address(decoder);
-        self.value_to_store_u64 = decoder.source_register_2;
+        self.value_to_store_u64 = decoder.source_register_2_value;
         self.memory_value_type = MemoryValueTypeEnum::DOUBLE_WORD;
     }
 
     fn instruction_add_word(&mut self, decoder: &Decoder) {
-        debug!("Executing ADDW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_32,
+            "addw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value as SignedXLen32,
+            decoder.source_register_2_value as SignedXLen32
+        );
 
         let result32 = SignedXLen32::wrapping_add(
-            decoder.source_register_1 as SignedXLen32,
-            decoder.source_register_2 as SignedXLen32,
+            decoder.source_register_1_value as SignedXLen32,
+            decoder.source_register_2_value as SignedXLen32,
         ) as XLen32;
         self.result = result32.sign_extend();
     }
 
     fn instruction_sub_word(&mut self, decoder: &Decoder) {
-        debug!("Executing SUBW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_32,
+            "subw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value as SignedXLen32,
+            decoder.source_register_2_value as SignedXLen32
+        );
 
         let result32 = SignedXLen32::wrapping_sub(
-            decoder.source_register_1 as SignedXLen32,
-            decoder.source_register_2 as SignedXLen32,
+            decoder.source_register_1_value as SignedXLen32,
+            decoder.source_register_2_value as SignedXLen32,
         ) as XLen32;
         self.result = result32.sign_extend();
     }
 
     fn instruction_shift_left_logical_word(&mut self, decoder: &Decoder) {
-        debug!("Executing SLLW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_32,
+            "sllw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value as SignedXLen32,
+            decoder.source_register_2_value as SignedXLen32
+        );
 
-        let result32 = (decoder.source_register_1 as XLen32) << decoder.shamt;
+        let result32 =
+            (decoder.source_register_1_value as XLen32) << decoder.shamt;
         self.result = result32.sign_extend();
     }
 
     fn instruction_shift_right_logical_word(&mut self, decoder: &Decoder) {
-        debug!("Executing SRLW...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_32,
+            "srlw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value as SignedXLen32,
+            decoder.source_register_2_value as SignedXLen32
+        );
 
-        let result32 = (decoder.source_register_1 as XLen32) >> decoder.shamt;
+        let result32 =
+            (decoder.source_register_1_value as XLen32) >> decoder.shamt;
         self.result = result32.sign_extend();
     }
 
     fn instruction_shift_right_arith_word(&mut self, decoder: &Decoder) {
-        debug!(
-            "Executing SRAW: {:#018} >> {:?}...",
-            decoder.source_register_1 as SignedXLen32, decoder.shamt
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_32,
+            "sraw",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.source_register_2_offset,
+            decoder.source_register_1_value as SignedXLen32,
+            decoder.source_register_2_value as SignedXLen32
         );
 
-        let result32 = ((decoder.source_register_1 as SignedXLen32)
+        let result32 = ((decoder.source_register_1_value as SignedXLen32)
             >> decoder.shamt) as XLen32;
         self.result = result32.sign_extend();
     }
 
     fn instruction_fence(&mut self, decoder: &Decoder) {
-        debug!("Executing FENCE...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(fence);
 
         //
         error!("TODO: unimplemented instruction");
     }
 
     fn instruction_fence_i(&mut self, decoder: &Decoder) {
-        debug!("Executing FENCE_I...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(fence_i);
 
         //
         error!("TODO: unimplemented instruction");
@@ -776,7 +1203,8 @@ impl Executor {
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
         pc: &Register,
     ) {
-        debug!("Executing ECALL...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(ecall);
 
         let current_privilege_mode =
             self.read_mstatus_mpp(control_status_registers);
@@ -808,21 +1236,24 @@ impl Executor {
     }
 
     fn instruction_execution_break(&mut self, decoder: &Decoder) {
-        debug!("Executing EBREAK...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(ebreak);
 
         //
         todo!();
     }
 
     fn instruction_user_return(&mut self, decoder: &Decoder) {
-        debug!("Executing URET...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(uret);
 
         //
         todo!();
     }
 
     fn instruction_supervisor_return(&mut self, decoder: &Decoder) {
-        debug!("Executing SRET...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(sret);
 
         //
         todo!();
@@ -832,36 +1263,77 @@ impl Executor {
         &mut self,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        debug!("Executing MRET...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(mret);
 
         self.return_target_address =
             control_status_registers.read(CSRRegisterName::mepc as usize);
     }
 
     // CSR instructions
+    fn instruction_csr_read_write(
+        &mut self,
+        decoder: &Decoder,
+        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
+    ) {
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csr,
+            "csrrw",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.source_register_1_offset,
+            control_status_registers.read_raw(decoder.immediate as usize),
+            decoder.source_register_1_value
+        );
+
+        if decoder.zicsr.need_to_read_csr {
+            self.read_csr_to_result(decoder, control_status_registers);
+        }
+        self.prepare_value_for_csr(decoder.source_register_1_value);
+    }
+
+    fn instruction_csr_read_set(
+        &mut self,
+        decoder: &Decoder,
+        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
+    ) {
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csr,
+            "csrrs",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.source_register_1_offset,
+            control_status_registers.read_raw(decoder.immediate as usize),
+            decoder.source_register_1_value
+        );
+
+        self.read_csr_to_result(decoder, control_status_registers);
+        if decoder.zicsr.need_to_write_csr {
+            self.prepare_set_bits_for_csr(decoder.source_register_1_value);
+        }
+    }
+
     fn instruction_csr_read_clear(
         &mut self,
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        debug!("Executing CSRRC...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csr,
+            "csrrc",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.source_register_1_offset,
+            control_status_registers.read_raw(decoder.immediate as usize),
+            decoder.source_register_1_value
+        );
 
         self.read_csr_to_result(decoder, control_status_registers);
         if decoder.zicsr.need_to_write_csr {
-            self.prepare_clear_bits_for_csr(decoder.source_register_1);
-        }
-    }
-
-    fn instruction_csr_read_clear_immediate(
-        &mut self,
-        decoder: &Decoder,
-        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
-    ) {
-        debug!("Executing CSRRCI...");
-
-        self.read_csr_to_result(decoder, control_status_registers);
-        if decoder.zicsr.need_to_write_csr {
-            self.prepare_clear_bits_for_csr(decoder.zicsr.uimm);
+            self.prepare_clear_bits_for_csr(decoder.source_register_1_value);
         }
     }
 
@@ -870,7 +1342,15 @@ impl Executor {
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        debug!("Executing CSRRWI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csri,
+            "csrrwi",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.zicsr.uimm,
+            control_status_registers.read_raw(decoder.immediate as usize)
+        );
 
         if decoder.zicsr.need_to_read_csr {
             self.read_csr_to_result(decoder, control_status_registers);
@@ -878,42 +1358,45 @@ impl Executor {
         self.prepare_value_for_csr(decoder.zicsr.uimm);
     }
 
-    fn instruction_csr_read_write(
-        &mut self,
-        decoder: &Decoder,
-        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
-    ) {
-        debug!("Executing CSRRW...");
-
-        if decoder.zicsr.need_to_read_csr {
-            self.read_csr_to_result(decoder, control_status_registers);
-        }
-        self.prepare_value_for_csr(decoder.source_register_1);
-    }
-
-    fn instruction_csr_read_set(
-        &mut self,
-        decoder: &Decoder,
-        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
-    ) {
-        debug!("Executing CSRRS...");
-
-        self.read_csr_to_result(decoder, control_status_registers);
-        if decoder.zicsr.need_to_write_csr {
-            self.prepare_set_bits_for_csr(decoder.source_register_1);
-        }
-    }
-
     fn instruction_csr_read_set_immediate(
         &mut self,
         decoder: &Decoder,
         control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
     ) {
-        debug!("Executing CSRRSI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csri,
+            "csrrsi",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.zicsr.uimm,
+            control_status_registers.read_raw(decoder.immediate as usize)
+        );
 
         self.read_csr_to_result(decoder, control_status_registers);
         if decoder.zicsr.need_to_write_csr {
             self.prepare_set_bits_for_csr(decoder.zicsr.uimm);
+        }
+    }
+
+    fn instruction_csr_read_clear_immediate(
+        &mut self,
+        decoder: &Decoder,
+        control_status_registers: &CSRFile<RISCV_NUM_OF_CSR>,
+    ) {
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            csri,
+            "csrrci",
+            decoder.destination_register_offset,
+            decoder.immediate as usize,
+            decoder.zicsr.uimm,
+            control_status_registers.read_raw(decoder.immediate as usize)
+        );
+
+        self.read_csr_to_result(decoder, control_status_registers);
+        if decoder.zicsr.need_to_write_csr {
+            self.prepare_clear_bits_for_csr(decoder.zicsr.uimm);
         }
     }
 

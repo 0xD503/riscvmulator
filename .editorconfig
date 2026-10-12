@@ -24,3 +24,4 @@ indent_size = 2
 # double whitespace at end of line
 # denotes a line break in Markdown
 trim_trailing_whitespace = false
+#indent_size = 2

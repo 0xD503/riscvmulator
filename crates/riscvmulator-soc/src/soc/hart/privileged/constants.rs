@@ -80,7 +80,7 @@ impl From<XLen> for MStatus_MPP {
 
 #[allow(non_camel_case_types)]
 #[repr(i64)]
-#[derive(Default, Clone)]
+#[derive(Default, Copy, Clone)]
 pub enum MCause_Code {
     #[allow(clippy::identity_op)]
     INTERRUPT_RESERVED = 0 | SignedMXLen::MIN,

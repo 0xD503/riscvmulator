@@ -1,10 +1,10 @@
 pub mod constants;
 
 use self::constants::{
-    BRANCH_Funct3, FenceMode, I_Funct12, JALR_Funct3, MISC_MEM_Funct3,
-    OP_Funct7, OP_IMM_Funct3, OP_IMM_Funct7, OP_IMM_ShiftType,
-    OPCODE_LOAD_Funct3, Opcode, OpcodeToInstructionFormat, STORE_Funct3,
-    SYSTEM_Funct3, SYSTEM_Imm_transfer_control_return_from,
+    BRANCH_Funct3, FenceMode, Funct3_OPCODE_LOAD, I_Funct12, JALR_Funct3,
+    MISC_MEM_Funct3, OP_Funct7, OP_IMM_Funct3, OP_IMM_Funct7, OP_IMM_ShiftType,
+    Opcode, OpcodeToInstructionFormat, STORE_Funct3, SYSTEM_Funct3,
+    SYSTEM_Imm_transfer_control_return_from,
 };
 use crate::soc::hart::core::ArchState;
 use crate::soc::hart::extensions;
@@ -29,8 +29,8 @@ use log::{error, trace};
 #[derive(Default, Clone)]
 pub struct Decoder {
     pub(crate) opcode: Opcode,
-    pub(crate) source_register_1: XLen,
-    pub(crate) source_register_2: XLen,
+    pub(crate) source_register_1_value: XLen,
+    pub(crate) source_register_2_value: XLen,
     pub(crate) source_register_1_offset: usize,
     pub(crate) source_register_2_offset: usize,
     pub(crate) destination_register_offset: usize,
@@ -43,7 +43,8 @@ pub struct Decoder {
     pub(crate) shamt: InstructionType,
     pub(crate) shift_type: OP_IMM_ShiftType,
 
-    pub(crate) immediate: UnsignedImmediate,
+    // immediate sign-extends to XLEN
+    pub(crate) immediate: SignedXLen,
     pub(crate) command_to_execute: ExecutableCommand,
     pub(crate) need_to_read_memory: bool,
     pub(crate) need_to_write_memory: bool,
@@ -66,8 +67,8 @@ impl Decoder {
 
     fn get_reset_instance() -> Self {
         Self {
-            source_register_1: RISCV_X0_ZERO_REGISTER_VALUE,
-            source_register_2: RISCV_X0_ZERO_REGISTER_VALUE,
+            source_register_1_value: RISCV_X0_ZERO_REGISTER_VALUE,
+            source_register_2_value: RISCV_X0_ZERO_REGISTER_VALUE,
             source_register_1_offset: GPRegisterName::x0_zero as usize,
             source_register_2_offset: GPRegisterName::x0_zero as usize,
             destination_register_offset: GPRegisterName::x0_zero as usize,
@@ -171,9 +172,9 @@ impl Decoder {
     ) {
         trace!("Decoding R-type instruction");
 
-        self.source_register_1 =
+        self.source_register_1_value =
             self.extract_source_register_1(instruction, register_file);
-        self.source_register_2 =
+        self.source_register_2_value =
             self.extract_source_register_2(instruction, register_file);
         self.destination_register_offset =
             self.extract_destination_register_offset(instruction);
@@ -260,7 +261,7 @@ impl Decoder {
                     }
                     OP_32_Funct3::SRXW => {
                         self.shamt = self.extract_r_shamt_rv64w();
-                        trace!("New shamt: {}", self.shamt);
+                        // trace!("New shamt: {}", self.shamt);
                         self.command_to_execute = ExecutableCommand::SRLW;
                     }
                 },
@@ -308,7 +309,7 @@ impl Decoder {
     ) {
         trace!("Decoding I-type instruction");
 
-        self.source_register_1 =
+        self.source_register_1_value =
             self.extract_source_register_1(instruction, register_file);
         self.destination_register_offset =
             self.extract_destination_register_offset(instruction);
@@ -327,29 +328,28 @@ impl Decoder {
         match self.opcode {
             // I_3
             Opcode::LOAD => {
-                self.immediate =
-                    self.extract_imm_11_0(instruction) as UnsignedImmediate;
+                self.immediate = self.extract_imm_11_0(instruction);
                 self.need_to_read_memory = true;
-                match OPCODE_LOAD_Funct3::from(self.funct3) {
-                    OPCODE_LOAD_Funct3::LB => {
+                match Funct3_OPCODE_LOAD::from(self.funct3) {
+                    Funct3_OPCODE_LOAD::LB => {
                         self.command_to_execute = ExecutableCommand::LB
                     }
-                    OPCODE_LOAD_Funct3::LH => {
+                    Funct3_OPCODE_LOAD::LH => {
                         self.command_to_execute = ExecutableCommand::LH
                     }
-                    OPCODE_LOAD_Funct3::LW => {
+                    Funct3_OPCODE_LOAD::LW => {
                         self.command_to_execute = ExecutableCommand::LW
                     }
-                    OPCODE_LOAD_Funct3::LD => {
+                    Funct3_OPCODE_LOAD::LD => {
                         self.command_to_execute = ExecutableCommand::LD
                     }
-                    OPCODE_LOAD_Funct3::LBU => {
+                    Funct3_OPCODE_LOAD::LBU => {
                         self.command_to_execute = ExecutableCommand::LBU
                     }
-                    OPCODE_LOAD_Funct3::LHU => {
+                    Funct3_OPCODE_LOAD::LHU => {
                         self.command_to_execute = ExecutableCommand::LHU
                     }
-                    OPCODE_LOAD_Funct3::LWU => {
+                    Funct3_OPCODE_LOAD::LWU => {
                         self.command_to_execute = ExecutableCommand::LWU
                     }
                 }
@@ -422,8 +422,7 @@ impl Decoder {
             }
             // I_19
             Opcode::OP_IMM => {
-                self.immediate =
-                    self.extract_imm_11_0(instruction) as UnsignedImmediate;
+                self.immediate = self.extract_imm_11_0(instruction);
                 match OP_IMM_Funct3::from(self.funct3) {
                     OP_IMM_Funct3::ADDI => {
                         self.command_to_execute = ExecutableCommand::ADDI;
@@ -478,8 +477,7 @@ impl Decoder {
             }
             // I_27
             Opcode::OP_IMM_32 => {
-                self.immediate =
-                    self.extract_imm_11_0(instruction) as UnsignedImmediate;
+                self.immediate = self.extract_imm_11_0(instruction);
                 match OP_IMM_32_Funct3::from(self.funct3) {
                     OP_IMM_32_Funct3::ADDIW => {
                         self.command_to_execute = ExecutableCommand::ADDIW
@@ -520,8 +518,7 @@ impl Decoder {
             }
             // I_103
             Opcode::JALR => {
-                self.immediate =
-                    self.extract_imm_11_0(instruction) as UnsignedImmediate;
+                self.immediate = self.extract_imm_11_0(instruction);
                 match JALR_Funct3::from(self.funct3) {
                     JALR_Funct3::JALR => {
                         self.need_to_jump = true;
@@ -532,12 +529,13 @@ impl Decoder {
 
             // I_115 (Zicsr_extension)
             Opcode::SYSTEM => {
-                self.immediate = self.extract_csr_address(instruction);
+                self.immediate =
+                    self.extract_csr_address(instruction) as XLen as SignedXLen;
                 match SYSTEM_Funct3::from(self.funct3) {
                     SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM => {
                         self.need_to_write_back = false;
                         let are_rd_and_rs1_zero = || -> bool {
-                            (self.source_register_1 == 0)
+                            (self.source_register_1_value == 0)
                                 && (register_file
                                     .read(self.destination_register_offset)
                                     == 0)
@@ -584,11 +582,14 @@ impl Decoder {
                     // CSR instructions are atomic
                     SYSTEM_Funct3::CSRRW => {
                         self.zicsr.need_to_write_csr = true;
-                        if self.destination_register_offset
-                            != GPRegisterName::x0_zero as usize
-                        {
-                            self.zicsr.need_to_read_csr = true;
-                        }
+                        // if self.destination_register_offset
+                        //     != GPRegisterName::x0_zero as usize
+                        // {
+                        //     self.zicsr.need_to_read_csr = true;
+                        // }
+                        self.zicsr.need_to_read_csr = self
+                            .destination_register_offset
+                            != GPRegisterName::x0_zero as usize;
                         self.command_to_execute = ExecutableCommand::CSRRW;
                     }
                     SYSTEM_Funct3::CSRRS => {
@@ -614,11 +615,14 @@ impl Decoder {
                         self.zicsr.uimm = self
                             .extract_source_register_1_offset(instruction)
                             as XLen;
-                        if self.destination_register_offset
-                            != GPRegisterName::x0_zero as usize
-                        {
-                            self.zicsr.need_to_read_csr = true;
-                        }
+                        // if self.destination_register_offset
+                        //     != GPRegisterName::x0_zero as usize
+                        // {
+                        //     self.zicsr.need_to_read_csr = true;
+                        // }
+                        self.zicsr.need_to_read_csr = self
+                            .destination_register_offset
+                            != GPRegisterName::x0_zero as usize;
                         self.command_to_execute = ExecutableCommand::CSRRWI;
                     }
                     SYSTEM_Funct3::CSRRSI => {
@@ -662,9 +666,9 @@ impl Decoder {
     ) {
         trace!("Decoding S-type instruction");
 
-        self.source_register_1 =
+        self.source_register_1_value =
             self.extract_source_register_1(instruction, register_file);
-        self.source_register_2 =
+        self.source_register_2_value =
             self.extract_source_register_2(instruction, register_file);
         self.need_to_read_memory = false;
         self.need_to_write_memory = true;
@@ -677,8 +681,7 @@ impl Decoder {
 
         // extract immediate
         self.immediate = self.extract_imm_4_0(instruction);
-        self.immediate |=
-            self.extract_imm_11_5(instruction) as UnsignedImmediate;
+        self.immediate |= self.extract_imm_11_5(instruction);
 
         self.funct3 = self.extract_funct3(instruction);
 
@@ -713,9 +716,9 @@ impl Decoder {
     ) {
         trace!("Decoding B-type instruction");
 
-        self.source_register_1 =
+        self.source_register_1_value =
             self.extract_source_register_1(instruction, register_file);
-        self.source_register_2 =
+        self.source_register_2_value =
             self.extract_source_register_2(instruction, register_file);
         self.need_to_read_memory = false;
         self.need_to_write_memory = false;
@@ -730,7 +733,7 @@ impl Decoder {
         self.immediate = self.extract_imm_4_1(instruction);
         self.immediate |= self.extract_imm_10_5(instruction);
         self.immediate |= self.extract_b_11(instruction);
-        self.immediate |= self.extract_b_12(instruction) as UnsignedImmediate;
+        self.immediate |= self.extract_b_12(instruction);
 
         self.funct3 = self.extract_funct3(instruction);
 
@@ -768,8 +771,7 @@ impl Decoder {
 
         self.destination_register_offset =
             self.extract_destination_register_offset(instruction);
-        self.immediate =
-            self.extract_imm_31_12(instruction) as UnsignedImmediate;
+        self.immediate = self.extract_imm_31_12(instruction);
 
         self.need_to_read_memory = false;
         self.need_to_write_memory = false;
@@ -813,7 +815,7 @@ impl Decoder {
         self.immediate = self.extract_imm_10_1(instruction);
         self.immediate |= self.extract_j_11(instruction);
         self.immediate |= self.extract_imm_19_12(instruction);
-        self.immediate |= self.extract_j_20(instruction) as UnsignedImmediate;
+        self.immediate |= self.extract_j_20(instruction);
 
         match self.opcode {
             Opcode::JAL => {
@@ -923,11 +925,12 @@ impl Decoder {
     }
 
     fn extract_r_shamt(&self) -> InstructionType {
-        (self.source_register_2 & (MASK_SHAMT as XLen)) as InstructionType
+        (self.source_register_2_value & (MASK_SHAMT as XLen)) as InstructionType
     }
 
     fn extract_r_shamt_rv64w(&self) -> InstructionType {
-        (self.source_register_2 & (MASK_SHAMT_RV64W as XLen)) as InstructionType
+        (self.source_register_2_value & (MASK_SHAMT_RV64W as XLen))
+            as InstructionType
     }
 
     fn extract_i_shamt(&self, instruction: InstructionType) -> InstructionType {
@@ -946,7 +949,7 @@ impl Decoder {
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL))
-            as SignedXLen
+            as SignedXLen32 as SignedXLen
     }
 
     fn extract_fence_sw(&self, instruction: InstructionType) -> bool {
@@ -999,16 +1002,13 @@ impl Decoder {
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_5 - BIT_OFFSET_IMM_11_5_FINAL))
-            as SignedXLen
+            as SignedXLen32 as SignedXLen
             & !((1 << BIT_OFFSET_IMM_11_5_FINAL) - 1)
     }
 
-    fn extract_imm_4_0(
-        &self,
-        instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_4_0 - BIT_OFFSET_IMM_4_0_FINAL))
-            & MASK_IMM_4_0
+    fn extract_imm_4_0(&self, instruction: InstructionType) -> SignedXLen {
+        ((instruction >> (BIT_OFFSET_IMM_4_0 - BIT_OFFSET_IMM_4_0_FINAL))
+            & MASK_IMM_4_0) as SignedXLen32 as SignedXLen
     }
 
     fn extract_imm_31_12(&self, instruction: InstructionType) -> SignedXLen {
@@ -1016,63 +1016,55 @@ impl Decoder {
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_31_12 - BIT_OFFSET_IMM_31_12_FINAL))
-            as SignedXLen
+            as SignedXLen32 as SignedXLen
             & !((1 << BIT_OFFSET_IMM_31_12_FINAL) - 1)
     }
 
-    fn extract_imm_10_5(
-        &self,
-        instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_10_5 - BIT_OFFSET_IMM_10_5_FINAL))
-            & MASK_IMM_10_5
+    fn extract_imm_10_5(&self, instruction: InstructionType) -> SignedXLen {
+        ((instruction >> (BIT_OFFSET_IMM_10_5 - BIT_OFFSET_IMM_10_5_FINAL))
+            & MASK_IMM_10_5) as SignedXLen32 as SignedXLen
     }
 
-    fn extract_imm_4_1(
-        &self,
-        instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_4_1 - BIT_OFFSET_IMM_4_1_FINAL))
-            & MASK_IMM_4_1
+    fn extract_imm_4_1(&self, instruction: InstructionType) -> SignedXLen {
+        ((instruction >> (BIT_OFFSET_IMM_4_1 - BIT_OFFSET_IMM_4_1_FINAL))
+            & MASK_IMM_4_1) as SignedXLen32 as SignedXLen
     }
 
-    fn extract_imm_10_1(
-        &self,
-        instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_10_1 - BIT_OFFSET_IMM_10_1_FINAL))
-            & MASK_IMM_10_1
+    fn extract_imm_10_1(&self, instruction: InstructionType) -> SignedXLen {
+        ((instruction >> (BIT_OFFSET_IMM_10_1 - BIT_OFFSET_IMM_10_1_FINAL))
+            & MASK_IMM_10_1) as SignedXLen32 as SignedXLen
     }
 
-    fn extract_imm_19_12(
-        &self,
-        instruction: InstructionType,
-    ) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_IMM_19_12 - BIT_OFFSET_IMM_19_12_FINAL))
-            & MASK_IMM_19_12
+    fn extract_imm_19_12(&self, instruction: InstructionType) -> SignedXLen {
+        ((instruction >> (BIT_OFFSET_IMM_19_12 - BIT_OFFSET_IMM_19_12_FINAL))
+            & MASK_IMM_19_12) as SignedXLen32 as SignedXLen
     }
 
-    fn extract_b_11(&self, instruction: InstructionType) -> UnsignedImmediate {
-        (instruction << (BIT_OFFSET_B_11_FINAL - BIT_OFFSET_B_11)) & MASK_B_11
+    fn extract_b_11(&self, instruction: InstructionType) -> SignedXLen {
+        ((instruction << (BIT_OFFSET_B_11_FINAL - BIT_OFFSET_B_11)) & MASK_B_11)
+            as SignedXLen32 as SignedXLen
     }
 
     fn extract_b_12(&self, instruction: InstructionType) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (instruction as SignedInstructionType
-            >> (BIT_OFFSET_B_12 - BIT_OFFSET_B_12_FINAL)) as SignedXLen
+            >> (BIT_OFFSET_B_12 - BIT_OFFSET_B_12_FINAL))
+            as SignedXLen32 as SignedXLen
             & !((1 << BIT_OFFSET_B_12_FINAL) - 1)
     }
 
-    fn extract_j_11(&self, instruction: InstructionType) -> UnsignedImmediate {
-        (instruction >> (BIT_OFFSET_J_11 - BIT_OFFSET_J_11_FINAL)) & MASK_J_11
+    fn extract_j_11(&self, instruction: InstructionType) -> SignedXLen {
+        ((instruction >> (BIT_OFFSET_J_11 - BIT_OFFSET_J_11_FINAL)) & MASK_J_11)
+            as SignedXLen32 as SignedXLen
     }
 
     fn extract_j_20(&self, instruction: InstructionType) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         ((instruction as SignedInstructionType)
-            >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL)) as SignedXLen
+            >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL))
+            as SignedXLen32 as SignedXLen
             & !((1 << BIT_OFFSET_J_20_FINAL) - 1)
     }
 }

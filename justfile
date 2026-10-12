@@ -21,11 +21,17 @@ COMPOSE := COMPOSE_CMD + " run --rm"
 ENSURE_DEV_IMAGE_EXISTS := just_executable() + " --justfile " + quote(justfile()) + " " + "ensure-dev-image-exists" + " && "
 COMMON_ENV := "JUST_TIME=true"
 RUN_UNDER_NICE := "nice"
-RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" + RUN_UNDER_NICE + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " " + DEV_SERVICE_NAME + " " + RUN_UNDER_NICE + " " }
+RUN_IN_CONTAINER := if IS_IN_CONTAINER != "" { "" + RUN_UNDER_NICE } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " " + DEV_SERVICE_NAME + " " + RUN_UNDER_NICE }
+WITH_DEV_PROFILE := "--workspace --profile=dev --features='print-instructions'"
+RUN_WITH_DEV_PROFILE := "--profile=dev --features='print-instructions'"
+WITH_REL_CHECKED_PROFILE := "--workspace --profile=release-checked --features='print-instructions'"
+RUN_WITH_REL_CHECKED_PROFILE := "--profile=release-checked --features='print-instructions'"
+WITH_RELEASE_PROFILE := "--workspace --profile=release"
+RUN_WITH_RELEASE_PROFILE := "--profile=release"
 DEBUG_ENV := "RVMULATOR_EMULATOR__LOGGING__LEVEL=debug RUST_BACKTRACE=full"
 TRACE_ENV := "RVMULATOR_EMULATOR__LOGGING__LEVEL=trace RUST_BACKTRACE=full"
-RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { DEBUG_ENV + " " + RUN_UNDER_NICE + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e " + replace(DEBUG_ENV, " ", " -e ") + " " + DEV_SERVICE_NAME + " " + RUN_UNDER_NICE + " " }
-RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { TRACE_ENV + " " + RUN_UNDER_NICE + " " } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e " + replace(TRACE_ENV, " ", " -e ") + " " + DEV_SERVICE_NAME + " " + RUN_UNDER_NICE + " " }
+RUN_IN_CONTAINER_DEBUG := if IS_IN_CONTAINER != "" { DEBUG_ENV + " " + RUN_UNDER_NICE } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e " + replace(DEBUG_ENV, " ", " -e ") + " " + DEV_SERVICE_NAME + " " + RUN_UNDER_NICE }
+RUN_IN_CONTAINER_TRACE := if IS_IN_CONTAINER != "" { TRACE_ENV + " " + RUN_UNDER_NICE } else { ENSURE_DEV_IMAGE_EXISTS + COMPOSE + " -e " + replace(TRACE_ENV, " ", " -e ") + " " + DEV_SERVICE_NAME + " " + RUN_UNDER_NICE }
 DEV_IMAGE := env_var("DEV_SERVICE_STARTING_IMAGE_NAME") + ":local"
 
 
@@ -41,39 +47,39 @@ run-dev-container: ensure-dev-image-exists
   fi
 
 build-dev:
-  {{RUN_IN_CONTAINER}} cargo build --workspace --profile=release-checked
+  {{RUN_IN_CONTAINER}} cargo build {{WITH_REL_CHECKED_PROFILE}}
 
 run-dev:
-  {{RUN_IN_CONTAINER_DEBUG}} cargo run --profile=release-checked
+  {{RUN_IN_CONTAINER_DEBUG}} cargo run {{RUN_WITH_REL_CHECKED_PROFILE}}
 
 ci-dev: test run-dev
 
 run-dev-trace:
-  {{RUN_IN_CONTAINER_TRACE}} cargo run --profile=release-checked
+  {{RUN_IN_CONTAINER_TRACE}} cargo run {{RUN_WITH_REL_CHECKED_PROFILE}}
 
 run-linux-dev: build-dev test
-  {{RUN_IN_CONTAINER_DEBUG}} cargo run --profile=release-checked
+  {{RUN_IN_CONTAINER_DEBUG}} cargo run {{RUN_WITH_REL_CHECKED_PROFILE}}
 
 asm *args:
   {{RUN_IN_CONTAINER_DEBUG}} cargo asm --profile=release {{args}}
 
 build-deb:
-  {{RUN_IN_CONTAINER}} cargo build --workspace
+  {{RUN_IN_CONTAINER}} cargo build {{WITH_DEV_PROFILE}}
 
 run-deb:
-  {{RUN_IN_CONTAINER_DEBUG}} cargo run
+  {{RUN_IN_CONTAINER_DEBUG}} cargo run {{RUN_WITH_DEV_PROFILE}}
 
 run-deb-trace:
-  {{RUN_IN_CONTAINER_TRACE}} cargo run
+  {{RUN_IN_CONTAINER_TRACE}} cargo run {{RUN_WITH_DEV_PROFILE}}
 
 
 ## release
 
 build:
-  {{RUN_IN_CONTAINER}} cargo build --workspace --profile=release
+  {{RUN_IN_CONTAINER}} cargo build {{WITH_RELEASE_PROFILE}}
 
 run:
-  {{RUN_IN_CONTAINER}} cargo run --profile=release
+  {{RUN_IN_CONTAINER}} cargo run {{RUN_WITH_RELEASE_PROFILE}}
 
 run-release-container:
   #!/usr/bin/env sh
@@ -88,26 +94,26 @@ run-release-container:
 
 test:
   {{RUN_IN_CONTAINER_DEBUG}} scripts/riscv_tests.temp.sh
-  {{RUN_IN_CONTAINER_DEBUG}} cargo test --workspace --profile=release-checked
+  {{RUN_IN_CONTAINER_DEBUG}} cargo test {{WITH_REL_CHECKED_PROFILE}}
 
 test-debug:
   {{RUN_IN_CONTAINER_DEBUG}} scripts/riscv_tests.temp.sh
-  {{RUN_IN_CONTAINER_DEBUG}} cargo test --workspace --profile=dev
+  {{RUN_IN_CONTAINER_DEBUG}} cargo test {{WITH_DEV_PROFILE}}
 
 bench:
-  {{RUN_IN_CONTAINER_DEBUG}} cargo bench --workspace  --profile=release-checked
+  {{RUN_IN_CONTAINER_DEBUG}} cargo bench --workspace
 
 lint:
-  {{RUN_IN_CONTAINER}} cargo clippy --workspace --profile=release-checked -- -D warnings
+  {{RUN_IN_CONTAINER}} cargo clippy {{WITH_REL_CHECKED_PROFILE}} -- -D warnings
 
 fmt:
   {{RUN_IN_CONTAINER}} cargo fmt --all
 
 doc:
-  {{RUN_IN_CONTAINER}} cargo doc --workspace --profile=release --no-deps
+  {{RUN_IN_CONTAINER}} cargo doc {{WITH_RELEASE_PROFILE}} --no-deps
 
 check:
-  {{RUN_IN_CONTAINER}} cargo check --workspace --all-targets --profile=release-checked
+  {{RUN_IN_CONTAINER}} cargo check --all-targets {{WITH_REL_CHECKED_PROFILE}}
 
 audit:
   {{RUN_IN_CONTAINER}} cargo audit
@@ -195,4 +201,8 @@ bolt:
 
 ## miscelaneous
 
-##
+lock-update:
+  {{RUN_IN_CONTAINER}} cargo update
+
+metadata:
+  {{RUN_IN_CONTAINER}} cargo metadata
