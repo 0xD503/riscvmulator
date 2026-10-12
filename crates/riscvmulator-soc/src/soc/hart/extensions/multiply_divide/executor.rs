@@ -13,17 +13,17 @@ impl Executor {
         debug!("Executing MUL...");
 
         self.result = decoder
-            .source_register_1
-            .wrapping_mul(decoder.source_register_2);
+            .source_register_1_value
+            .wrapping_mul(decoder.source_register_2_value);
     }
 
     pub(crate) fn instruction_multiply_high(&mut self, decoder: &Decoder) {
         debug!("Executing MULH...");
 
         let extended_rs1: i128 =
-            decoder.source_register_1 as SignedXLen as i128;
+            decoder.source_register_1_value as SignedXLen as i128;
         let extended_rs2: i128 =
-            decoder.source_register_2 as SignedXLen as i128;
+            decoder.source_register_2_value as SignedXLen as i128;
         self.result = ((extended_rs1 * extended_rs2) >> XLen::BITS) as XLen;
     }
 
@@ -34,8 +34,8 @@ impl Executor {
         debug!("Executing MULHSU...");
 
         let extended_rs1: i128 =
-            decoder.source_register_1 as SignedXLen as i128;
-        let extended_rs2: u128 = decoder.source_register_2 as u128;
+            decoder.source_register_1_value as SignedXLen as i128;
+        let extended_rs2: u128 = decoder.source_register_2_value as u128;
         self.result =
             ((extended_rs1 * extended_rs2 as i128) >> XLen::BITS) as XLen;
     }
@@ -46,27 +46,27 @@ impl Executor {
     ) {
         debug!("Executing MULHU...");
 
-        let extended_rs1: u128 = decoder.source_register_1 as u128;
-        let extended_rs2: u128 = decoder.source_register_2 as u128;
+        let extended_rs1: u128 = decoder.source_register_1_value as u128;
+        let extended_rs2: u128 = decoder.source_register_2_value as u128;
         self.result = ((extended_rs1 * extended_rs2) >> XLen::BITS) as XLen;
     }
 
     fn is_div_by_zero(&self, decoder: &Decoder) -> bool {
-        decoder.source_register_2 == 0
+        decoder.source_register_2_value == 0
     }
 
     fn is_div_overflow(&self, decoder: &Decoder) -> bool {
-        decoder.source_register_2 as SignedXLen == -1
-            && decoder.source_register_1 as SignedXLen == SignedXLen::MIN
+        decoder.source_register_2_value as SignedXLen == -1
+            && decoder.source_register_1_value as SignedXLen == SignedXLen::MIN
     }
 
     fn is_div_by_zero_32(&self, decoder: &Decoder) -> bool {
-        decoder.source_register_2 as XLen32 == 0
+        decoder.source_register_2_value as XLen32 == 0
     }
 
     fn is_div_overflow_32(&self, decoder: &Decoder) -> bool {
-        decoder.source_register_2 as XLen32 as SignedXLen32 == -1
-            && decoder.source_register_1 as XLen32 as SignedXLen32
+        decoder.source_register_2_value as XLen32 as SignedXLen32 == -1
+            && decoder.source_register_1_value as XLen32 as SignedXLen32
                 == SignedXLen32::MIN
     }
 
@@ -76,10 +76,10 @@ impl Executor {
         if self.is_div_by_zero(decoder) {
             self.result = XLen::MAX;
         } else if self.is_div_overflow(decoder) {
-            self.result = decoder.source_register_1;
+            self.result = decoder.source_register_1_value;
         } else {
-            self.result = (decoder.source_register_1 as SignedXLen
-                / decoder.source_register_2 as SignedXLen)
+            self.result = (decoder.source_register_1_value as SignedXLen
+                / decoder.source_register_2_value as SignedXLen)
                 as XLen;
         }
     }
@@ -90,7 +90,8 @@ impl Executor {
         if self.is_div_by_zero(decoder) {
             self.result = XLen::MAX;
         } else {
-            self.result = decoder.source_register_1 / decoder.source_register_2;
+            self.result = decoder.source_register_1_value
+                / decoder.source_register_2_value;
         }
     }
 
@@ -98,12 +99,12 @@ impl Executor {
         debug!("Executing REM...");
 
         if self.is_div_by_zero(decoder) {
-            self.result = decoder.source_register_1;
+            self.result = decoder.source_register_1_value;
         } else if self.is_div_overflow(decoder) {
             self.result = 0;
         } else {
-            self.result = (decoder.source_register_1 as SignedXLen
-                % decoder.source_register_2 as SignedXLen)
+            self.result = (decoder.source_register_1_value as SignedXLen
+                % decoder.source_register_2_value as SignedXLen)
                 as XLen;
         }
     }
@@ -112,9 +113,10 @@ impl Executor {
         debug!("Executing REMU...");
 
         if self.is_div_by_zero(decoder) {
-            self.result = decoder.source_register_1;
+            self.result = decoder.source_register_1_value;
         } else {
-            self.result = decoder.source_register_1 % decoder.source_register_2;
+            self.result = decoder.source_register_1_value
+                % decoder.source_register_2_value;
         }
     }
     // M32
@@ -128,8 +130,8 @@ impl Executor {
         //     * (decoder.source_register_2 & XLen32::MAX as XLen))
         //     & XLen32::MAX as XLen)
         //     .sign_extend();
-        self.result = (decoder.source_register_1 as XLen32)
-            .wrapping_mul(decoder.source_register_2 as XLen32)
+        self.result = (decoder.source_register_1_value as XLen32)
+            .wrapping_mul(decoder.source_register_2_value as XLen32)
             .sign_extend();
     }
     pub(crate) fn instruction_divide_word(&mut self, decoder: &Decoder) {
@@ -138,10 +140,11 @@ impl Executor {
         if self.is_div_by_zero_32(decoder) {
             self.result = -1 as SignedXLen32 as SignedXLen as XLen;
         } else if self.is_div_overflow_32(decoder) {
-            self.result = (decoder.source_register_1 as XLen32).sign_extend();
+            self.result =
+                (decoder.source_register_1_value as XLen32).sign_extend();
         } else {
-            self.result = ((decoder.source_register_1 as SignedXLen32)
-                .wrapping_div(decoder.source_register_2 as SignedXLen32))
+            self.result = ((decoder.source_register_1_value as SignedXLen32)
+                .wrapping_div(decoder.source_register_2_value as SignedXLen32))
                 as SignedXLen as XLen;
         }
     }
@@ -154,8 +157,8 @@ impl Executor {
         if self.is_div_by_zero_32(decoder) {
             self.result = XLen::MAX;
         } else {
-            self.result = ((decoder.source_register_1 as XLen32)
-                .wrapping_div(decoder.source_register_2 as XLen32))
+            self.result = ((decoder.source_register_1_value as XLen32)
+                .wrapping_div(decoder.source_register_2_value as XLen32))
             .sign_extend();
         }
     }
@@ -163,12 +166,13 @@ impl Executor {
         debug!("Executing REMW...");
 
         if self.is_div_by_zero_32(decoder) {
-            self.result = (decoder.source_register_1 as XLen32).sign_extend();
+            self.result =
+                (decoder.source_register_1_value as XLen32).sign_extend();
         } else if self.is_div_overflow_32(decoder) {
             self.result = 0;
         } else {
-            self.result = ((decoder.source_register_1 as SignedXLen32)
-                .wrapping_rem(decoder.source_register_2 as SignedXLen32))
+            self.result = ((decoder.source_register_1_value as SignedXLen32)
+                .wrapping_rem(decoder.source_register_2_value as SignedXLen32))
                 as SignedXLen as XLen;
         }
     }
@@ -179,10 +183,11 @@ impl Executor {
         debug!("Executing REMUW...");
 
         if self.is_div_by_zero_32(decoder) {
-            self.result = (decoder.source_register_1 as XLen32).sign_extend();
+            self.result =
+                (decoder.source_register_1_value as XLen32).sign_extend();
         } else {
-            self.result = ((decoder.source_register_1 as XLen32)
-                % (decoder.source_register_2 as XLen32))
+            self.result = ((decoder.source_register_1_value as XLen32)
+                % (decoder.source_register_2_value as XLen32))
                 .sign_extend();
         }
     }

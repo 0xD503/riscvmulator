@@ -29,8 +29,8 @@ use log::{error, trace};
 #[derive(Default, Clone)]
 pub struct Decoder {
     pub(crate) opcode: Opcode,
-    pub(crate) source_register_1: XLen,
-    pub(crate) source_register_2: XLen,
+    pub(crate) source_register_1_value: XLen,
+    pub(crate) source_register_2_value: XLen,
     pub(crate) source_register_1_offset: usize,
     pub(crate) source_register_2_offset: usize,
     pub(crate) destination_register_offset: usize,
@@ -67,8 +67,8 @@ impl Decoder {
 
     fn get_reset_instance() -> Self {
         Self {
-            source_register_1: RISCV_X0_ZERO_REGISTER_VALUE,
-            source_register_2: RISCV_X0_ZERO_REGISTER_VALUE,
+            source_register_1_value: RISCV_X0_ZERO_REGISTER_VALUE,
+            source_register_2_value: RISCV_X0_ZERO_REGISTER_VALUE,
             source_register_1_offset: GPRegisterName::x0_zero as usize,
             source_register_2_offset: GPRegisterName::x0_zero as usize,
             destination_register_offset: GPRegisterName::x0_zero as usize,
@@ -172,9 +172,9 @@ impl Decoder {
     ) {
         trace!("Decoding R-type instruction");
 
-        self.source_register_1 =
+        self.source_register_1_value =
             self.extract_source_register_1(instruction, register_file);
-        self.source_register_2 =
+        self.source_register_2_value =
             self.extract_source_register_2(instruction, register_file);
         self.destination_register_offset =
             self.extract_destination_register_offset(instruction);
@@ -261,7 +261,7 @@ impl Decoder {
                     }
                     OP_32_Funct3::SRXW => {
                         self.shamt = self.extract_r_shamt_rv64w();
-                        trace!("New shamt: {}", self.shamt);
+                        // trace!("New shamt: {}", self.shamt);
                         self.command_to_execute = ExecutableCommand::SRLW;
                     }
                 },
@@ -309,7 +309,7 @@ impl Decoder {
     ) {
         trace!("Decoding I-type instruction");
 
-        self.source_register_1 =
+        self.source_register_1_value =
             self.extract_source_register_1(instruction, register_file);
         self.destination_register_offset =
             self.extract_destination_register_offset(instruction);
@@ -535,7 +535,7 @@ impl Decoder {
                     SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM => {
                         self.need_to_write_back = false;
                         let are_rd_and_rs1_zero = || -> bool {
-                            (self.source_register_1 == 0)
+                            (self.source_register_1_value == 0)
                                 && (register_file
                                     .read(self.destination_register_offset)
                                     == 0)
@@ -660,9 +660,9 @@ impl Decoder {
     ) {
         trace!("Decoding S-type instruction");
 
-        self.source_register_1 =
+        self.source_register_1_value =
             self.extract_source_register_1(instruction, register_file);
-        self.source_register_2 =
+        self.source_register_2_value =
             self.extract_source_register_2(instruction, register_file);
         self.need_to_read_memory = false;
         self.need_to_write_memory = true;
@@ -710,9 +710,9 @@ impl Decoder {
     ) {
         trace!("Decoding B-type instruction");
 
-        self.source_register_1 =
+        self.source_register_1_value =
             self.extract_source_register_1(instruction, register_file);
-        self.source_register_2 =
+        self.source_register_2_value =
             self.extract_source_register_2(instruction, register_file);
         self.need_to_read_memory = false;
         self.need_to_write_memory = false;
@@ -919,11 +919,12 @@ impl Decoder {
     }
 
     fn extract_r_shamt(&self) -> InstructionType {
-        (self.source_register_2 & (MASK_SHAMT as XLen)) as InstructionType
+        (self.source_register_2_value & (MASK_SHAMT as XLen)) as InstructionType
     }
 
     fn extract_r_shamt_rv64w(&self) -> InstructionType {
-        (self.source_register_2 & (MASK_SHAMT_RV64W as XLen)) as InstructionType
+        (self.source_register_2_value & (MASK_SHAMT_RV64W as XLen))
+            as InstructionType
     }
 
     fn extract_i_shamt(&self, instruction: InstructionType) -> InstructionType {
