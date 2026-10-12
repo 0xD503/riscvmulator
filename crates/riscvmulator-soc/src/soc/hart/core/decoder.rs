@@ -43,7 +43,8 @@ pub struct Decoder {
     pub(crate) shamt: InstructionType,
     pub(crate) shift_type: OP_IMM_ShiftType,
 
-    pub(crate) immediate: SignedImmediate,
+    // immediate sign-extends to XLEN
+    pub(crate) immediate: SignedXLen,
     pub(crate) command_to_execute: ExecutableCommand,
     pub(crate) need_to_read_memory: bool,
     pub(crate) need_to_write_memory: bool,
@@ -529,7 +530,7 @@ impl Decoder {
             // I_115 (Zicsr_extension)
             Opcode::SYSTEM => {
                 self.immediate =
-                    self.extract_csr_address(instruction) as SignedImmediate;
+                    self.extract_csr_address(instruction) as XLen as SignedXLen;
                 match SYSTEM_Funct3::from(self.funct3) {
                     SYSTEM_Funct3::TRANSFER_CONTROL_RETURN_FROM => {
                         self.need_to_write_back = false;
@@ -936,15 +937,12 @@ impl Decoder {
         (instruction >> BIT_OFFSET_SHAMT) & MASK_SHAMT_RV64W
     }
 
-    fn extract_imm_11_0(
-        &self,
-        instruction: InstructionType,
-    ) -> SignedImmediate {
+    fn extract_imm_11_0(&self, instruction: InstructionType) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL))
-            as SignedImmediate
+            as SignedXLen32 as SignedXLen
     }
 
     fn extract_fence_sw(&self, instruction: InstructionType) -> bool {
@@ -992,89 +990,74 @@ impl Decoder {
         instruction >> (BIT_OFFSET_IMM_11_0 - BIT_OFFSET_IMM_11_0_FINAL)
     }
 
-    fn extract_imm_11_5(
-        &self,
-        instruction: InstructionType,
-    ) -> SignedImmediate {
+    fn extract_imm_11_5(&self, instruction: InstructionType) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_11_5 - BIT_OFFSET_IMM_11_5_FINAL))
-            as SignedImmediate
+            as SignedXLen32 as SignedXLen
             & !((1 << BIT_OFFSET_IMM_11_5_FINAL) - 1)
     }
 
-    fn extract_imm_4_0(&self, instruction: InstructionType) -> SignedImmediate {
+    fn extract_imm_4_0(&self, instruction: InstructionType) -> SignedXLen {
         ((instruction >> (BIT_OFFSET_IMM_4_0 - BIT_OFFSET_IMM_4_0_FINAL))
-            & MASK_IMM_4_0) as SignedImmediate
+            & MASK_IMM_4_0) as SignedXLen32 as SignedXLen
     }
 
-    fn extract_imm_31_12(
-        &self,
-        instruction: InstructionType,
-    ) -> SignedImmediate {
+    fn extract_imm_31_12(&self, instruction: InstructionType) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_IMM_31_12 - BIT_OFFSET_IMM_31_12_FINAL))
-            as SignedImmediate
+            as SignedXLen32 as SignedXLen
             & !((1 << BIT_OFFSET_IMM_31_12_FINAL) - 1)
     }
 
-    fn extract_imm_10_5(
-        &self,
-        instruction: InstructionType,
-    ) -> SignedImmediate {
+    fn extract_imm_10_5(&self, instruction: InstructionType) -> SignedXLen {
         ((instruction >> (BIT_OFFSET_IMM_10_5 - BIT_OFFSET_IMM_10_5_FINAL))
-            & MASK_IMM_10_5) as SignedImmediate
+            & MASK_IMM_10_5) as SignedXLen32 as SignedXLen
     }
 
-    fn extract_imm_4_1(&self, instruction: InstructionType) -> SignedImmediate {
+    fn extract_imm_4_1(&self, instruction: InstructionType) -> SignedXLen {
         ((instruction >> (BIT_OFFSET_IMM_4_1 - BIT_OFFSET_IMM_4_1_FINAL))
-            & MASK_IMM_4_1) as SignedImmediate
+            & MASK_IMM_4_1) as SignedXLen32 as SignedXLen
     }
 
-    fn extract_imm_10_1(
-        &self,
-        instruction: InstructionType,
-    ) -> SignedImmediate {
+    fn extract_imm_10_1(&self, instruction: InstructionType) -> SignedXLen {
         ((instruction >> (BIT_OFFSET_IMM_10_1 - BIT_OFFSET_IMM_10_1_FINAL))
-            & MASK_IMM_10_1) as SignedImmediate
+            & MASK_IMM_10_1) as SignedXLen32 as SignedXLen
     }
 
-    fn extract_imm_19_12(
-        &self,
-        instruction: InstructionType,
-    ) -> SignedImmediate {
+    fn extract_imm_19_12(&self, instruction: InstructionType) -> SignedXLen {
         ((instruction >> (BIT_OFFSET_IMM_19_12 - BIT_OFFSET_IMM_19_12_FINAL))
-            & MASK_IMM_19_12) as SignedImmediate
+            & MASK_IMM_19_12) as SignedXLen32 as SignedXLen
     }
 
-    fn extract_b_11(&self, instruction: InstructionType) -> SignedImmediate {
+    fn extract_b_11(&self, instruction: InstructionType) -> SignedXLen {
         ((instruction << (BIT_OFFSET_B_11_FINAL - BIT_OFFSET_B_11)) & MASK_B_11)
-            as SignedImmediate
+            as SignedXLen32 as SignedXLen
     }
 
-    fn extract_b_12(&self, instruction: InstructionType) -> SignedImmediate {
+    fn extract_b_12(&self, instruction: InstructionType) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         (instruction as SignedInstructionType
             >> (BIT_OFFSET_B_12 - BIT_OFFSET_B_12_FINAL))
-            as SignedImmediate
+            as SignedXLen32 as SignedXLen
             & !((1 << BIT_OFFSET_B_12_FINAL) - 1)
     }
 
-    fn extract_j_11(&self, instruction: InstructionType) -> SignedImmediate {
+    fn extract_j_11(&self, instruction: InstructionType) -> SignedXLen {
         ((instruction >> (BIT_OFFSET_J_11 - BIT_OFFSET_J_11_FINAL)) & MASK_J_11)
-            as SignedImmediate
+            as SignedXLen32 as SignedXLen
     }
 
-    fn extract_j_20(&self, instruction: InstructionType) -> SignedImmediate {
+    fn extract_j_20(&self, instruction: InstructionType) -> SignedXLen {
         // right shift for signed values compiles to arithmetic shift right
         // (ASR) with sign extension
         ((instruction as SignedInstructionType)
             >> (BIT_OFFSET_J_20 - BIT_OFFSET_J_20_FINAL))
-            as SignedImmediate
+            as SignedXLen32 as SignedXLen
             & !((1 << BIT_OFFSET_J_20_FINAL) - 1)
     }
 }
