@@ -201,4 +201,8 @@ bolt:
 
 ## miscelaneous
 
-##
+lock-update:
+  {{RUN_IN_CONTAINER}} cargo update
+
+metadata:
+  {{RUN_IN_CONTAINER}} cargo metadata
