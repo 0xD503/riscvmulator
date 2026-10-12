@@ -2,6 +2,9 @@
 
 ## Following action
 
+- add CI (Forjejo/GitHub compatibility)
+- use `riscv-arch-tests`
+- add support for RV32I and RV64/32E
 - implement A extension
 - implement F extension
 - implement D extension
