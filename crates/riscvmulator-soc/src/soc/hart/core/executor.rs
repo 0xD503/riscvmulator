@@ -532,7 +532,13 @@ impl Executor {
     }
 
     fn instruction_auipc(&mut self, decoder: &Decoder, pc: &Register) {
-        debug!("Executing AUIPC...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            luipc,
+            "auipc",
+            decoder.destination_register_offset,
+            decoder.immediate
+        );
 
         self.result =
             XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen);
@@ -770,7 +776,13 @@ impl Executor {
     }
 
     fn instruction_lui(&mut self, decoder: &Decoder) {
-        debug!("Executing LUI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            luipc,
+            "lui",
+            decoder.destination_register_offset,
+            decoder.immediate
+        );
 
         self.result = decoder.immediate as UnsignedXLen;
     }
@@ -942,7 +954,12 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
-        debug!("Executing JAL...");
+        print_full_instruction!(
+            jal,
+            "jal",
+            decoder.destination_register_offset,
+            decoder.immediate
+        );
 
         self.jump_target_address =
             XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen);
@@ -1165,14 +1182,16 @@ impl Executor {
     }
 
     fn instruction_fence(&mut self, decoder: &Decoder) {
-        debug!("Executing FENCE...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(fence);
 
         //
         error!("TODO: unimplemented instruction");
     }
 
     fn instruction_fence_i(&mut self, decoder: &Decoder) {
-        debug!("Executing FENCE_I...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(fence_i);
 
         //
         error!("TODO: unimplemented instruction");
