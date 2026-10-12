@@ -493,7 +493,7 @@ impl Executor {
             "srai",
             decoder.destination_register_offset,
             decoder.source_register_1_offset,
-            decoder.immediate,
+            decoder.shamt,
             decoder.source_register_1_value
         );
 
@@ -794,7 +794,7 @@ impl Executor {
             "beq",
             decoder.source_register_1_offset,
             decoder.source_register_2_offset,
-            decoder.immediate,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
             decoder.source_register_1_value,
             decoder.source_register_2_value
         );
@@ -815,7 +815,7 @@ impl Executor {
             "bne",
             decoder.source_register_1_offset,
             decoder.source_register_2_offset,
-            decoder.immediate,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
             decoder.source_register_1_value,
             decoder.source_register_2_value
         );
@@ -839,7 +839,7 @@ impl Executor {
             "blt",
             decoder.source_register_1_offset,
             decoder.source_register_2_offset,
-            decoder.immediate,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
             decoder.source_register_1_value,
             decoder.source_register_2_value
         );
@@ -862,7 +862,7 @@ impl Executor {
             "bge",
             decoder.source_register_1_offset,
             decoder.source_register_2_offset,
-            decoder.immediate,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
             decoder.source_register_1_value,
             decoder.source_register_2_value
         );
@@ -885,7 +885,7 @@ impl Executor {
             "bltu",
             decoder.source_register_1_offset,
             decoder.source_register_2_offset,
-            decoder.immediate,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
             decoder.source_register_1_value,
             decoder.source_register_2_value
         );
@@ -908,7 +908,7 @@ impl Executor {
             "bgeu",
             decoder.source_register_1_offset,
             decoder.source_register_2_offset,
-            decoder.immediate,
+            XLen::wrapping_add(pc.read(), decoder.immediate as UnsignedXLen),
             decoder.source_register_1_value,
             decoder.source_register_2_value
         );
@@ -932,7 +932,7 @@ impl Executor {
     ) {
         #[cfg(feature = "print-instructions")]
         print_full_instruction!(
-            op_imm,
+            jalr,
             "jalr",
             decoder.destination_register_offset,
             decoder.source_register_1_offset,
@@ -954,6 +954,7 @@ impl Executor {
         pc: &Register,
         fetch_unit: &FetchUnit,
     ) {
+        #[cfg(feature = "print-instructions")]
         print_full_instruction!(
             jal,
             "jal",
@@ -1064,7 +1065,7 @@ impl Executor {
             "sraiw",
             decoder.destination_register_offset,
             decoder.source_register_1_offset,
-            decoder.immediate,
+            decoder.shamt,
             decoder.source_register_1_value as SignedXLen32
         );
 

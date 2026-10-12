@@ -10,6 +10,7 @@
 ## Fixes/Features
 
 - [ ] revamp instruction logs so they show instruction mnenmonics/listing
+    - [ ] fix printers for `beq`, `bne`, `bge`, `bgeu`, `blt`, `bltu`, `jal`, `srai`/`sraiw` shamt
 - [ ] add UTs
 - [ ] add benchmarks (compare with Spike)
 - [ ] add docs
