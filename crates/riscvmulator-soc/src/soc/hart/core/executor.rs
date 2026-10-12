@@ -385,7 +385,15 @@ impl Executor {
     }
 
     fn instruction_addi(&mut self, decoder: &Decoder) {
-        debug!("Executing ADDI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "addi",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         // use wrapping operation in order to allow overruns
         self.result = XLen::wrapping_add(
@@ -395,13 +403,29 @@ impl Executor {
     }
 
     fn instruction_slli(&mut self, decoder: &Decoder) {
-        debug!("Executing SLLI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "slli",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.result = decoder.source_register_1 << decoder.shamt;
     }
 
     fn instruction_slti(&mut self, decoder: &Decoder) {
-        debug!("Executing SLTI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "slti",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.result =
             if (decoder.source_register_1 as SignedXLen) < decoder.immediate {
@@ -412,7 +436,15 @@ impl Executor {
     }
 
     fn instruction_sltiu(&mut self, decoder: &Decoder) {
-        debug!("Executing SLTIU...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "sltiu",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.result = if (decoder.source_register_1 as UnsignedXLen)
             < decoder.immediate as UnsignedXLen
@@ -424,34 +456,74 @@ impl Executor {
     }
 
     fn instruction_xori(&mut self, decoder: &Decoder) {
-        debug!("Executing XORI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "xori",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.result =
             decoder.source_register_1 ^ decoder.immediate as UnsignedXLen;
     }
 
     fn instruction_srli(&mut self, decoder: &Decoder) {
-        debug!("Executing SRLI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "srli",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.result = decoder.source_register_1 >> decoder.shamt;
     }
 
     fn instruction_srai(&mut self, decoder: &Decoder) {
-        debug!("Executing SRAI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "srai",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.result = ((decoder.source_register_1 as SignedXLen)
             >> decoder.shamt) as XLen;
     }
 
     fn instruction_ori(&mut self, decoder: &Decoder) {
-        debug!("Executing ORI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "ori",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.result =
             decoder.source_register_1 | decoder.immediate as UnsignedXLen;
     }
 
     fn instruction_andi(&mut self, decoder: &Decoder) {
-        debug!("Executing ANDI...");
+        #[cfg(feature = "print-instructions")]
+        print_full_instruction!(
+            op_imm,
+            "andi",
+            decoder.destination_register_offset,
+            decoder.source_register_1_offset,
+            decoder.immediate,
+            decoder.source_register_1
+        );
 
         self.result =
             decoder.source_register_1 & decoder.immediate as UnsignedXLen;

@@ -1,6 +1,26 @@
 #![cfg(feature = "print-instructions")]
 
 macro_rules! print_full_instruction {
+    (op, $instruction_name:expr, $rd:expr, $rs1:expr, $imm:expr, $rs1_value:expr) => {
+        debug!(
+            "Executing `{} rd{{{:#}}}, rs1{{{:#}}}, imm{{{:#}}}` # x[rs1] = {:#}",
+            $instruction_name,
+            GPRegisterName::try_from($rd).expect("rd exceeded 5-bit width"),
+            GPRegisterName::try_from($rs1).expect("rs1 exceeded 5-bit width"),
+            $imm,
+            $rs1_value
+        );
+    };
+    (op_imm, $instruction_name:expr, $rd:expr, $rs1:expr, $imm:expr, $rs1_value:expr) => {
+        debug!(
+            "Executing `{} rd{{{:#}}}, rs1{{{:#}}}, imm{{{:#}}}` # x[rs1] = {:#}",
+            $instruction_name,
+            GPRegisterName::try_from($rd).expect("rd exceeded 5-bit width"),
+            GPRegisterName::try_from($rs1).expect("rs1 exceeded 5-bit width"),
+            $imm,
+            $rs1_value
+        );
+    };
     (load, $instruction_name:expr, $rd:expr, $rs1:expr, $imm:expr, $rs1_value:expr) => {
         debug!(
             "Executing `{} rd{{{:#}}}, imm{{{:#}}}(rs1{{{:#}}})` # x[rs1] = {:#X}",
@@ -20,16 +40,6 @@ macro_rules! print_full_instruction {
             GPRegisterName::try_from($rs1).expect("rs1 exceeded 5-bit width"),
             $rs1_value,
             $rs2_value
-        );
-    };
-    (op_imm, $instruction_name:expr, $rd:expr, $rs1:expr, $imm:expr, $rs1_value:expr) => {
-        debug!(
-            "Executing `{} rd{{{:#}}}, imm{{{:#}}}(rs1{{{:#}}})` # x[rs1] = {:#X}",
-            $instruction_name,
-            GPRegisterName::try_from($rd).expect("rd exceeded 5-bit width"),
-            $imm,
-            GPRegisterName::try_from($rs1).expect("rs1 exceeded 5-bit width"),
-            $rs1_value
         );
     };
 }
