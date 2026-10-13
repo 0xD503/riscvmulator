@@ -47,11 +47,23 @@ RUN apt-get update && apt-get install --assume-yes \
     && cargo install --locked cargo-fuzz
 
 ARG CODE_LLDB_VERSION=1.12.3
-RUN curl -fsSL -o /tmp/codelldb.vsix \
+RUN curl --fail --silent --show-error --location -o /tmp/codelldb.vsix \
     https://github.com/vadimcn/codelldb/releases/download/v${CODE_LLDB_VERSION}/codelldb-linux-x64.vsix \
     && unzip -q /tmp/codelldb.vsix 'extension/*' -d /tmp/codelldb \
     && mv /tmp/codelldb/extension /opt/codelldb \
     && rm -rf /tmp/codelldb /tmp/codelldb.vsix
+
+## add deps for RISC-V arch tests
+ARG SAIL_RISCV_VERSION=0.15
+ARG MISE_VERSION=v2026.10.8
+RUN mkdir -p /opt/sail_riscv \
+    && curl --fail --silent --show-error --location https://github.com/riscv/sail-riscv/releases/download/${SAIL_RISCV_VERSION}/sail-riscv-$(uname)-$(arch).tar.gz | tar -xz --directory=/opt/sail_riscv --strip-components=1 \
+    && export PATH=/opt/sail_riscv/bin:$PATH \
+    && sail_riscv_sim --version \
+    ## mise tools \
+    && curl https://mise.jdx.dev/install.sh | MISE_INSTALL_PATH=/usr/local/bin/mise MISE_VERSION=${MISE_VERSION} sh \
+    && export PATH=${HOME}/.local/bin:$PATH \
+    && mise --version
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
     && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME} \
