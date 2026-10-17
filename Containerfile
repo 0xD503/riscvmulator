@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install --assume-yes \
     picolibc-riscv64-unknown-elf newlib-source \
     #gdb-riscv64-linux-gnu \
     clang lld mold make llvm llvm-bolt \
-    #perf bloaty \
+    #perf bloaty gperf \
     git \
     less patch \
     python3 \
@@ -31,6 +31,11 @@ RUN apt-get update && apt-get install --assume-yes \
     vim gdb \
     curl openssh-server \
     unzip \
+    ## RISC-V Arch test deps
+    #autoconf automake autotools-dev python3-pip  \
+    #python3-tomli libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison   \
+    #flex texinfo libtool patchutils bc zlib1g-dev libexpat-dev ninja-build \
+    #cmake libglib2.0-dev libslirp-dev libncurses-dev
     ## clean apt cache and install some crates \
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt rust-src rust-analyzer \
@@ -61,7 +66,13 @@ RUN mkdir -p /opt/sail_riscv \
     && sail_riscv_sim --version \
     ## mise tools \
     && curl https://mise.jdx.dev/install.sh | MISE_INSTALL_PATH=/usr/local/bin/mise MISE_VERSION=${MISE_VERSION} sh \
-    && mise --version
+    && mise --version \
+    ## install tools with mise
+    && cd 3rd_party/riscv-arch-test \
+    && mise trust .mise.toml \
+    && mise install #\
+    #&& make tests \
+    #&& cd -
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
     && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME} \
