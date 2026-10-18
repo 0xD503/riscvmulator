@@ -10,6 +10,16 @@
           "extraArgs": ["--profile=release-checked"]
         }
       }
+    },
+    "clangd": {
+      "initialization_options": {
+        "exclude": ["3rd_party"]
+      }
+    },
+    "json-language-server": {
+      "initialization_options": {
+        "exclude": ["3rd_party"]
+      }
     }
   },
   "dap": {
