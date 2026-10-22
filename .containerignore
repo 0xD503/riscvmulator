@@ -1,5 +1,6 @@
 .git
 3rd_party
+!3rd_party/riscv-arch-test/.mise.toml
 target
 crates_guest/*/target
 **/*.log
