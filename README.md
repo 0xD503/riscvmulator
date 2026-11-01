@@ -49,6 +49,7 @@ Currently project implements base RV64IM functionality. Project passes
 
 ### Prerequisites
 
+- `git` for clonning
 - `podman`/`podman-compose` or `docker` (with compose plugin)
 - `just` task runner
 
