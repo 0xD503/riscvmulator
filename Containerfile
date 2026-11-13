@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install --assume-yes \
     picolibc-riscv64-unknown-elf newlib-source \
     #gdb-riscv64-linux-gnu \
     clang lld mold make llvm llvm-bolt \
-    #perf bloaty \
+    #perf bloaty gperf \
     git \
     less patch \
     python3 \
@@ -31,6 +31,11 @@ RUN apt-get update && apt-get install --assume-yes \
     vim gdb \
     curl openssh-server \
     unzip \
+    ## RISC-V Arch test deps
+    #autoconf automake autotools-dev python3-pip  \
+    #python3-tomli libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison   \
+    #flex texinfo libtool patchutils bc zlib1g-dev libexpat-dev ninja-build \
+    #cmake libglib2.0-dev libslirp-dev libncurses-dev
     ## clean apt cache and install some crates \
     && rm -rf /var/lib/apt/lists/* \
     && rustup component add clippy rustfmt rust-src rust-analyzer \
@@ -47,11 +52,25 @@ RUN apt-get update && apt-get install --assume-yes \
     && cargo install --locked cargo-fuzz
 
 ARG CODE_LLDB_VERSION=1.12.3
-RUN curl -fsSL -o /tmp/codelldb.vsix \
+RUN curl --fail --silent --show-error --location -o /tmp/codelldb.vsix \
     https://github.com/vadimcn/codelldb/releases/download/v${CODE_LLDB_VERSION}/codelldb-linux-x64.vsix \
     && unzip -q /tmp/codelldb.vsix 'extension/*' -d /tmp/codelldb \
     && mv /tmp/codelldb/extension /opt/codelldb \
     && rm -rf /tmp/codelldb /tmp/codelldb.vsix
+
+## add deps for RISC-V arch tests
+ARG SAIL_RISCV_VERSION=0.15
+ARG MISE_VERSION=v2026.10.15
+RUN curl --fail --silent --show-error --location https://github.com/riscv/sail-riscv/releases/download/${SAIL_RISCV_VERSION}/sail-riscv-$(uname)-$(arch).tar.gz | tar -xz --directory=/usr/local --strip-components=1 \
+    && sail_riscv_sim --version \
+    ## mise tools \
+    && curl --fail --silent --show-error https://mise.jdx.dev/install.sh | MISE_INSTALL_PATH=/usr/local/bin/mise MISE_VERSION=${MISE_VERSION} sh \
+    && mise --version
+
+ENV MISE_DATA_DIR=/opt/mise
+ENV PATH="/opt/mise/shims:${PATH}"
+COPY 3rd_party/riscv-arch-test/.mise.toml /opt/act/.mise.toml
+RUN cd /opt/act && mise trust .mise.toml && mise install
 
 RUN groupadd -g ${DEV_GID} ${DEV_GROUPNAME} \
     && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash ${DEV_USERNAME} \

@@ -1,5 +1,12 @@
 # RISC-V emulator
 
+```text
+ _ __(_)___  _____   ___ __ ___  _   _| | __ _| |_ ___  _ __
+| '__| / __|/ __\ \ / / '_ ` _ \| | | | |/ _` | __/ _ \| '__|
+| |  | \__ \ (__ \ V /| | | | | | |_| | | (_| | || (_) | |
+|_|  |_|___/\___| \_/ |_| |_| |_|\__,_|_|\__,_|\__\___/|_|
+```
+
 ## Specifications
 
 [Specification](https://riscv.org/specifications/ratified/)
@@ -42,6 +49,7 @@ Currently project implements base RV64IM functionality. Project passes
 
 ### Prerequisites
 
+- `git` for clonning
 - `podman`/`podman-compose` or `docker` (with compose plugin)
 - `just` task runner
 

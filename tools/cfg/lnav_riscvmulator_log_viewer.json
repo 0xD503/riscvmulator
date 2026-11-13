@@ -1,0 +1,42 @@
+{
+    "$schema": "https://lnav.org/schemas/format-v1.schema.json",
+    "riscvmulator_log": {
+        "title": "riscvmulator log",
+        "description": "riscvmulator logs (env_logger): [TIMESTAMP LEVEL module file:line] message",
+        "url": "https://github.com/0xD503/riscvmulator",
+        "regex": {
+            "std": {
+                "pattern": "^\\[(?<timestamp>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z) +(?<level>[A-Z]+) +(?<module>[^ \\]]+)(?: (?<file>[^ :\\]]+):(?<line>\\d+))?\\] (?<body>.*)$"
+            }
+        },
+        "timestamp-format": ["%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S.%fZ"],
+        "level-field": "level",
+        "level": {
+            "error": "^ERROR$",
+            "warning": "^WARN$",
+            "info": "^INFO$",
+            "debug": "^DEBUG$",
+            "trace": "^TRACE$"
+        },
+        "highlights": {
+            "timestamp": { "pattern": "^\\[\\d{4}-\\d{2}-\\d{2}T[\\d:.]+Z", "color": "#5f87af" },
+            "trace": { "pattern": " TRACE ", "color": "#808080" },
+            "debug": { "pattern": " DEBUG ", "color": "#00afaf" },
+            "info":  { "pattern": " INFO  ", "color": "#5faf00" },
+            "warn":  { "pattern": " WARN  ", "color": "#ffaf00" },
+            "error": { "pattern": " ERROR ", "color": "#ff0000" },
+            "line-number": { "pattern": "(?<=\\.rs:)\\d+(?=\\])", "color": "#d7af5f" }
+        },
+        "opid-field": "module",
+        "value": {
+            "module": { "kind": "string", "identifier": true },
+            "file": { "kind": "string", "identifier": true },
+            "line": { "kind": "integer", "foreign-key": true }
+        },
+        "sample": [
+            { "line": "[2026-10-09T00:51:50Z TRACE riscvmulator_soc::soc::memory_bus crates/riscvmulator-soc/src/soc/memory_bus.rs:116] Writing memory at addr: 0x0000000080000000", "level": "trace" },
+            { "line": "[2026-10-09T00:51:50Z ERROR riscvmulator_soc::soc::hart::core::executor crates/riscvmulator-soc/src/soc/hart/core/executor.rs:762] TODO: unimplemented instruction", "level": "error" },
+            { "line": "[2026-10-09T00:51:50Z INFO  riscvmulator_emulator] started", "level": "info" }
+        ]
+    }
+}
