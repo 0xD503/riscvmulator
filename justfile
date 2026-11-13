@@ -47,39 +47,39 @@ run-dev-container: ensure-dev-image-exists
   fi
 
 build-dev:
-  {{RUN_IN_CONTAINER}} cargo build {{WITH_REL_CHECKED_PROFILE}}
+  {{RUN_IN_CONTAINER}} cargo build -v {{WITH_REL_CHECKED_PROFILE}}
 
 run-dev:
-  {{RUN_IN_CONTAINER_DEBUG}} cargo run {{RUN_WITH_REL_CHECKED_PROFILE}}
+  {{RUN_IN_CONTAINER_DEBUG}} cargo run -v {{RUN_WITH_REL_CHECKED_PROFILE}}
 
 ci-dev: test run-dev
 
 run-dev-trace:
-  {{RUN_IN_CONTAINER_TRACE}} cargo run {{RUN_WITH_REL_CHECKED_PROFILE}}
+  {{RUN_IN_CONTAINER_TRACE}} cargo run -v {{RUN_WITH_REL_CHECKED_PROFILE}}
 
 run-linux-dev: build-dev test
-  {{RUN_IN_CONTAINER_DEBUG}} cargo run {{RUN_WITH_REL_CHECKED_PROFILE}}
+  {{RUN_IN_CONTAINER_DEBUG}} cargo run -v {{RUN_WITH_REL_CHECKED_PROFILE}}
 
 asm *args:
   {{RUN_IN_CONTAINER_DEBUG}} cargo asm --profile=release {{args}}
 
 build-deb:
-  {{RUN_IN_CONTAINER}} cargo build {{WITH_DEV_PROFILE}}
+  {{RUN_IN_CONTAINER}} cargo build -v {{WITH_DEV_PROFILE}}
 
 run-deb:
-  {{RUN_IN_CONTAINER_DEBUG}} cargo run {{RUN_WITH_DEV_PROFILE}}
+  {{RUN_IN_CONTAINER_DEBUG}} cargo run -v {{RUN_WITH_DEV_PROFILE}}
 
 run-deb-trace:
-  {{RUN_IN_CONTAINER_TRACE}} cargo run {{RUN_WITH_DEV_PROFILE}}
+  {{RUN_IN_CONTAINER_TRACE}} cargo run -v {{RUN_WITH_DEV_PROFILE}}
 
 
 ## release
 
 build:
-  {{RUN_IN_CONTAINER}} cargo build {{WITH_RELEASE_PROFILE}}
+  {{RUN_IN_CONTAINER}} cargo build -v {{WITH_RELEASE_PROFILE}}
 
 run:
-  {{RUN_IN_CONTAINER}} cargo run {{RUN_WITH_RELEASE_PROFILE}}
+  {{RUN_IN_CONTAINER}} cargo run -v {{RUN_WITH_RELEASE_PROFILE}}
 
 run-release-container:
   #!/usr/bin/env sh
@@ -94,11 +94,11 @@ run-release-container:
 
 test:
   {{RUN_IN_CONTAINER_DEBUG}} scripts/riscv_tests.temp.sh
-  {{RUN_IN_CONTAINER_DEBUG}} cargo test {{WITH_REL_CHECKED_PROFILE}}
+  {{RUN_IN_CONTAINER_DEBUG}} cargo test -v {{WITH_REL_CHECKED_PROFILE}}
 
 test-debug:
   {{RUN_IN_CONTAINER_DEBUG}} scripts/riscv_tests.temp.sh
-  {{RUN_IN_CONTAINER_DEBUG}} cargo test {{WITH_DEV_PROFILE}}
+  {{RUN_IN_CONTAINER_DEBUG}} cargo test -v {{WITH_DEV_PROFILE}}
 
 bench:
   {{RUN_IN_CONTAINER_DEBUG}} cargo bench --workspace

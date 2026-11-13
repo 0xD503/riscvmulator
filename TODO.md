@@ -2,9 +2,10 @@
 
 ## Following action
 
+- add support for RV64/32E
+- add support for RV32I
 - add CI (Forjejo/GitHub compatibility)
 - use `riscv-arch-tests`
-- add support for RV32I and RV64/32E
 - implement A extension
 - implement F extension
 - implement D extension
@@ -12,8 +13,6 @@
 
 ## Fixes/Features
 
-- [ ] revamp instruction logs so they show instruction mnenmonics/listing
-    - [ ] fix printers for `beq`, `bne`, `bge`, `bgeu`, `blt`, `bltu`, `jal`, `srai`/`sraiw` shamt
 - [ ] add UTs
 - [ ] add benchmarks (compare with Spike)
 - [ ] add docs
