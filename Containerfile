@@ -1,9 +1,10 @@
 ## 1. DEV stage   --------------------------------------------------------------
 
 ARG DISTRO_RELEASE_VER=trixie
+ARG RUST_VER=1.100
 
 ## use fixed `major`/`minor`, but latest `patch` version
-FROM docker.io/library/rust:1.99-slim-${DISTRO_RELEASE_VER} AS builder
+FROM docker.io/library/rust:${RUST_VER}-slim-${DISTRO_RELEASE_VER} AS builder
 
 ## declare stage vars (doesn't affect runtime)
 ARG WD=/app

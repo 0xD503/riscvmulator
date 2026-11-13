@@ -8,7 +8,7 @@ repository = "https://github.com/0xD503/riscvmulator.git"
 license = "MIT OR Apache-2.0"
 keywords = [ "emulator", "risc-v", "riscv", "cpu", "firmware" ]
 categories = [ "emulators" ]
-rust-version = "1.99"
+rust-version = "1.100"
 
 [workspace.dependencies]
 riscv = { version = "0.16.1" }
